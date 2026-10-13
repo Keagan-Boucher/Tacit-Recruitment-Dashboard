@@ -1,0 +1,18 @@
+/* Centred in the content area (x 104 to 1424), as in the frame. */
+.page {
+  display: grid;
+  place-items: center;
+  min-height: calc(100dvh - 16px);
+  padding-bottom: 10px; /* frame centres the block 5 px above the middle */
+}
+.standalone { padding: 16px 16px 26px; min-height: 100dvh; }
+.block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+.figure { margin: 0; color: var(--accent-text); }
+.block .message { margin: 0; max-width: 440px; color: var(--text-2); line-height: 1.45; }
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
