@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tacit</title>
+    <script>
+      // Theme and reduced motion before first paint. Keys mirror features/prefs/theme.ts.
+      (function () {
+        var d = document.documentElement, t = "dark", r = false;
+        try { t = localStorage.getItem("tacit.theme") || "dark"; r = localStorage.getItem("tacit.reduceMotion") === "true"; } catch (e) {}
+        if (t === "system") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        if (t === "light") d.dataset.theme = "light";
+        if (r || matchMedia("(prefers-reduced-motion: reduce)").matches) d.dataset.reduceMotion = "";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import type { RouteObject } from "react-router";
+import { RedirectIfSignedIn, RequireAuth } from "../features/auth";
 import { Placeholder } from "./Placeholder";
 import { Shell } from "./Shell";
 
@@ -9,9 +10,15 @@ const DevGallery = import.meta.env.DEV ? lazy(() => import("../screens/dev-galle
 const ph = (id: string, title: string) => <Placeholder id={id} title={title} />;
 
 export const routes: RouteObject[] = [
-  { path: "/login", element: ph("S07", "Sign in") }, // no rail
+  // DEV only, outside the auth guard so the component gallery opens without a session.
+  ...(DevGallery ? [{ path: "/dev/components", element: <Suspense fallback={null}><DevGallery /></Suspense> }] : []),
+  { path: "/login", element: <RedirectIfSignedIn>{ph("S07", "Sign in")}</RedirectIfSignedIn> }, // no rail
   {
-    element: <Shell />,
+    element: (
+      <RequireAuth>
+        <Shell />
+      </RequireAuth>
+    ),
     children: [
       { path: "/", element: ph("S01", "Dashboard") },
       { path: "/candidates", element: ph("S08", "Candidates") },
@@ -26,9 +33,6 @@ export const routes: RouteObject[] = [
       { path: "/brief", element: ph("S05", "Brief intake") },
       { path: "/settings", element: ph("S14", "Settings") },
       { path: "/widgets", element: ph("S17", "Widgets") },
-      ...(DevGallery
-        ? [{ path: "/dev/components", element: <Suspense fallback={null}><DevGallery /></Suspense> }]
-        : []),
       { path: "*", element: ph("S16", "Not found") },
     ],
   },

@@ -1,4 +1,5 @@
 import { NavLink } from "react-router";
+import { initials, useAuth } from "../features/auth";
 import { Logo } from "./Logo";
 import styles from "./Rail.module.css";
 
@@ -33,6 +34,8 @@ function RailItem({ to, label, icon, end }: Item) {
 }
 
 export function Rail() {
+  const { user } = useAuth();
+  const who = initials(user);
   return (
     <nav className={styles.rail} aria-label="Main">
       <Logo />
@@ -42,8 +45,8 @@ export function Rail() {
       ))}
       <div className={styles.spacer} />
       <RailItem {...settings} />
-      <div className={styles.avatar} role="img" aria-label="Signed in as NM">
-        NM
+      <div className={styles.avatar} role="img" aria-label={`Signed in as ${who}`}>
+        {who}
       </div>
     </nav>
   );
