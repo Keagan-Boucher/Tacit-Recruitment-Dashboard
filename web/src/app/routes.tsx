@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import type { RouteObject } from "react-router";
 import { RedirectIfSignedIn, RequireAuth } from "../features/auth";
+import SignIn from "../screens/S07-sign-in/SignIn";
 import { Placeholder } from "./Placeholder";
 import { Shell } from "./Shell";
 import NotFound, { RouteError } from "../screens/S16-not-found/NotFound";
@@ -15,7 +16,7 @@ const ph = (id: string, title: string) => <Placeholder id={id} title={title} />;
 export const routes: RouteObject[] = [
   // DEV only, outside the auth guard so the component gallery opens without a session.
   ...(DevGallery ? [{ path: "/dev/components", errorElement: <RouteError standalone />, element: <Suspense fallback={null}><DevGallery /></Suspense> }] : []),
-  { path: "/login", errorElement: <RouteError standalone />, element: <RedirectIfSignedIn>{ph("S07", "Sign in")}</RedirectIfSignedIn> }, // no rail
+  { path: "/login", errorElement: <RouteError standalone />, element: <RedirectIfSignedIn><SignIn /></RedirectIfSignedIn> }, // no rail
   {
     errorElement: <RouteError standalone />, // the shell or the auth guard itself failed
     element: (

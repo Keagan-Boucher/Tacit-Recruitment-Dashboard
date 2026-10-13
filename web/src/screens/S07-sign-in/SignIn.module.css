@@ -1,0 +1,73 @@
+.page {
+  display: grid;
+  grid-template-columns: 808px 1fr;
+  min-height: 100%;
+  padding: 16px 0 16px 16px;
+  background: var(--canvas);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 48px 56px;
+  border-radius: var(--radius-widget);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brandName { line-height: normal; }
+.pitch { line-height: 0.96; letter-spacing: -0.04em; }
+
+.side { display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+.form {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* Email gets the red outline without a message of its own. Field = label, control, error slot. */
+.flagged > div:first-of-type { border-color: var(--against); }
+
+.eye {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.eye:hover { color: var(--text); }
+
+.submit { min-height: 44px; }
+
+.forgotWrap { position: relative; display: flex; justify-content: center; padding-bottom: 24px; }
+.forgot {
+  min-height: 44px;
+  margin-top: -13px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.forgot:hover { text-decoration: underline; }
+/* sits in the padding under the link so it never moves the form */
+.note { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; color: var(--text-2); }
+.noteError { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; color: var(--against); }
+
+@media (max-width: 900px) {
+  .page { grid-template-columns: 1fr; padding: 16px; }
+  .panel { padding: 24px; gap: 40px; }
+  .pitch { font-size: 44px; letter-spacing: -0.035em; }
+  .side { padding: 40px 0; }
+}
