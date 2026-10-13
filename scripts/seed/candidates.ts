@@ -23,9 +23,12 @@ function heroes(ctx: Ctx): CandRow[] {
       ["salary", "R65k", "around R65k", "R65k", 0.92], ["availability", "One calendar month notice", "notice is a calendar month", "notice", 0.85]),
   ], { unconfirmed: true, role: "role_demo_fico" });
 
-  // Sipho: the forgotten candidate (R-11).
-  n("demo_forgotten", 1, 14, [
-    sec(Q.now, "SAP support lead at Lumen Telecoms, three years. Interviewed for the support manager role, wrong fit honestly. Taught himself S/4HANA Finance over the last year and passed the FICO certification on his own.",
+  // Sipho: the forgotten candidate (R-11). Notes run oldest first.
+  n("demo_forgotten", 1, 31, [sec(Q.now, "Quick catch-up. Just promoted to SAP support lead at Lumen, happy for now. Doing an SAP Activate course in the evenings. Not looking.",
+    sk("SAP Activate course (in progress)", "Doing an SAP Activate course in the evenings", "Activate", 0.8),
+    ["availability", "Not looking (March 2024)", "Not looking", "Not looking", 0.6])]);
+  n("demo_forgotten", 2, 14, [
+    sec(Q.now, "SAP support lead at Lumen Telecoms since last year, four years at the company. Interviewed for the support manager role, wrong fit honestly. Taught himself S/4HANA Finance over the last year and passed the FICO certification on his own.",
       sk("SAP support lead experience", "SAP support lead at Lumen Telecoms", "Lumen", 0.9),
       sk("S/4HANA Finance (self-taught)", "Taught himself S/4HANA Finance over the last year", "S/4HANA", 0.86),
       sk("FICO certification (passed)", "passed the FICO certification on his own", "certification", 0.9)),
@@ -36,12 +39,9 @@ function heroes(ctx: Ctx): CandRow[] {
     sec(Q.no, "His FICO work is support tickets, not a full implementation.",
       ["signal", "FICO work is support tickets, not a full implementation", "His FICO work is support tickets, not a full implementation", "support tickets", 0.82]),
   ], { role: "role_karoo_support_mgr" });
-  n("demo_forgotten", 2, 31, [sec(Q.now, "Quick catch-up. Promoted to SAP support lead at Lumen, happy for now. Doing an SAP Activate course in the evenings. Not looking.",
-    sk("SAP Activate course (in progress)", "Doing an SAP Activate course in the evenings", "Activate", 0.8),
-    ["availability", "Not looking (March 2024)", "Not looking", "Not looking", 0.6])]);
 
   // Stale records.
-  n("lindiwe_khumalo", 1, 22, [sec(Q.now, "Quick catch-up. Still at the manufacturer, S/4 conversion is two years away.", ["signal", "S/4 conversion two years away", "S/4 conversion is two years away", "conversion", 0.7])]);
+  n("lindiwe_khumalo", 1, 22, [sec(Q.now, "First call. SAP FICO analyst at a Durban manufacturer, S/4 conversion is two years away.", ["signal", "S/4 conversion two years away", "S/4 conversion is two years away", "conversion", 0.7])]);
   n("lindiwe_khumalo", 2, 15, [
     sec(Q.now, "SAP FICO analyst at a Durban manufacturer, six years on ECC. Strong on group reporting and consolidations.",
       sk("SAP FICO (ECC)", "six years on ECC", "ECC"), sk("Group reporting", "Strong on group reporting and consolidations", "group reporting", 0.9)),

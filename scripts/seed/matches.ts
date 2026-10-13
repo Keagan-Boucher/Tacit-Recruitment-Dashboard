@@ -25,7 +25,6 @@ const SPECS: Spec[] = [
       ["His FICO work is support tickets, not a full implementation", ["support tickets"]],
     ],
     align: [
-      ["S/4HANA Finance", "Taught himself S/4HANA Finance over the last year", "stated", ["S/4HANA"]],
       ["FI/CO configuration on S/4HANA", "Passed the FICO certification; configuration is inferred, his hands-on work is support tickets", "interpreted", ["certification", "support tickets"]],
       ["Group reporting", "No mention in his notes", "not-seen", []],
       ["Asset accounting", "No mention in his notes", "not-seen", []],
@@ -116,6 +115,46 @@ const SPECS: Spec[] = [
     ],
     q: ["Have you worked remotely full time before?"],
   },
+  {
+    role: "role_protea_abap", cand: "sandile_cele", rank: 1,
+    f: [["Hands-on ABAP developer", ["ABAP"]], ["Fiori in his toolkit", ["Fiori"]], ["Salary around R32k fits the R35k budget", ["R32k"]]],
+    a: [["Happier on-site, and this role is hybrid", ["on-site"]]],
+    align: [
+      ["ABAP", "Hands-on with ABAP day to day", "stated", ["ABAP"]],
+      ["Fiori", "Strong on ABAP and Fiori", "stated", ["Fiori"]],
+    ],
+    q: ["Are you comfortable with two days a week from home?", "Would you move from Durban to Cape Town?"],
+  },
+  {
+    role: "role_protea_abap", cand: "palesa_mokwena", rank: 2,
+    f: [["Experienced ABAP developer", ["ABAP"]], ["Fiori exposure", ["Fiori"]]],
+    a: [["Expects R52k, well above the R35k junior budget", ["R52k"]], ["Prefers remote, would only go hybrid", ["remote"]]],
+    align: [
+      ["ABAP", "Strong on ABAP", "stated", ["ABAP"]],
+      ["Fiori", "Fiori listed alongside ABAP", "interpreted", ["Fiori"]],
+    ],
+    q: ["Would you take a junior-level salary?", "Where are you based, and would you relocate?"],
+  },
+  {
+    role: "role_vantage_sap_pm", cand: "pieter_van_wyk", rank: 1,
+    f: [["Two S/4HANA rollouts for retail clients", ["rollouts"]], ["Runs a tight steering committee, calm with sponsors", ["steering"]]],
+    a: [["Said he is open to contract work, and this role is permanent", ["contract"]], ["Free only after the January go-live", ["go-live"]]],
+    align: [
+      ["SAP rollout project management", "SAP project manager with two S/4HANA rollouts", "stated", ["project manager", "rollouts"]],
+      ["Retail or logistics background", "Rollouts were for retail clients", "interpreted", ["rollouts"]],
+    ],
+    q: ["Would you take this as permanent rather than contract?", "Can you start before the January go-live?"],
+  },
+  {
+    role: "role_vantage_sap_pm", cand: "chantelle_oosthuizen", rank: 2,
+    f: [["Hands-on project management", ["project management"]], ["Stakeholder reporting experience", ["stakeholder reporting"]]],
+    a: [["Prefers hybrid, and this role is on-site in Durban", ["Hybrid"]], ["Commute is a problem for her", ["commute"]]],
+    align: [
+      ["SAP rollout project management", "General project management; SAP rollouts not mentioned", "interpreted", ["project management"]],
+      ["Retail or logistics background", "No mention in her notes", "not-seen", []],
+    ],
+    q: ["Have you run an SAP rollout?", "Would you work on-site in Durban?"],
+  },
 ];
 
 export function buildMatches(ctx: Ctx, candidates: Doc<Candidate>[]): Doc<Match>[] {
@@ -128,7 +167,7 @@ export function buildMatches(ctx: Ctx, candidates: Doc<Candidate>[]): Doc<Match>
     const oldest = Math.min(...ctx.attributes.filter((a) => ids.has(a.id)).map((a) => a.data.observedAt.getTime()));
     const evidenceAgeDays = Math.floor((ctx.now.getTime() - oldest) / DAY);
     const opened = candidates.find((c) => c.id === `cand_${s.cand}`)?.data.lastOpenedAt;
-    const generatedAt = daysAgo(ctx.now, 1);
+    const generatedAt = daysAgo(ctx.now, 7);
     return {
       id: `match_${s.role}_${s.cand}`,
       data: {

@@ -88,7 +88,19 @@ test("matches: both sides, real citations, three open roles covered", () => {
   const covered = new Set(matches.map((m) => m.data.roleId));
   assert.ok(covered.has("role_demo_fico") && covered.size >= 3);
   for (const r of covered) assert.ok(open.has(r));
-  for (const o of overrides) assert.ok(ids(matches).has(o.data.matchId), o.id);
+  for (const o of overrides) {
+    const m = matches.find((x) => x.id === o.data.matchId);
+    assert.ok(m, o.id);
+    assert.ok(o.data.decidedAt > m.data.generatedAt, `${o.id} predates its match`);
+  }
+  assert.deepEqual(open.size - covered.size, 1, "exactly one open role without matches");
+  assert.ok(!covered.has("role_umoya_sf"));
+  for (const { data: m } of matches) assert.ok(m.skillAlignment.length >= 2);
+  const fico = roles.find((r) => r.id === "role_demo_fico")!.data.interpretedBrief!;
+  const reqs = [...fico.mustHave, ...fico.niceToHave];
+  for (const m of matches.filter((x) => x.data.roleId === "role_demo_fico")) assert.ok(m.data.skillAlignment.every((a) => reqs.includes(a.requirement)), m.id);
+  const chrono = (c: string) => notes.filter((n) => n.data.candidateId === c).sort((a, b) => a.id.localeCompare(b.id));
+  for (const c of cands) { const l = chrono(c.id); l.forEach((n, i) => i && assert.ok(n.data.capturedAt > l[i - 1].data.capturedAt, `${n.id} out of order`)); }
 });
 
 test("no demographic or photographic fields; deterministic", () => {
