@@ -1,0 +1,12 @@
+/* Headline top at y 53, context line at y 30, actions at y 44, content starts at y 128. */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 128px;
+  padding-top: 30px;
+}
+.title { position: relative; padding-top: 23px; min-width: 0; }
+.context { position: absolute; top: 0; left: 0; color: var(--text-3); white-space: nowrap; }
+.actions { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex: none; }

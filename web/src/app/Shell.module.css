@@ -1,0 +1,5 @@
+/* Content area: x 104 to 1424 at 1440 wide, bottom margin 16. */
+.main {
+  min-height: 100dvh;
+  padding: 0 16px 16px 104px;
+}
