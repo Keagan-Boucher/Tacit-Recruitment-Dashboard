@@ -1,0 +1,58 @@
+/* Tacit design tokens. Source: Figma "Redesign 2 tokens" (Dark = :root, Light = [data-theme="light"]).
+   The only file in web/src allowed raw colours, fonts and radii (npm run check:tokens). */
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  --canvas: #0A0A0C; --surface: #151518; --surface-2: #1E1E23; --surface-3: #2A2A31;
+  --hairline: rgb(255 255 255 / .08);
+  --text: #F4F4F2; --text-2: #A1A1A8; --text-3: #93939C;
+  --accent: #D4FF3A; --on-accent: #0A0A0C; --accent-text: #D4FF3A; --accent-wash: rgb(212 255 58 / .12);
+  --for: #3DD68C; --for-wash: #132D21; --against: #FF9592; --against-wash: #3B1219;
+  --stale: #FFCA16; --stale-wash: #302008; --stale-solid: #FFC53D;
+  --scrim: rgb(0 0 0 / .6);
+
+  --font: "Geist", system-ui, sans-serif;
+  --radius-widget: 20px; --radius-inner: 12px; --radius-pill: 999px;
+  --gap: 12px; --card-pad: 18px 20px 20px;
+  --shadow-float: 0 24px 48px -8px rgb(0 0 0 / .5);
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --focus-ring: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --canvas: #F2F2F0; --surface: #FFFFFF; --surface-2: #EBEBE8; --surface-3: #DEDEDA;
+  --hairline: rgb(10 10 12 / .08);
+  --text: #111113; --text-2: #4A4A52; --text-3: #5F5F67;
+  --accent-text: #4D6100; --accent-wash: rgb(184 224 0 / .18);
+  --for: #218358; --for-wash: #E6F6EB; --against: #CE2C31; --against-wash: #FEEBEC;
+  --stale: #AB6400; --stale-wash: #FFF7C2;
+  --scrim: rgb(10 10 12 / .4);
+  color-scheme: light;
+}
+
+/* Figma text styles, one class each (names follow the Figma style names). */
+.t-display-xl   { font: 600 80px/1 var(--font); letter-spacing: -0.05em; }
+.t-display-l    { font: 600 56px/1 var(--font); letter-spacing: -0.04em; }
+.t-headline     { font: 600 44px/1.05 var(--font); letter-spacing: -0.035em; }
+.t-figure       { font: 600 24px/1 var(--font); letter-spacing: -0.015em; }
+.t-figure-medium{ font: 500 24px/1 var(--font); }
+.t-title        { font: 600 18px/1.2 var(--font); letter-spacing: -0.015em; }
+.t-note         { font: 400 18px/1.6 var(--font); }
+.t-body-m-strong{ font: 500 14px/1 var(--font); }
+.t-body-m       { font: 400 14px/1 var(--font); }
+.t-body-m-para  { font: 400 14px/1.45 var(--font); }
+.t-body-s-bold  { font: 600 13px/1 var(--font); }
+.t-body-s-strong{ font: 500 13px/1 var(--font); }
+.t-body-s       { font: 400 13px/1 var(--font); }
+.t-body-s-para  { font: 400 13px/1.4 var(--font); }
+.t-caption-strong{ font: 500 12px/1 var(--font); }
+.t-caption      { font: 400 12px/1 var(--font); }
+.t-caption-para { font: 400 12px/1.4 var(--font); }
+.t-chip         { font: 500 11px/1 var(--font); }
+.t-meta         { font: 400 11px/1 var(--font); }
