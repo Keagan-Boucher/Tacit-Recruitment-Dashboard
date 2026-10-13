@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owns(data) { return signedIn() && data.ownerUid == request.auth.uid; }
+    function onlyChanges(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+
+    // Normal owner CRUD. Create must carry the caller's uid; update can't hand the doc to someone else.
+    match /{col}/{id} {
+      allow read, delete: if col in ['candidates', 'interviewNotes', 'companies', 'roles', 'questionGuides', 'placements']
+        && owns(resource.data);
+      allow create: if col in ['candidates', 'interviewNotes', 'companies', 'roles', 'questionGuides', 'placements']
+        && owns(request.resource.data);
+      allow update: if col in ['candidates', 'interviewNotes', 'companies', 'roles', 'questionGuides', 'placements']
+        && owns(resource.data) && owns(request.resource.data);
+    }
+
+    // AI-derived: proxy (Admin SDK) writes only. Client may only record a confirmation or an edit.
+    match /attributes/{id} {
+      allow read: if owns(resource.data);
+      allow update: if owns(resource.data)
+        && onlyChanges(['confirmedByRecruiter', 'editedValue', 'updatedAt'])
+        && request.resource.data.confirmedByRecruiter is bool
+        && request.resource.data.get('editedValue', '') is string;
+    }
+    match /matches/{id} {
+      allow read: if owns(resource.data);
+    }
+
+    // Create-only; reversing is the single later update; never deleted.
+    match /overrides/{id} {
+      allow read: if owns(resource.data);
+      allow create: if owns(request.resource.data) && request.resource.data.get('reversedAt', null) == null;
+      // Reversal is one-way: set once, never cleared or rewritten.
+      allow update: if owns(resource.data) && onlyChanges(['reversedAt', 'updatedAt'])
+        && resource.data.get('reversedAt', null) == null
+        && request.resource.data.reversedAt is timestamp;
+    }
+
+    match /userPrefs/{uid} {
+      allow read, write: if signedIn() && uid == request.auth.uid;
+    }
+  }
+}

@@ -12,9 +12,11 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "check:tokens": "node scripts/check-tokens.mjs",
-    "test": "npm run test --workspaces --if-present && node --test \"scripts/**/*.test.mjs\"",
+    "test": "npm run test --workspaces --if-present && node --import tsx --test \"scripts/**/*.test.mjs\" \"scripts/**/*.test.ts\"",
     "check": "npm run typecheck && npm run lint && npm run check:tokens && npm test",
-    "snap": "node --env-file-if-exists=.env.snap .claude/skills/tacit-build/scripts/snap-screens.mjs"
+    "snap": "node --env-file-if-exists=.env.snap .claude/skills/tacit-build/scripts/snap-screens.mjs",
+    "test:rules": "npx -y firebase-tools@13.35.1 emulators:exec --only firestore,storage --project tacit-3cdd4 \"npx vitest run --config tests/rules/vitest.config.ts\"",
+    "seed": "node --env-file-if-exists=.env.snap --import tsx scripts/seed-synthetic.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
