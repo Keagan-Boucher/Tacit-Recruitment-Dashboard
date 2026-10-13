@@ -1,0 +1,25 @@
+# deps and builds
+node_modules/
+dist/
+coverage/
+
+# secrets: never commit
+.env
+.env.*
+!.env.example
+service-account.json
+*-service-account.json
+
+# firebase
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# playwright
+test-results/
+playwright-report/
+
+# os / editor
+.DS_Store
+Thumbs.db
