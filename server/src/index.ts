@@ -1,2 +1,8 @@
-// F-09 replaces this placeholder with the Express proxy.
-console.log("server placeholder: F-09 not built yet");
+import { createApp } from "./app.ts";
+import { loadConfig } from "./config.ts";
+import { initFirebase } from "./firebase/admin.ts";
+
+const config = loadConfig();
+createApp(config, initFirebase(config)).listen(config.port, () => {
+  console.log(`Tacit proxy listening on :${config.port}`);
+});
