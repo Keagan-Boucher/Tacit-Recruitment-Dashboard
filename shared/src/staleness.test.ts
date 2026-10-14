@@ -12,6 +12,8 @@ describe("staleness", () => {
     expect(staleness(ago(13), now)).toBe("stale");
     expect(monthsSince(ago(14), now)).toBe(14);
     expect(monthsSince(new Date(now.getTime() + 1e9), now)).toBe(0);
+    expect(monthsSince(new Date("2025-08-14T09:00:00"), new Date("2026-10-14T08:00:00"))).toBe(14); // the demo's "14 months"
+    expect(monthsSince(new Date("2025-08-15T09:00:00"), new Date("2026-10-14T08:00:00"))).toBe(13);
   });
   it("flags candidates not opened in 6 months", () => {
     expect(isForgotten(ago(14), now)).toBe(true);

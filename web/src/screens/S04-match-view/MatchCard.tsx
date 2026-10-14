@@ -19,7 +19,6 @@ type Props = {
   onReject: () => void;
 };
 
-const MONTH = 30.4375;
 
 function Source({ ids, attrs, now }: { ids: string[]; attrs: Map<string, WithId<Attribute>>; now: Date }) {
   const p = provenance(ids, attrs, now);
@@ -54,7 +53,7 @@ function Reasons({ tone, label, reasons, empty, attrs, now }: { tone: "for" | "a
 
 export function MatchCard({ match: m, candidate: c, attrs, decision, focal, now, saving, onShortlist, onReject }: Props) {
   const first = c?.fullName.split(" ")[0] ?? "this person";
-  const evidenceMonths = Math.floor(m.evidenceAgeDays / MONTH);
+  const evidenceMonths = monthsSince(new Date(now.getTime() - m.evidenceAgeDays * 86_400_000), now); // calendar months, same as the chips
   const hasFooter = m.staleness !== "fresh" || m.questionsToAsk.length > 0;
   const actions = decision ? (
     <Chip tone={decision.decision === "shortlist" ? "for" : "against"} icon={decision.decision === "shortlist" ? "bx-check" : "bx-x"}>

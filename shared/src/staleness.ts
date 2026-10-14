@@ -1,13 +1,13 @@
 import type { Staleness } from "./schemas.ts";
 
 // Thresholds from data-model.md (tunable; record any change in Decisions).
-const MONTH = 30.4375 * 86_400_000;
 export const AGEING_MONTHS = 6;
 export const STALE_MONTHS = 12;
 export const FORGOTTEN_MONTHS = 6;
 
-/** Whole months between `d` and `now` (never negative). */
-export const monthsSince = (d: Date, now = new Date()) => Math.max(0, Math.floor((now.getTime() - d.getTime()) / MONTH));
+/** Whole calendar months between `d` and `now` (14 Aug 2025 → 14 Oct 2026 is 14), never negative. */
+export const monthsSince = (d: Date, now = new Date()) =>
+  Math.max(0, (now.getFullYear() - d.getFullYear()) * 12 + now.getMonth() - d.getMonth() - (now.getDate() < d.getDate() ? 1 : 0));
 
 /** < 6 months fresh, 6–12 ageing, > 12 stale. Ages the evidence, never removes it. */
 export function staleness(observedAt: Date, now = new Date()): Staleness {

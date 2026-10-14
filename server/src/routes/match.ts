@@ -13,7 +13,7 @@ type Rec = Record<string, any>; // eslint-disable-line @typescript-eslint/no-exp
 const toDate = (v: unknown): Date => (v && typeof (v as { toDate?: unknown }).toDate === "function" ? (v as { toDate(): Date }).toDate() : (v as Date));
 const err = (code: ApiErrorBody["code"], error: string): ApiErrorBody => ({ error, code });
 const STOP = new Set(["the", "and", "for", "with", "have", "experience", "hands", "years", "year"]);
-const words = (s: string) => s.toLowerCase().split(/[^a-z0-9/+#]+/).filter((w) => w.length >= 3 && !STOP.has(w));
+const words = (s: string) => s.toLowerCase().split(/[^a-z0-9+#]+/).filter((w) => w.length >= 3 && !STOP.has(w));
 const budgetOf = (v: string) => {
   const m = /(\d+(?:[ ,]\d{3})*)\s*(k)?/i.exec(v);
   const n = m ? Number(m[1]!.replace(/[ ,]/g, "")) * (m[2] ? 1000 : 1) : 0;
@@ -103,26 +103,36 @@ export function matchRouter({ ai, db }: { ai: Ai; db: Firestore }) {
         ].join("\n");
         await runStructured(
           {
-            task: "match", prompt: loadPrompt("match", 1), schema: MatchResult, input, reasoningEffort: "low",
+            task: "match", prompt: loadPrompt("match", 2), schema: MatchResult, input, reasoningEffort: "low",
             check: (d) => {
               const seen = new Set<string>();
+              const allIds = [...facts.values()].flat().map((f) => f.id);
               let demo = 0;
               kept = [];
               for (const s of d.suggestions) {
                 if (!short.some((c) => c.id === s.candidateId) || seen.has(s.candidateId)) continue;
                 const own = new Map((facts.get(s.candidateId) ?? []).map((f) => [f.id, f]));
                 const clean = (t: string) => !mentionsDemographic(t) || (demo++, false);
-                const reasons = (rs: typeof s.reasonsFor) => rs.filter((r) => r.attributeIds.length && r.attributeIds.every((i) => own.has(i)) && clean(r.text));
+                // Ids belong in attributeIds, not in the sentence the recruiter reads.
+                const strip = (t: string) => allIds.reduce((x, id) => x.split(id).join(""), t).replace(/\(\s*[,;\s]*\)/g, "").replace(/\s{2,}/g, " ").replace(/\s+([.,;])/g, "$1").trim();
+                // A stray foreign id voids only itself; the reason survives on its own candidate's facts.
+                const mine = (ids: string[]) => ids.filter((i) => own.has(i));
+                const reasons = (rs: typeof s.reasonsFor) =>
+                  rs.map((r) => ({ text: strip(r.text), attributeIds: mine(r.attributeIds) })).filter((r) => r.attributeIds.length && r.text && clean(r.text));
                 const out = {
                   ...s,
                   reasonsFor: reasons(s.reasonsFor),
                   reasonsAgainst: reasons(s.reasonsAgainst),
-                  skillAlignment: s.skillAlignment.filter(
-                    (a) => a.attributeIds.every((i) => own.has(i)) && (a.kind === "not-seen" ? !a.attributeIds.length : a.attributeIds.length > 0) && clean(a.evidence) && clean(a.requirement),
-                  ),
-                  questionsToAsk: s.questionsToAsk.filter(clean),
+                  skillAlignment: s.skillAlignment
+                    .map((a) => ({ ...a, evidence: strip(a.evidence), attributeIds: a.kind === "not-seen" ? [] : mine(a.attributeIds) }))
+                    .filter((a) => (a.kind === "not-seen" || a.attributeIds.length > 0) && clean(a.evidence) && clean(a.requirement)),
+                  questionsToAsk: s.questionsToAsk.map(strip).filter(clean),
                 };
-                if (!out.reasonsFor.length || !out.reasonsAgainst.length) continue;
+                if (!out.reasonsFor.length) continue;
+                // Both sides always show: if no reason against survived the citation checks, say so plainly instead of dropping the person.
+                if (!out.reasonsAgainst.length) {
+                  out.reasonsAgainst = [{ text: "Tacit couldn't ground a reason against in your notes. Check fit, location and pay yourself.", attributeIds: out.reasonsFor[0]!.attributeIds }];
+                }
                 const cited = [...out.reasonsFor, ...out.reasonsAgainst, ...out.skillAlignment].flatMap((x) => x.attributeIds);
                 seen.add(s.candidateId);
                 kept.push({ s: out, newest: new Date(Math.max(...cited.map((i) => own.get(i)!.observedAt.getTime()))) });

@@ -122,7 +122,7 @@ describe("POST /api/match", () => {
     expect(p.inputs[0]).not.toContain("unconfirmed"); // unconfirmed facts never reach the model
   });
 
-  it("drops foreign candidates, uncited / foreign-cited reasons, and suggestions missing a side", async () => {
+  it("drops foreign candidates and uncited reasons; a missing against becomes a plain fallback, never a dropped person", async () => {
     const p = provider({ suggestions: [
       sug("cx", ["a1"]), // not in the shortlist (other owner)
       sug("c1", ["a1"], { reasonsFor: [{ text: "uncited", attributeIds: [] }, { text: "foreign id", attributeIds: ["a2"] }] }), // no valid for
@@ -133,8 +133,18 @@ describe("POST /api/match", () => {
     const r = await post(app);
     expect(r.status).toBe(200);
     const docs = stored(store);
-    expect(docs).toHaveLength(1);
-    expect(docs[0]).toMatchObject({ candidateId: "c1", rank: 1, skillAlignment: [] }); // bad alignment rows dropped, suggestion kept
+    expect(docs).toHaveLength(2);
+    // stated row citing another candidate's fact is dropped; a not-seen row keeps its place with its ids cleared
+    expect(docs[0]).toMatchObject({ candidateId: "c2", rank: 1 });
+    expect(docs[0].reasonsAgainst).toEqual([{ text: expect.stringContaining("couldn't ground a reason against"), attributeIds: ["a2"] }]);
+    expect(docs[1]).toMatchObject({ candidateId: "c1", rank: 2, skillAlignment: [{ requirement: "G", kind: "not-seen", attributeIds: [] }] });
+  });
+
+  it("strips attribute ids the model wrote into the text", async () => {
+    const p = provider({ suggestions: [sug("c1", ["a1"], { reasonsFor: [{ text: "Has FI/CO on S/4 (a1).", attributeIds: ["a1"] }] })] });
+    const { app, store } = setup(p);
+    await post(app);
+    expect(stored(store)[0].reasonsFor[0].text).toBe("Has FI/CO on S/4.");
   });
 
   it("drops demographic-looking reasons like interpret-note does", async () => {
