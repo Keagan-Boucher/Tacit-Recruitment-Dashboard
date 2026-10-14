@@ -42,6 +42,10 @@
   color: var(--text-2);
 }
 
+.fileText { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fileText > span:last-child { color: var(--text-3); }
+.fileActions { display: flex; flex-wrap: wrap; gap: 8px; }
+
 /* What you observed */
 .attrList { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .attr {

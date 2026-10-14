@@ -127,7 +127,7 @@ function heroes(ctx: Ctx): CandRow[] {
   return [
     { slug: "demo_thabo", name: "Thabo Nkosi", headline: "Finance systems analyst", location: "Durban", opened: 0.03, cv: {
       history: [{ title: "Finance systems analyst", company: "Sable Insurance", from: "2020" }, { title: "Junior SAP FI analyst", company: "Coastal Freight", from: "2017", to: "2020" }],
-      education: ["BCom Information Systems, University of KwaZulu-Natal, 2016"], skills: ["SAP ECC FI", "S/4HANA FI/CO", "Month-end close", "Excel"], salaryExpectation: "R65k a month" } },
+      education: ["BCom Information Systems, University of KwaZulu-Natal, 2016"], skills: ["SAP ECC FI", "S/4HANA FI/CO", "Month-end close", "Excel"], salaryExpectation: "R65k a month", fileName: "thabo-nkosi-cv.pdf" } },
     { slug: "demo_forgotten", name: "Sipho Mabaso", headline: "SAP support lead", location: "Cape Town", opened: 14, cv: {
       history: [{ title: "SAP support lead", company: "Lumen Telecoms", from: "2021" }, { title: "SAP FI support analyst", company: "Lumen Telecoms", from: "2018", to: "2021" }],
       education: ["BCom Accounting, University of the Western Cape, 2017"], skills: ["SAP ECC FI", "SAP CO", "Solution Manager", "Excel", "SQL"], fileName: "sipho-mabaso-cv.pdf" } },

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Candidate } from "@tacit/shared";
 import { Card, Chip, Icon } from "../../components";
+import { CvFileActions, fileKind, readLabel } from "../../features/files";
 import styles from "./CandidateProfile.module.css";
 
 type Job = NonNullable<Candidate["cv"]>["history"][number];
@@ -16,18 +17,18 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/**
- * Original CV file row. C-15 (View CV / Download) fills `actions`; until then the row only appears when the file exists
- * (cv.fileName and cvFileRef), so a hand-added candidate shows nothing here.
- */
-export function CvFileRow({ fileName, actions }: { fileName: string; actions?: ReactNode }) {
+/** Original CV file row: name, type and when it was read, then the actions. Rendered only when the file exists. */
+export function CvFileRow({ fileName, meta, actions }: { fileName: string; meta?: string; actions?: ReactNode }) {
   return (
     <div className={styles.file}>
       <div className={styles.fileHead}>
         <span className={styles.fileIcon}>
           <Icon name="bx-file" size={20} />
         </span>
-        <span className="t-body-m-strong">{fileName}</span>
+        <div className={styles.fileText}>
+          <span className="t-body-m-strong">{fileName}</span>
+          {meta && <span className="t-caption">{meta}</span>}
+        </div>
       </div>
       {actions}
     </div>
@@ -67,7 +68,13 @@ export function CvPanel({ candidate }: { candidate: Candidate }) {
         </div>
       ) : null}
       {!cv && <p className="t-body-s-para">No CV has been read for this candidate.</p>}
-      {cv?.fileName && candidate.cvFileRef ? <CvFileRow fileName={cv.fileName} /> : null}
+      {cv?.fileName && candidate.cvFileRef ? (
+        <CvFileRow
+          fileName={cv.fileName}
+          meta={[fileKind(cv.fileName), cv.readAt && readLabel(cv.readAt)].filter(Boolean).join(" · ")}
+          actions={<CvFileActions fileRef={candidate.cvFileRef} fileName={cv.fileName} className={styles.fileActions} />}
+        />
+      ) : null}
     </Card>
   );
 }

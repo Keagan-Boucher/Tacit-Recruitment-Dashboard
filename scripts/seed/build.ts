@@ -81,6 +81,8 @@ export function buildCandidates(ctx: Ctx, rows: CandRow[]): Doc<Candidate>[] {
         parseConfidence, parseStatus, topSkills, lastInterviewAt: last,
         // CV claims: hand-written for the demo people, otherwise the headline and the skills they list.
         cv: { readAt: notes[0].data.capturedAt, modelVersion: MODEL, ...(r.cv ?? { history: [{ title: r.headline }], education: [], skills: topSkills }) },
+        // Original CV file: seeded to Storage by `npm run seed` from scripts/seed/cvs/<fileName>.
+        ...(r.cv?.fileName ? { cvFileRef: `users/${ctx.owner}/cvs/${r.cv.fileName}` } : {}),
         lastOpenedAt: r.opened !== undefined ? monthsAgo(ctx.now, r.opened) : new Date(Math.min(ctx.now.getTime(), last.getTime() + 2 * DAY)),
       },
     };

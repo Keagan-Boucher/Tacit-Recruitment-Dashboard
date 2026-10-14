@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { test } from "node:test";
 import type { Attribute, Candidate, Company, InterviewNote, Match, Override, Placement, Role } from "@tacit/shared";
 import { DAY } from "./build.ts";
@@ -108,4 +109,15 @@ test("no demographic or photographic fields; deterministic", () => {
   for (const c of ["candidates", "interviewNotes", "attributes", "companies", "roles", "matches", "overrides", "placements"] as const)
     for (const doc of d[c] as { data: object }[]) for (const k of Object.keys(doc.data)) assert.ok(!bad.test(k), `${c}.${k}`);
   assert.deepEqual(buildDataset(now, "owner-test"), d);
+});
+
+test("every cvFileRef has a matching synthetic PDF in scripts/seed/cvs", () => {
+  const withRef = cands.filter((c) => c.data.cvFileRef);
+  assert.ok(withRef.length >= 2);
+  for (const c of withRef) {
+    const file = c.data.cvFileRef!.split("/").pop()!;
+    assert.equal(c.data.cvFileRef, `users/owner-test/cvs/${file}`);
+    assert.equal(c.data.cv?.fileName, file);
+    assert.ok(existsSync(new URL(`./cvs/${file}`, import.meta.url)), file);
+  }
 });
