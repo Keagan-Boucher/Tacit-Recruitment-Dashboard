@@ -8,11 +8,18 @@ export class OpenAiCompatibleProvider implements AiProvider {
   }
 
   async complete(req: StructuredRequest): Promise<StructuredResponse> {
-    const res = await this.client.chat.completions.create({
+    const body = {
       model: this.model,
       messages: req.messages,
       temperature: 0,
-      response_format: { type: "json_schema", json_schema: { name: req.name, schema: req.schema, strict: true } },
+      max_completion_tokens: 6000,
+      ...(req.reasoningEffort ? { reasoning_effort: req.reasoningEffort } : {}),
+      response_format: { type: "json_schema" as const, json_schema: { name: req.name, schema: req.schema, strict: true } },
+    };
+    // Groq rejects a generation that breaks the strict schema mid-stream (400 json_validate_failed); one fresh try usually lands.
+    const res = await this.client.chat.completions.create(body).catch((e: { status?: number; code?: string }) => {
+      if (e?.status === 400 && e?.code === "json_validate_failed") return this.client.chat.completions.create(body);
+      throw e;
     });
     const choice = res.choices[0];
     // A refusal or a cut-off answer can't be repaired by asking again with the same budget.

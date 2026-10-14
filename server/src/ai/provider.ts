@@ -13,6 +13,8 @@ export interface StructuredRequest {
   /** Strict JSON Schema (every property required, additionalProperties: false on every object). */
   schema: Record<string, unknown>;
   messages: ChatMessage[];
+  /** gpt-oss reasoning budget; omit for the provider default. Big outputs (match) use "low" to fit the time and token caps. */
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 export interface StructuredResponse {

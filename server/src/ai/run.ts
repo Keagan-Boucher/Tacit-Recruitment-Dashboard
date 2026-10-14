@@ -44,6 +44,7 @@ export interface RunOptions<T> {
   input: string;
   /** Semantic check: return the (possibly pruned) data, or throw to trigger the repair retry. */
   check?: (data: T) => T;
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 export async function runStructured<T>(o: RunOptions<T>, ai: Ai): Promise<{ data: T; modelVersion: string }> {
@@ -64,7 +65,7 @@ export async function runStructured<T>(o: RunOptions<T>, ai: Ai): Promise<{ data
       attempts++;
       let content: string;
       try {
-        const res = await provider.complete({ name: o.task.replace(/[^\w-]/g, "_"), schema: jsonSchema, messages });
+        const res = await provider.complete({ name: o.task.replace(/[^\w-]/g, "_"), schema: jsonSchema, messages, reasoningEffort: o.reasoningEffort });
         inputTokens += res.usage.inputTokens;
         outputTokens += res.usage.outputTokens;
         content = res.content;

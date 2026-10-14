@@ -6,6 +6,7 @@ import { requireAuth, type TokenVerifier } from "./auth.ts";
 import type { Config } from "./config.ts";
 import type { BucketLike } from "./files.ts";
 import { interpretNoteRouter } from "./routes/interpret-note.ts";
+import { matchRouter } from "./routes/match.ts";
 import { parseRouter } from "./routes/parse.ts";
 
 /** Firebase-backed services; omitted in tests that don't need them, and their routes aren't mounted. */
@@ -26,6 +27,7 @@ export function createApp(config: Config, verifyToken: TokenVerifier, services: 
   app.use("/api", requireAuth(verifyToken, config.allowedUids));
   app.get("/api/me", (req, res) => void res.json({ uid: req.uid }));
   if (services.db) app.use("/api", interpretNoteRouter({ ai, db: services.db }));
+  if (services.db) app.use("/api", matchRouter({ ai, db: services.db }));
   if (services.bucket) app.use("/api", parseRouter({ ai, bucket: services.bucket }));
 
   app.use("/api", (_req, res) => void res.status(404).json({ error: "Not found", code: "not_found" }));
