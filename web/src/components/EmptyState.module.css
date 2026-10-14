@@ -1,0 +1,2 @@
+.root { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.message { max-width: 44ch; color: var(--text-2); }

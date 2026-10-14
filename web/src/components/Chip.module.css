@@ -1,0 +1,24 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  line-height: normal;
+  white-space: nowrap;
+  color: var(--text-2);
+}
+.lg { padding: 4px 10px; }
+
+.neutral { color: var(--text-2); }
+.quiet { color: var(--text-3); }
+.for { color: var(--for); }
+.against { color: var(--against); }
+.stale { color: var(--stale); }
+.accent { color: var(--accent-text); }
+
+/* On lime: For and Stale are black pills with coloured text; Against and neutral are black outlines. */
+.onLime.neutral, .onLime.quiet, .onLime.against, .onLime.accent { color: var(--on-accent); border-color: var(--on-accent); }
+.onLime.for { background: var(--on-accent); border-color: var(--on-accent); color: var(--accent); }
+.onLime.stale { background: var(--on-accent); border-color: var(--on-accent); color: var(--stale-solid); }

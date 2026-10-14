@@ -1,0 +1,24 @@
+.root {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  line-height: normal;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out), transform 150ms var(--ease-out);
+}
+/* 44 px tall hit area without growing the chip */
+.root::after { content: ""; position: absolute; inset: -6px 0; }
+.root:hover { background: var(--surface-2); }
+.root:active { transform: scale(0.97); }
+.count { font-weight: 400; color: var(--text-3); }
+
+.selected, .selected:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.selected .count { color: var(--on-accent); }

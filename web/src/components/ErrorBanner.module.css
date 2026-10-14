@@ -1,0 +1,14 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 7px 7px 18px;
+  border: 1px solid var(--against);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+  color: var(--text);
+}
+.icon { display: inline-flex; color: var(--against); }
+.title { margin: 0; font-weight: 600; line-height: normal; }
+.detail { margin: 0; flex: 1; min-width: 0; line-height: normal; color: var(--text-2); }
+.retry { margin-left: auto; }

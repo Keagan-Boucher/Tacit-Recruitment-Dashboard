@@ -1,0 +1,47 @@
+.field { display: flex; flex-direction: column; min-width: 0; }
+.label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+  line-height: normal;
+  color: var(--text-2);
+}
+.note { color: var(--text-3); font-weight: 400; }
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+  color: var(--text);
+  transition: border-color 150ms var(--ease-out);
+}
+.sm { padding: 10px 14px; }
+.multiline { align-items: stretch; padding: 11px 14px; }
+.invalid { border-color: var(--against); }
+/* 1.5 px lime stroke on focus: the 1 px border plus a half-pixel ring */
+.control:focus-within { border-color: var(--accent-text); box-shadow: 0 0 0 0.5px var(--accent-text); }
+
+.native {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  line-height: normal;
+}
+.native:focus-visible { outline: none; box-shadow: none; }
+.native::placeholder { color: var(--text-3); opacity: 1; }
+.textarea { min-height: 60px; line-height: 1.4; resize: none; }
+.leading { display: inline-flex; color: var(--text-2); }
+/* eye button is 44 x 44 inside a 46 px field */
+.trailing { display: inline-flex; margin: -13px -13px -13px 0; color: var(--text-2); }
+
+.errorSlot:not(:empty) { margin-top: 8px; }
+.error { display: flex; align-items: flex-start; gap: 6px; color: var(--against); }
+.error i { margin-top: 1px; }

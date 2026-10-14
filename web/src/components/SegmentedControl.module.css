@@ -1,0 +1,22 @@
+.group {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+}
+.option {
+  position: relative;
+  padding: 4px 9px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-3);
+  line-height: normal;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+/* 44 px tall hit area around a 22 px option */
+.option::before { content: ""; position: absolute; inset: -11px -1px; }
+.option:hover { color: var(--text); }
+.option[aria-checked="true"] { background: var(--surface-3); color: var(--text); font-weight: 500; }

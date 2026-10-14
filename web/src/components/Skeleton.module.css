@@ -1,0 +1,14 @@
+.block {
+  display: block;
+  width: var(--sk-w);
+  height: var(--sk-h);
+  max-width: 100%;
+  background: var(--surface-2);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.tone3 { background: var(--surface-3); }
+.toneLime { background: color-mix(in srgb, var(--on-accent) 14%, var(--accent)); }
+.r-inner { border-radius: var(--radius-inner); }
+.r-pill { border-radius: var(--radius-pill); }
+.r-widget { border-radius: var(--radius-widget); }
+@keyframes pulse { 50% { opacity: 0.55; } }

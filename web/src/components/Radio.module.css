@@ -1,0 +1,57 @@
+.group { margin: 0; padding: 0; border: 0; min-width: 0; }
+.legend { padding: 0; margin-bottom: 10px; color: var(--text-2); line-height: normal; }
+.legendInner { display: flex; align-items: baseline; gap: 8px; }
+.note { color: var(--text-3); font-weight: 400; }
+.errorSlot:not(:empty) { margin-top: 8px; }
+
+.list { display: flex; flex-direction: column; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* round radio: 44 px tall row, 18 px dot */
+.item { position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--text); cursor: pointer; }
+.item:has(input:disabled) { cursor: not-allowed; opacity: 0.5; }
+.dot {
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--text-3);
+  border-radius: var(--radius-pill);
+  transition: background-color 150ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+.dot::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--on-accent);
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 150ms var(--ease-out);
+}
+input:checked + .dot { background: var(--accent); border-color: var(--accent); }
+input:checked + .dot::after { transform: translate(-50%, -50%) scale(1); }
+input:focus-visible + .dot { box-shadow: var(--focus-ring); }
+
+/* chip radio */
+.chipItem { position: relative; display: inline-flex; cursor: pointer; }
+.chipItem::after { content: ""; position: absolute; inset: -6px 0; }
+.chipFace {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  line-height: normal;
+  white-space: nowrap;
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+.chipItem:hover .chipFace { background: var(--surface-2); color: var(--text); }
+input:checked + .chipFace, .chipItem:hover input:checked + .chipFace { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+input:focus-visible + .chipFace { box-shadow: var(--focus-ring); }
+.chipItem:has(input:disabled) { cursor: not-allowed; opacity: 0.5; }
