@@ -11,7 +11,7 @@ export function createApp(config: Config, verifyToken: TokenVerifier) {
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, modelConfigured: Boolean(config.openaiApiKey && config.openaiModel) });
+    res.json({ ok: true, modelConfigured: Boolean(config.aiBaseUrl && config.aiApiKey && config.aiModel) });
   });
 
   app.use("/api", requireAuth(verifyToken));

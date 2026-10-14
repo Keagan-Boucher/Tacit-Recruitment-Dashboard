@@ -2,8 +2,9 @@ export interface Config {
   port: number;
   allowedOrigin: string;
   serviceAccountPath?: string;
-  openaiApiKey?: string;
-  openaiModel?: string;
+  aiBaseUrl?: string;
+  aiApiKey?: string;
+  aiModel?: string;
 }
 
 const opt = (env: NodeJS.ProcessEnv, k: string) => env[k]?.trim() || undefined;
@@ -19,7 +20,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port,
     allowedOrigin,
     serviceAccountPath: opt(env, "FIREBASE_SERVICE_ACCOUNT_PATH"),
-    openaiApiKey: opt(env, "OPENAI_API_KEY"),
-    openaiModel: opt(env, "OPENAI_MODEL"),
+    // OpenAI-compatible endpoint: Groq today (https://api.groq.com/openai/v1, openai/gpt-oss-120b).
+    aiBaseUrl: opt(env, "AI_BASE_URL"),
+    aiApiKey: opt(env, "AI_API_KEY"),
+    aiModel: opt(env, "AI_MODEL"),
   };
 }
