@@ -1,0 +1,40 @@
+.dialog {
+  width: 640px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 128px);
+  margin: 112px auto 0;
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
+.dialog[open] { display: flex; flex-direction: column; animation: rise 220ms var(--ease-out); }
+.dialog::backdrop { background: var(--scrim); }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+
+.top { display: flex; align-items: center; gap: 12px; padding: 16px 16px 16px 20px; border-bottom: 1px solid var(--hairline); color: var(--text); }
+.input { flex: 1; min-width: 0; padding: 0; border: 0; background: none; color: var(--text); font: 400 18px/normal var(--font); caret-color: var(--accent); }
+.input::placeholder { color: var(--text-3); }
+/* The caret and the marked row are the focus cue here, as in the frame; the global ring would box the whole field. */
+.input:focus-visible { box-shadow: none; }
+.hint { padding: 3px 8px; border: 1px solid var(--text-3); border-radius: var(--radius-pill); color: var(--text-3); }
+
+.results { display: flex; flex-direction: column; gap: 2px; padding: 8px; overflow-y: auto; }
+.list { display: flex; flex-direction: column; gap: 2px; }
+.group { padding: 10px 12px 6px; color: var(--text-3); }
+.message { padding: 12px 12px 8px; color: var(--text); }
+
+.option { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: var(--radius-inner); cursor: pointer; }
+.option[aria-selected="true"] { background: var(--surface-3); }
+.option[aria-selected="true"]::before { content: ""; position: absolute; left: 0; top: 50%; width: 3px; height: 24px; border-radius: var(--radius-pill); background: var(--accent); transform: translateY(-50%); }
+.iconBox { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--radius-inner); background: var(--surface-2); color: var(--text-2); }
+.text { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.title, .sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sub { color: var(--text-3); }
+.text mark { background: none; color: var(--accent-text); }
+.kbd { padding: 2px 6px; border: 1px solid var(--hairline); border-radius: var(--radius-inner); background: var(--surface-2); color: var(--text-2); }
+
+@media (prefers-reduced-motion: reduce) { .dialog[open] { animation: none; } }
