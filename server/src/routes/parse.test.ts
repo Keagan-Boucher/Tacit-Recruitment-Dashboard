@@ -43,7 +43,7 @@ describe("POST /api/parse-cv", () => {
     const r = await request(setup(provider(CV))).post("/api/parse-cv").send({ fileRef: "users/u1/cvs/a.txt" });
     expect(r.status).toBe(200);
     expect(r.body.result.fullName.value).toBe("Thandi Nkosi");
-    expect(r.body.modelVersion).toBe("v/m/parse-cv.v1");
+    expect(r.body.modelVersion).toBe("v/m/parse-cv.v2");
   });
   it("bad body 400, other uid 400, ai failure 502, unconfigured 503", async () => {
     const app = setup(provider({ nope: 1 }, { nope: 1 }));

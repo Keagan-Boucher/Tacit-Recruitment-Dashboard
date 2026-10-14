@@ -1,0 +1,166 @@
+/* Figma S09: header 128, drop zone 232 tall, 12 gap, then the queue card to the bottom. Review: notice 72, 12 gap, form + 439 side. */
+.root { outline: none; }
+.root:focus { box-shadow: none; }
+.page { display: flex; flex-direction: column; gap: 12px; min-height: calc(100dvh - 16px); }
+.page > header { margin-bottom: -12px; } /* the header's own 128 includes the gap */
+
+.dim { color: var(--text-3); }
+.spark { flex: none; color: var(--accent-text); }
+.crumb { color: inherit; text-decoration: none; }
+.crumb:hover { text-decoration: underline; }
+.crumbButton { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
+
+/* Small pills (Review, Looks right, View CV): 28 to 30 high, with the 44 px hit area the system asks for. */
+button.small { position: relative; gap: 6px; padding: 6px 12px; font: 500 12px/normal var(--font); }
+button.small::after { content: ""; position: absolute; inset: -8px -3px; }
+button.quiet { border-color: transparent; background: none; color: var(--text-2); }
+button.quiet:hover { background: var(--surface-3); color: var(--text); }
+button.quiet:disabled { background: none; }
+
+.link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  line-height: normal;
+  cursor: pointer;
+}
+.link::after { content: ""; position: absolute; inset: -14px -8px; }
+.link:hover { color: var(--text); }
+
+/* ---- drop zone ---- */
+.drop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px;
+  border: 1.5px dashed var(--text-3);
+  border-radius: var(--radius-widget);
+  transition: background-color 150ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+.drop[data-over] { border-color: var(--accent-text); background: var(--accent-wash); }
+.dropIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 9px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.drop h2 { margin-bottom: 6px; }
+.dropActions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 14px; }
+.dropNote { position: absolute; left: 20px; right: 20px; bottom: 6px; text-align: center; color: var(--text-2); }
+
+/* ---- queue ---- */
+.queue {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 14px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+}
+.queueLive { display: flex; flex-direction: column; gap: 14px; }
+.queueHead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 0 0 2px; }
+.queueTitle { display: inline-flex; align-items: center; gap: 8px; line-height: normal; }
+.rows { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.row {
+  display: grid;
+  grid-template-columns: 16px 260px minmax(0, 1fr) 329px;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 6px 13px 6px 18px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+}
+.fileIcon { display: inline-flex; color: var(--text-2); }
+.problem { display: inline-flex; color: var(--against); }
+.fileName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.message { min-width: 0; grid-column: 3; }
+.track { height: 4px; overflow: hidden; border-radius: var(--radius-pill); background: var(--surface-3); }
+.fill { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--accent); }
+.barDone { width: 100%; background: var(--text-3); }
+.barBusy { width: 40%; animation: sweep 1.6s var(--ease-out) infinite; }
+@keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) { .barBusy { animation: none; } }
+:global([data-reduce-motion]) .barBusy { animation: none; }
+
+.status { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.busy { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); }
+.read { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
+.queueFoot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: auto; padding-top: 6px; }
+
+/* ---- review ---- */
+.error { margin-bottom: 0; }
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 12px 20px 12px 22px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+}
+.noticeIcon { display: inline-flex; color: var(--text); }
+.noticeText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.noticeText p:last-child { color: var(--text-2); }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 439px; align-items: stretch; gap: 12px; flex: 1; }
+.form { display: flex; flex-direction: column; gap: 16px; padding: 22px 24px 24px; }
+.formHead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 2px; }
+.formHead p { color: var(--text-3); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.fieldBlock { display: flex; flex-direction: column; min-width: 0; }
+.labelRow { display: flex; align-items: center; gap: 8px; min-height: 16px; margin-bottom: 8px; }
+.label { color: var(--text-2); }
+.labelRow button.small { margin-left: auto; }
+.readAs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 8px; }
+.readAs > :first-child { color: var(--text-3); }
+.readAs q { color: var(--text-2); quotes: "\201C" "\201D"; }
+.readAs .note { color: var(--text-3); }
+
+.side { align-self: start; display: flex; flex-direction: column; gap: 12px; }
+.side h2 { color: var(--text-2); }
+.jobs { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.job { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px 13px; border: 1px solid transparent; border-radius: var(--radius-inner); background: var(--surface-2); }
+.jobFlagged { border-color: var(--text-3); }
+.jobEditing { gap: 10px; border-color: var(--hairline); }
+.jobHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.job .dim { color: var(--text-3); }
+.jobActions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 4px; }
+.dates { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.job .readAs { margin-top: 4px; }
+
+.education { display: flex; flex-direction: column; gap: 6px; color: var(--text-2); }
+.education h3 { color: var(--text-2); }
+.education ul { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.rule { width: 100%; height: 0; margin: 4px 0 2px; border: 0; border-top: 1px solid var(--hairline); }
+.skills { display: flex; flex-direction: column; gap: 12px; }
+.skills h3 { color: var(--text-2); }
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.x { position: relative; display: inline-flex; margin-right: -3px; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; }
+.x::after { content: ""; position: absolute; inset: -16px -8px; }
+.addSkill { display: flex; align-items: center; gap: 8px; }
+
+@media (max-width: 1100px) {
+  .row { grid-template-columns: 16px minmax(0, 1fr) auto; }
+  .track { display: none; }
+  .message { grid-column: auto; }
+  .cols { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 700px) {
+  .pair { grid-template-columns: 1fr; }
+  .queueFoot { flex-direction: column; align-items: stretch; }
+}

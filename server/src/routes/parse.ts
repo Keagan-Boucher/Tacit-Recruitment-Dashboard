@@ -32,7 +32,7 @@ export function parseRouter({ ai, bucket }: { ai: Ai; bucket: BucketLike }) {
     try {
       const { text } = await readUploadText(bucket, req.uid!, body.data.fileRef, "cvs");
       const { data, modelVersion } = await runStructured(
-        { task: "parse-cv", prompt: loadPrompt("parse-cv", 1), schema: CvParseResult, input: text, check: needNotes },
+        { task: "parse-cv", prompt: loadPrompt("parse-cv", 2), schema: CvParseResult, input: text, check: needNotes },
         ai,
       );
       res.json({ result: data, modelVersion });

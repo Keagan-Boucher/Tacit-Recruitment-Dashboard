@@ -4,6 +4,8 @@ import { RedirectIfSignedIn, RequireAuth } from "../features/auth";
 import SignIn from "../screens/S07-sign-in/SignIn";
 import CandidatesList from "../screens/S08-candidates-list/CandidatesList";
 import CandidateProfile from "../screens/S03-candidate-profile/CandidateProfile";
+import InterviewCapture from "../screens/S02-interview-capture/InterviewCapture";
+import CvUpload from "../screens/S09-cv-upload/CvUpload";
 import { Placeholder } from "./Placeholder";
 import { Shell } from "./Shell";
 import NotFound, { RouteError } from "../screens/S16-not-found/NotFound";
@@ -31,9 +33,9 @@ export const routes: RouteObject[] = [
         ...(Crash ? [{ path: "/dev/crash", element: <Suspense fallback={null}><Crash /></Suspense> }] : []),
         { path: "/", element: ph("S01", "Dashboard") },
         { path: "/candidates", element: <CandidatesList /> },
-        { path: "/candidates/new", element: ph("S09", "CV upload") },
+        { path: "/candidates/new", element: <CvUpload /> },
         { path: "/candidates/:candidateId", element: <CandidateProfile /> },
-        { path: "/candidates/:candidateId/notes/new", element: ph("S02", "Interview capture") },
+        { path: "/candidates/:candidateId/notes/new", element: <InterviewCapture /> },
         { path: "/companies", element: ph("S10", "Companies") },
         { path: "/companies/:companyId", element: ph("S11", "Company profile") },
         { path: "/roles", element: ph("S12", "Roles") },
