@@ -11,6 +11,7 @@ import Dashboard from "../screens/S01-dashboard/Dashboard";
 import BriefIntake from "../screens/S05-brief-intake/BriefIntake";
 import RolesList from "../screens/S12-roles-list/RolesList";
 import RoleForm from "../screens/S13-role-form/RoleForm";
+import Widgets from "../screens/S17-widgets/Widgets";
 import { Placeholder } from "./Placeholder";
 import { Shell } from "./Shell";
 import NotFound, { RouteError } from "../screens/S16-not-found/NotFound";
@@ -48,7 +49,7 @@ export const routes: RouteObject[] = [
         { path: "/roles/:roleId", element: <MatchView /> }, // S06 override dialog: ?dialog=override
         { path: "/brief", element: <BriefIntake /> },
         { path: "/settings", element: ph("S14", "Settings") },
-        { path: "/widgets", element: ph("S17", "Widgets") },
+        { path: "/widgets", element: <Widgets /> },
         { path: "*", element: <NotFound /> },
       ] },
     ],

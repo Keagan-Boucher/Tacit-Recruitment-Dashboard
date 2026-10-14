@@ -1,0 +1,79 @@
+/* Figma S17: library 3 columns (x 104 to 980), side column 424 wide, content from y 128. */
+.page { display: flex; flex-direction: column; }
+.banner { margin: -14px 0 12px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 428px; gap: 16px; align-items: start; }
+.dim { color: var(--text-3); }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.library { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+}
+.name { margin: 0; color: var(--text); }
+.off { color: var(--text-2); }
+.controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+/* Preview sketches: decorative, tokens only */
+.preview { position: relative; display: flex; height: 84px; padding: 12px; border-radius: var(--radius-inner); background: var(--surface-2); overflow: hidden; }
+.preview i, .preview u, .preview s { display: block; border-radius: var(--radius-pill); background: var(--text-3); }
+.lines, .list { flex-direction: column; justify-content: center; gap: 8px; }
+.lines span, .list span { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lines span i { height: 8px; width: 45%; }
+.lines span:nth-child(2) i { width: 36%; }
+.lines span:nth-child(3) i { width: 26%; }
+.lines span u { width: 40px; height: 10px; background: none; border: 1px solid var(--accent-text); }
+.list span { justify-content: flex-start; }
+.list s { flex: none; width: 6px; height: 6px; background: var(--accent-text); opacity: 0.6; }
+.list span i { height: 6px; width: 55%; }
+.list span:nth-child(2) i { width: 45%; }
+.list span:nth-child(3) i { width: 32%; }
+.preview.hero { flex-flow: row wrap; align-content: center; align-items: center; gap: 8px 6px; background: var(--accent); color: var(--on-accent); }
+.hero b { flex: 0 0 100%; font-weight: 600; }
+.preview.hero i { height: 10px; width: 26%; background: var(--on-accent); }
+.preview.hero i + i { flex: 1; width: auto; }
+.number { flex-direction: column; justify-content: space-between; color: var(--accent-text); }
+.number b { line-height: 0.9; }
+.number em { display: flex; gap: 6px; }
+.number em i { flex: 1; height: 4px; background: var(--surface-3); }
+.bars { align-items: flex-end; gap: 4px; }
+.bars i { flex: 1; border-radius: var(--radius-inner); background: var(--surface-3); }
+.bars i:last-child { background: var(--accent); }
+.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-content: center; }
+.grid i { height: 14px; border-radius: var(--radius-inner); border: 1px solid var(--accent-text); background: none; }
+.grid i[data-c="f"] { background: var(--accent); border-color: var(--accent); }
+.grid i[data-c="n"] { background: var(--surface-3); border-color: transparent; }
+.grid i[data-c="s"] { background: var(--stale-solid); border-color: var(--stale-solid); }
+
+/* Side column */
+.side { display: flex; flex-direction: column; gap: 12px; }
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+}
+.panel h2 { margin: 0; color: var(--text-2); }
+.panelHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+
+.schematic { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 70px; grid-auto-flow: dense; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.cell { padding: 8px; border-radius: var(--radius-inner); background: var(--surface-2); color: var(--text-2); overflow: hidden; }
+.s2x1 { grid-column: span 2; }
+.s2x2 { grid-column: span 2; grid-row: span 2; }
+.schematic .hero { background: var(--accent); color: var(--on-accent); }
+
+.order { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.row { display: flex; align-items: center; gap: 12px; padding: 0 0 0 12px; border-radius: var(--radius-inner); background: var(--surface-2); }
+.rowName { flex: 1; min-width: 0; color: var(--text); }
+
+@media (max-width: 1240px) { .library { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .library { grid-template-columns: minmax(0, 1fr); } }
