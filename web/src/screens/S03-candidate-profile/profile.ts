@@ -55,7 +55,11 @@ export function buildObserved(
     if (!a.confirmedByRecruiter) continue;
     const isNote = a.sourceType === "note";
     const source = isNote ? notes.find((n) => n.id === a.noteId) : overrides.find((o) => o.id === a.overrideId);
-    const text = source ? ("rawText" in source ? source.rawText : source.reasonText) : undefined;
+    // S06 "Anything new?" values (modelVersion "recruiter") are spanned over the typed update, seeded ones over reasonText.
+    const text = !source ? undefined
+      : "rawText" in source ? source.rawText
+      : a.modelVersion === "recruiter" ? source.updates?.find((u) => u.type === a.type)?.value
+      : source.reasonText;
     const { start, end } = a.sourceSpan;
     if (text === undefined || start < 0 || end > text.length || start >= end) {
       console.warn(`S03: attribute ${a.id} hidden, its source span [${start}, ${end}) does not fit its text`);
