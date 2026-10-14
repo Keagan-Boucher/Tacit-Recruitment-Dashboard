@@ -1,0 +1,110 @@
+import { z } from "zod";
+import { AttributeType, BriefSource } from "./schemas.ts";
+
+// Model output schemas, sent to the provider as strict JSON Schema (z.toJSONSchema) and re-validated with Zod.
+// Groq strict mode: every property required, so "maybe" is nullable, never optional; no refinements here
+// (semantic checks such as quote-in-note live in the proxy pipeline).
+// No demographic, photo or name-derived fields anywhere (product rule).
+
+const confidence = z.number().min(0).max(1);
+/** Below this, the UI flags a value ("Low confidence" / "Check this"). */
+export const LOW_CONFIDENCE = 0.7;
+
+// ---- /api/interpret-note -------------------------------------------------------------------
+
+export const InterpretedAttribute = z.object({
+  type: AttributeType,
+  /** Short, recruiter-readable claim, e.g. "Owns month-end close in SAP". */
+  value: z.string(),
+  /** Verbatim phrase from the note. The proxy locates it to compute sourceSpan; not found = dropped. */
+  quote: z.string(),
+  confidence,
+  /** Why it's uncertain, e.g. "Basic or cost to company? Not said." Null when confident. */
+  note: z.string().nullable(),
+});
+
+export const NoteInterpretation = z.object({ attributes: z.array(InterpretedAttribute) });
+
+export const InterpretNoteRequest = z.object({ noteId: z.string().min(1) });
+/** Attributes are written unconfirmed (confirmedByRecruiter: false); the client reads them from Firestore. */
+export interface InterpretNoteResponse { attributeIds: string[]; modelVersion: string }
+
+// ---- /api/parse-cv -------------------------------------------------------------------------
+
+/** One field as read from the CV: the cleaned value, the raw text it was read from, and how sure. */
+export const CvField = z.object({
+  value: z.string().nullable(),
+  readAs: z.string().nullable(),
+  confidence,
+  note: z.string().nullable(),
+});
+
+export const CvParseJob = z.object({
+  title: z.string(),
+  company: z.string().nullable(),
+  from: z.string().nullable(),
+  /** Null = current job. */
+  to: z.string().nullable(),
+  readAs: z.string().nullable(),
+  confidence,
+  note: z.string().nullable(),
+});
+
+export const CvParseResult = z.object({
+  fullName: CvField,
+  headline: CvField,
+  location: CvField,
+  currentRole: CvField,
+  salaryExpectation: CvField,
+  /** Newest first. */
+  history: z.array(CvParseJob),
+  education: z.array(z.string()),
+  skills: z.array(z.string()),
+  parseConfidence: confidence,
+});
+
+/** fileRef = Storage path, must be under users/{uid}/cvs/. */
+export const ParseCvRequest = z.object({ fileRef: z.string().min(1) });
+/** Not persisted by the proxy: the recruiter's Confirm on S09 writes the candidate. */
+export interface ParseCvResponse { result: CvParseResult; modelVersion: string }
+
+// ---- /api/parse-brief ----------------------------------------------------------------------
+
+/** Same fields as Role.interpretedBrief, in screening order, but anything the brief doesn't say is null. */
+export const BriefInterpretation = z.object({
+  title: z.string().nullable(),
+  companyName: z.string().nullable(),
+  workMode: z.string().nullable(),
+  travel: z.string().nullable(),
+  budget: z.object({ min: z.number().nullable(), max: z.number().nullable(), currency: z.string().nullable() }),
+  location: z.string().nullable(),
+  mustHave: z.array(z.string()),
+  niceToHave: z.array(z.string()),
+  seniority: z.string().nullable(),
+  /** Things the brief leaves open, phrased as questions for the client. */
+  unclear: z.array(z.string()),
+});
+
+/** Exactly one of text (paste / call notes) or fileRef (upload, under users/{uid}/briefs/). */
+export const ParseBriefRequest = z
+  .object({ source: BriefSource, text: z.string().nullable(), fileRef: z.string().nullable() })
+  .refine((r) => (r.text ? 1 : 0) + (r.fileRef ? 1 : 0) === 1, { message: "Send exactly one of text or fileRef" });
+export interface ParseBriefResponse { result: BriefInterpretation; modelVersion: string }
+
+// ---- errors --------------------------------------------------------------------------------
+
+/** Every non-2xx from the proxy. `ai_failed` = the model failed after one repair retry; nothing was stored. */
+export interface ApiErrorBody {
+  error: string;
+  code: "bad_request" | "unauthorized" | "not_found" | "bad_file" | "ai_failed" | "ai_unconfigured" | "internal";
+}
+
+export type InterpretedAttribute = z.infer<typeof InterpretedAttribute>;
+export type NoteInterpretation = z.infer<typeof NoteInterpretation>;
+export type InterpretNoteRequest = z.infer<typeof InterpretNoteRequest>;
+export type CvField = z.infer<typeof CvField>;
+export type CvParseJob = z.infer<typeof CvParseJob>;
+export type CvParseResult = z.infer<typeof CvParseResult>;
+export type ParseCvRequest = z.infer<typeof ParseCvRequest>;
+export type BriefInterpretation = z.infer<typeof BriefInterpretation>;
+export type ParseBriefRequest = z.infer<typeof ParseBriefRequest>;

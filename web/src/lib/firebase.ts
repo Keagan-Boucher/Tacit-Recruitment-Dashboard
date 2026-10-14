@@ -1,6 +1,7 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { browserLocalPersistence, getAuth, initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const app = getApps().length
   ? getApp()
@@ -21,3 +22,4 @@ export const auth = (() => {
   }
 })();
 export const db = getFirestore(app);
+export const storage = getStorage(app);

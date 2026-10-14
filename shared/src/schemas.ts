@@ -29,11 +29,24 @@ export const SourceSpan = z
   .object({ start: z.number().int().min(0), end: z.number().int().min(0) })
   .refine((s) => s.start < s.end, { message: "sourceSpan.start must be < end" });
 
+/** What the CV claims (S03 "What the CV says"), kept apart from what the recruiter observed. */
+export const CvFacts = z.object({
+  /** Newest first; `to` missing = current job. */
+  history: z.array(z.object({ title: z.string(), company: z.string().optional(), from: z.string().optional(), to: z.string().optional() })),
+  education: z.array(z.string()),
+  skills: z.array(z.string()),
+  salaryExpectation: z.string().optional(),
+  fileName: z.string().optional(),
+  readAt: z.date().optional(),
+  modelVersion: z.string().optional(), // absent when added by hand
+});
+
 export const Candidate = z.object({
   ...doc,
   fullName: z.string(),
   headline: z.string(),
   location: z.string(),
+  cv: CvFacts.optional(),
   cvFileRef: z.string().optional(),
   parseConfidence: confidence,
   parseStatus: ParseStatus,
@@ -210,6 +223,7 @@ export type AlignmentKind = z.infer<typeof AlignmentKind>;
 export type Decision = z.infer<typeof Decision>;
 export type WidgetId = z.infer<typeof WidgetId>;
 export type WidgetSize = z.infer<typeof WidgetSize>;
+export type CvFacts = z.infer<typeof CvFacts>;
 export type SourceSpan = z.infer<typeof SourceSpan>;
 export type Candidate = z.infer<typeof Candidate>;
 export type InterviewNote = z.infer<typeof InterviewNote>;

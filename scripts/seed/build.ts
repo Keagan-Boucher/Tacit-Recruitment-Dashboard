@@ -60,7 +60,7 @@ export function addNote(ctx: Ctx, slug: string, n: number, m: number, sections: 
   }
 }
 
-export interface CandRow { slug: string; name: string; headline: string; location: string; parse?: [Candidate["parseStatus"], number]; opened?: number }
+export interface CandRow { slug: string; name: string; headline: string; location: string; parse?: [Candidate["parseStatus"], number]; opened?: number; cv?: Candidate["cv"] }
 
 /** Candidates are derived from their notes: dates, and the topSkills projection from skill attributes. */
 export function buildCandidates(ctx: Ctx, rows: CandRow[]): Doc<Candidate>[] {
@@ -79,6 +79,8 @@ export function buildCandidates(ctx: Ctx, rows: CandRow[]): Doc<Candidate>[] {
       data: {
         ...base(ctx, notes[0].data.capturedAt), updatedAt: last, fullName: r.name, headline: r.headline, location: r.location,
         parseConfidence, parseStatus, topSkills, lastInterviewAt: last,
+        // CV claims: hand-written for the demo people, otherwise the headline and the skills they list.
+        cv: { readAt: notes[0].data.capturedAt, modelVersion: MODEL, ...(r.cv ?? { history: [{ title: r.headline }], education: [], skills: topSkills }) },
         lastOpenedAt: r.opened !== undefined ? monthsAgo(ctx.now, r.opened) : new Date(Math.min(ctx.now.getTime(), last.getTime() + 2 * DAY)),
       },
     };

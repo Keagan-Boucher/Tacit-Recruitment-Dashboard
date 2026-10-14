@@ -125,8 +125,12 @@ function heroes(ctx: Ctx): CandRow[] {
   ]);
 
   return [
-    { slug: "demo_thabo", name: "Thabo Nkosi", headline: "Finance systems analyst", location: "Durban", opened: 0.03 },
-    { slug: "demo_forgotten", name: "Sipho Mabaso", headline: "SAP support lead", location: "Cape Town", opened: 14 },
+    { slug: "demo_thabo", name: "Thabo Nkosi", headline: "Finance systems analyst", location: "Durban", opened: 0.03, cv: {
+      history: [{ title: "Finance systems analyst", company: "Sable Insurance", from: "2020" }, { title: "Junior SAP FI analyst", company: "Coastal Freight", from: "2017", to: "2020" }],
+      education: ["BCom Information Systems, University of KwaZulu-Natal, 2016"], skills: ["SAP ECC FI", "S/4HANA FI/CO", "Month-end close", "Excel"], salaryExpectation: "R65k a month" } },
+    { slug: "demo_forgotten", name: "Sipho Mabaso", headline: "SAP support lead", location: "Cape Town", opened: 14, cv: {
+      history: [{ title: "SAP support lead", company: "Lumen Telecoms", from: "2021" }, { title: "SAP FI support analyst", company: "Lumen Telecoms", from: "2018", to: "2021" }],
+      education: ["BCom Accounting, University of the Western Cape, 2017"], skills: ["SAP ECC FI", "SAP CO", "Solution Manager", "Excel", "SQL"], fileName: "sipho-mabaso-cv.pdf" } },
     { slug: "lindiwe_khumalo", name: "Lindiwe Khumalo", headline: "SAP FICO analyst", location: "Durban", opened: 11 },
     { slug: "fatima_ebrahim", name: "Fatima Ebrahim", headline: "Oracle Financials team lead", location: "Cape Town", opened: 17 },
     { slug: "pieter_van_wyk", name: "Pieter van Wyk", headline: "SAP project manager", location: "Pretoria" },
