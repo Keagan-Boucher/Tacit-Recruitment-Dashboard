@@ -1,0 +1,102 @@
+.root { display: flex; flex-direction: column; gap: var(--gap); width: 100%; max-width: 868px; }
+.card { display: flex; flex-direction: column; gap: 16px; }
+
+/* Mode switch: Figma segmented (icon + 13 text, 14/8 padding), selection is neutral --surface-3 */
+.modes { display: flex; flex-wrap: wrap; align-self: flex-start; gap: 2px; padding: 4px; border-radius: var(--radius-pill); background: var(--surface-2); }
+.mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-2);
+  line-height: normal;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+}
+.mode:hover { color: var(--text); }
+.mode[aria-checked="true"] { background: var(--surface-3); color: var(--text); }
+
+/* Drop strip under the textarea, dashed --text-3 */
+.strip, .zone {
+  display: flex;
+  align-items: center;
+  border: 1px dashed var(--text-3);
+  border-radius: var(--radius-inner);
+  transition: border-color 150ms var(--ease-out);
+}
+.strip { gap: 10px; padding: 0 16px; min-height: 46px; color: var(--text-2); }
+.stripText { flex: 1; min-width: 0; }
+.zone { flex-direction: column; justify-content: center; gap: 6px; min-height: 300px; padding: 24px 16px; text-align: center; color: var(--text-2); }
+.zone .types { margin-top: 6px; color: var(--text-3); }
+.zoneActions { display: flex; gap: 8px; }
+.over { border-style: solid; border-color: var(--accent-text); }
+
+/* Tertiary action: text link in --accent-text with a 44 px hit area */
+.link {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  line-height: normal;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.link:hover { text-decoration: underline; }
+.link:disabled { color: var(--text-3); cursor: not-allowed; text-decoration: none; }
+.quiet { color: var(--text-2); }
+
+/* Error: against outline, what happened, that nothing was lost, one action */
+.problemSlot:empty { display: none; }
+.problem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 7px 7px 7px 18px;
+  border: 1px solid var(--against);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+  color: var(--text);
+}
+.problemIcon { display: inline-flex; color: var(--against); }
+.problemDetail { flex: 1; min-width: 160px; color: var(--text-2); }
+.problem > button { margin-left: auto; }
+
+/* 44 px target (Button is 40 high) */
+.tall { min-height: 44px; }
+
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.say { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; color: var(--text-2); }
+.spark { flex: none; color: var(--accent-text); animation: pulse 1.4s var(--ease-out) infinite alternate; }
+@keyframes pulse { from { opacity: 0.45; } to { opacity: 1; } }
+
+/* What Tacit understood */
+.context { margin-top: 4px; color: var(--text-3); }
+.rows { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+}
+.label { flex: none; width: 92px; padding-top: 4px; color: var(--text-3); line-height: normal; }
+.values { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+/* Value chip: outlined in --text, same measurements as Chip (22 high, 11 Medium, 3/8 padding) */
+.value {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid var(--text);
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  line-height: normal;
+}
+.ask { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
+.questions { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0 0 0 18px; color: var(--text); }

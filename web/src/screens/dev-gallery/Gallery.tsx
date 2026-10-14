@@ -22,6 +22,8 @@ import {
   Toggle,
   WidgetCard,
 } from "../../components";
+import { useAuth } from "../../features/auth";
+import { BriefPicker } from "../../features/brief";
 import styles from "./Gallery.module.css";
 
 const REASONS = [
@@ -77,6 +79,7 @@ export default function Gallery() {
   const [dialog, setDialog] = useState(false);
   const [toast, setToast] = useState(false);
   const [pw, setPw] = useState("");
+  const { user, loading: authLoading } = useAuth();
 
   return (
     <div className={styles.page}>
@@ -241,6 +244,14 @@ export default function Gallery() {
         <ToastRegion>
           {toast && <Toast message="Moved to Not this one." action={{ label: "Undo", onClick: () => setToast(false) }} onDismiss={() => setToast(false)} />}
         </ToastRegion>
+      </Section>
+
+      <Section title="Brief picker">
+        {authLoading ? null : user ? (
+          <BriefPicker onInterpreted={console.log} />
+        ) : (
+          <p className="t-body-s">Sign in to try the brief picker: it uploads to your Storage folder and calls the proxy.</p>
+        )}
       </Section>
 
       <Section title="States">
