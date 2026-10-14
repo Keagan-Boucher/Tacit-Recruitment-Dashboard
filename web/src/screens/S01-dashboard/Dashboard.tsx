@@ -1,0 +1,133 @@
+import { useMemo, useState } from "react";
+import type { MouseEvent, ReactNode } from "react";
+import { useNavigate } from "react-router";
+import type { Attribute, Candidate, Company, InterviewNote, Match, Override, Role, WidgetId } from "@tacit/shared";
+import { PageHeader, useScreenState } from "../../app";
+import { buttonClass, ErrorBanner, Icon } from "../../components";
+import { usePrefs } from "../../features/prefs";
+import { useOwned } from "../../lib/data";
+import { buildBoard, EMPTY, type Snapshot } from "./board";
+import { Forgotten, PeopleMet, RolesInPlay, RolesToShortlist, Shelf, ToConfirm, Waiting, WorthACall } from "./Widgets";
+import styles from "./Dashboard.module.css";
+
+const WIDGETS: Partial<Record<WidgetId, (p: { b?: ReturnType<typeof buildBoard> }) => ReactNode>> = {
+  forgotten: Forgotten,
+  "roles-to-shortlist": RolesToShortlist,
+  "to-confirm": ToConfirm,
+  "people-met": PeopleMet,
+  "roles-in-play": RolesInPlay,
+  "worth-a-call": WorthACall,
+  waiting: Waiting,
+};
+const SIZE = { "1x1": "", "2x1": styles.w2, "2x2": styles.w2h2 } as const;
+
+/** Retry remounts the screen, which opens fresh Firestore listeners (a failed listener does not recover by itself). */
+export default function Dashboard() {
+  const [attempt, setAttempt] = useState(0);
+  return <Board key={attempt} onRetry={() => setAttempt((n) => n + 1)} />;
+}
+
+function Board({ onRetry }: { onRetry: () => void }) {
+  const state = useScreenState();
+  const navigate = useNavigate();
+  const { prefs } = usePrefs();
+  const [now] = useState(() => new Date());
+
+  const candidates = useOwned<Candidate>("candidates");
+  const roles = useOwned<Role>("roles");
+  const companies = useOwned<Company>("companies");
+  const matches = useOwned<Match>("matches");
+  const overrides = useOwned<Override>("overrides");
+  const notes = useOwned<InterviewNote>("interviewNotes");
+  const attributes = useOwned<Attribute>("attributes");
+
+  const liveError = [candidates, roles, companies, matches, overrides, notes, attributes].find((l) => l.error)?.error;
+  const loaded = useMemo<Snapshot | undefined>(
+    () =>
+      candidates.data && roles.data && companies.data && matches.data && overrides.data && notes.data && attributes.data
+        ? { candidates: candidates.data, roles: roles.data, companies: companies.data, matches: matches.data, overrides: overrides.data, notes: notes.data, attributes: attributes.data }
+        : undefined,
+    [candidates.data, roles.data, companies.data, matches.data, overrides.data, notes.data, attributes.data],
+  );
+  const snap = state === "loading" ? undefined : state === "empty" ? EMPTY : loaded;
+  const error = state === "error" || liveError;
+
+  // Widgets keep their last content when a read fails.
+  const [kept, setKept] = useState<{ snap: Snapshot; at: Date }>();
+  if (snap && snap !== kept?.snap) setKept({ snap, at: new Date() });
+  const shown = snap ?? (error ? kept?.snap : undefined);
+  const b = useMemo(() => shown && buildBoard(shown, now), [shown, now]);
+
+  const board = [...prefs.dashboard].filter((w) => w.visible).sort((a, b) => a.order - b.order);
+
+  // One handler for every in-widget link, so navigation stays client-side (the links are plain anchors).
+  function goInApp(e: MouseEvent) {
+    const href = (e.target as HTMLElement).closest("a")?.getAttribute("href");
+    if (!href?.startsWith("/") || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    void navigate(href);
+  }
+
+  const headline = !b ? (
+    <span className={styles.dim}>Getting today’s list ready.</span>
+  ) : b.total === 0 ? (
+    b.hasPeople ? "Nothing needs you today." : "Nothing needs you yet."
+  ) : (
+    <>
+      <span className={styles.num}>{b.total}</span> {b.total === 1 ? "thing needs" : "things need"} you today.
+    </>
+  );
+
+  return (
+    <div className={styles.page}>
+      <PageHeader
+        headline={headline}
+        actions={
+          <div className={styles.actions}>
+            {/* The command palette (S15) listens for Ctrl K; this is its button. */}
+            <button
+              type="button"
+              className={styles.search}
+              onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }))}
+            >
+              <Icon name="bx-search" />
+              <span className="t-body-m">Search people, roles, notes</span>
+              <kbd className={`${styles.kbd} t-meta`}>Ctrl K</kbd>
+            </button>
+            <a href="/widgets" className={buttonClass("ghost")} onClick={goInApp}>
+              <Icon name="bx-pencil" />
+              Customise
+            </a>
+            <a href="/candidates" className={buttonClass("primary")} onClick={goInApp}>
+              <Icon name="bx-plus" />
+              New interview note
+            </a>
+          </div>
+        }
+      />
+      {error && (
+        <ErrorBanner
+          className={styles.banner}
+          title="Couldn’t load today’s list."
+          detail={kept ? `Nothing was lost. Showing what loaded at ${kept.at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}.` : undefined}
+          onRetry={onRetry}
+        />
+      )}
+      <div className={styles.board} onClick={goInApp} role="region" aria-label="Today’s list" aria-busy={!b} aria-live="polite">
+        {!b && (
+          <p className="sr-only" role="status">
+            Getting today’s list ready.
+          </p>
+        )}
+        {board.map((w) => {
+          const Widget = WIDGETS[w.widgetId];
+          return (
+            <div key={w.widgetId} className={`${styles.cell} ${SIZE[w.size]}`}>
+              {Widget ? <Widget b={b} /> : <Shelf id={w.widgetId} />}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

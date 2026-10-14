@@ -1,0 +1,115 @@
+/* Figma S01: board from y 132, 4 x 3 cells with 12 gaps, 654 x 497 hero. */
+.page { display: flex; flex-direction: column; height: calc(100dvh - 16px); min-height: 760px; } /* definite, so the rows can give way to the error banner */
+.num { color: var(--accent-text); }
+.dim { color: var(--text-2); }
+.banner { margin: -14px 0 6px; }
+/* Figma S01: the actions end at x 1413, 11 short of the other screens. */
+.actions { display: flex; align-items: center; gap: 10px; margin-right: 11px; }
+
+.search {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  min-height: 40px;
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text-3);
+  cursor: pointer;
+}
+/* 44 px hit area around the 40 px pill */
+.search::before { content: ""; position: absolute; inset: -2px; }
+.search:hover { background: var(--surface-2); }
+.kbd { padding: 3px 8px; border-radius: var(--radius-pill); background: var(--surface-2); font-family: inherit; }
+
+.board {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: minmax(242px, auto) minmax(180px, 1fr) minmax(242px, auto); /* the middle row gives way to the error banner, as in the Figma error frame */
+  grid-auto-rows: minmax(210px, 1fr);
+  grid-auto-flow: dense;
+  gap: var(--gap);
+  margin-top: 4px;
+}
+.cell { display: flex; min-width: 0; min-height: 0; }
+.cell > * { flex: 1; }
+.w2 { grid-column: span 2; }
+.w2h2 { grid-column: span 2; grid-row: span 2; }
+/* A widget's own "See all" link is a text link. */
+.board section > a { color: var(--accent-text); }
+.board section > a:hover { color: var(--text); }
+
+@media (max-width: 1100px) {
+  .board { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; }
+}
+@media (max-width: 700px) {
+  .board { grid-template-columns: minmax(0, 1fr); }
+  .w2, .w2h2 { grid-column: auto; grid-row: auto; }
+}
+
+/* Hero: lime, the focal point */
+.board .hero { padding: 22px 28px 28px; }
+.heroBody { flex: 1; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.person { margin-block: auto; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.person h3, .person p { margin: 0; }
+.sub { max-width: 540px; line-height: 1.4; }
+.start { gap: 20px; }
+.start .sub { max-width: 520px; }
+.uploadIcon { display: grid; place-items: center; width: 52px; height: 52px; border: 1.5px solid var(--on-accent); border-radius: var(--radius-pill); }
+.case { display: flex; flex-direction: column; gap: 16px; }
+.reason { display: flex; align-items: flex-start; gap: 12px; }
+.reason p { flex: 1; margin: 0; }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.ask { display: flex; align-items: center; gap: 8px; margin: 0; }
+.skRow { display: flex; align-items: center; gap: 8px; }
+
+/* In-widget rows */
+.say { margin: 0; color: var(--text-2); }
+.bottom { margin-top: auto; align-self: flex-start; }
+.list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 10px 9px 12px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 150ms var(--ease-out);
+}
+.item:hover { background: var(--surface-3); }
+.flat { padding: 0; background: none; }
+.flat:hover { background: none; }
+.flat:hover .line { text-decoration: underline; }
+.item > :not(.main) { flex: none; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.line, .quiet { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: normal; }
+.quiet { color: var(--text-3); }
+.plain { color: inherit; text-decoration: none; }
+
+.figure { display: flex; align-items: baseline; gap: 10px; margin: 0; }
+a.figure { align-items: center; }
+.big { color: var(--accent-text); }
+.text { color: var(--text); }
+
+/* People you have met: twelve months, oldest first */
+.bars { display: flex; align-items: flex-end; gap: 5px; height: 56px; margin-top: auto; }
+.bar { flex: 1; min-width: 0; border-radius: 3px; background: var(--surface-3); } /* token-ok: chart bars */
+.barNow { background: var(--accent); }
+
+/* Roles in play */
+.heat { display: flex; flex-direction: column; gap: 7px; margin-top: -5px; }
+.heatRow { display: grid; grid-template-columns: minmax(110px, 210px) repeat(5, minmax(0, 1fr)); align-items: center; gap: 6px; }
+.colHead { color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hc { display: block; padding: 9px 10px; border: 1px solid transparent; border-radius: var(--radius-inner); }
+.cFill { background: var(--accent); color: var(--on-accent); }
+.cLine { border-color: var(--accent-text); color: var(--accent-text); }
+.cLow { background: var(--surface-2); color: var(--text); }
+.cZero { background: var(--surface-2); color: var(--text-3); }
+.cStale { border-color: var(--stale); color: var(--stale); }
+.cStaleSolid { background: var(--stale-solid); color: var(--on-accent); }

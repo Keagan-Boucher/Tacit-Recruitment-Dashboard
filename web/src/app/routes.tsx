@@ -7,6 +7,7 @@ import CandidateProfile from "../screens/S03-candidate-profile/CandidateProfile"
 import InterviewCapture from "../screens/S02-interview-capture/InterviewCapture";
 import CvUpload from "../screens/S09-cv-upload/CvUpload";
 import MatchView from "../screens/S04-match-view/MatchView";
+import Dashboard from "../screens/S01-dashboard/Dashboard";
 import { Placeholder } from "./Placeholder";
 import { Shell } from "./Shell";
 import NotFound, { RouteError } from "../screens/S16-not-found/NotFound";
@@ -32,7 +33,7 @@ export const routes: RouteObject[] = [
     children: [
       { errorElement: <RouteError />, children: [ // a crash inside a screen keeps the shell
         ...(Crash ? [{ path: "/dev/crash", element: <Suspense fallback={null}><Crash /></Suspense> }] : []),
-        { path: "/", element: ph("S01", "Dashboard") },
+        { path: "/", element: <Dashboard /> },
         { path: "/candidates", element: <CandidatesList /> },
         { path: "/candidates/new", element: <CvUpload /> },
         { path: "/candidates/:candidateId", element: <CandidateProfile /> },
