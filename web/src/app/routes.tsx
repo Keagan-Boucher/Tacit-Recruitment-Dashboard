@@ -6,6 +6,7 @@ import CandidatesList from "../screens/S08-candidates-list/CandidatesList";
 import CandidateProfile from "../screens/S03-candidate-profile/CandidateProfile";
 import InterviewCapture from "../screens/S02-interview-capture/InterviewCapture";
 import CvUpload from "../screens/S09-cv-upload/CvUpload";
+import MatchView from "../screens/S04-match-view/MatchView";
 import { Placeholder } from "./Placeholder";
 import { Shell } from "./Shell";
 import NotFound, { RouteError } from "../screens/S16-not-found/NotFound";
@@ -40,7 +41,7 @@ export const routes: RouteObject[] = [
         { path: "/companies/:companyId", element: ph("S11", "Company profile") },
         { path: "/roles", element: ph("S12", "Roles") },
         { path: "/roles/new", element: ph("S13", "New role") },
-        { path: "/roles/:roleId", element: ph("S04", "Match view") }, // S06 override dialog: ?dialog=override
+        { path: "/roles/:roleId", element: <MatchView /> }, // S06 override dialog: ?dialog=override
         { path: "/brief", element: ph("S05", "Brief intake") },
         { path: "/settings", element: ph("S14", "Settings") },
         { path: "/widgets", element: ph("S17", "Widgets") },

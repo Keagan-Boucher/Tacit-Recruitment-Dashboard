@@ -1,0 +1,19 @@
+import { describe, expect, it } from "vitest";
+import type { Alignment, Attribute } from "@tacit/shared";
+import { budgetText, evidencedCount, provenance } from "./match";
+
+const now = new Date("2026-10-14T00:00:00Z");
+const attr = { id: "a", sourceType: "note", observedAt: new Date("2025-08-12T00:00:00Z") } as Attribute & { id: string };
+
+describe("S04 helpers", () => {
+  it("formats the budget", () => expect(budgetText({ min: 52000, max: 55000, currency: "ZAR" })).toBe("R52k to R55k"));
+  it("counts evidenced rows", () => {
+    const rows = [{ kind: "stated" }, { kind: "interpreted" }, { kind: "not-seen" }] as Alignment[];
+    expect(evidencedCount(rows)).toBe("2 of 3 evidenced");
+  });
+  it("ages the cited attribute and skips unknown ids", () => {
+    const p = provenance(["x", "a"], new Map([["a", attr]]), now)!;
+    expect(p).toMatchObject({ source: "Note, 12 Aug 2025", staleness: "stale", months: 14 });
+    expect(provenance(["x"], new Map(), now)).toBeNull();
+  });
+});

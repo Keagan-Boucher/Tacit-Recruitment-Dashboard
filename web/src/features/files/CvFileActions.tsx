@@ -3,8 +3,8 @@ import { getBlob, getDownloadURL, ref } from "firebase/storage";
 import { Button } from "../../components";
 import { storage } from "../../lib/firebase";
 
-/** View CV (new tab) and Download for an owner-only Storage file. URLs are fetched at click time, never stored. */
-export function CvFileActions({ fileRef, fileName, className }: { fileRef: string; fileName: string; className?: string }) {
+/** View CV (new tab; `viewLabel` renames it, e.g. "View original" for a brief) and Download for an owner-only Storage file. URLs are fetched at click time, never stored. */
+export function CvFileActions({ fileRef, fileName, className, viewLabel = "View CV" }: { fileRef: string; fileName: string; className?: string; viewLabel?: string }) {
   const [error, setError] = useState(false);
 
   const run = (fn: () => Promise<void>) => async () => {
@@ -38,7 +38,7 @@ export function CvFileActions({ fileRef, fileName, className }: { fileRef: strin
   return (
     <>
       <div className={className}>
-        <Button icon="bx-show" onClick={view}>View CV</Button>
+        <Button icon="bx-show" onClick={view}>{viewLabel}</Button>
         <Button icon="bx-download" onClick={download}>Download</Button>
       </div>
       {error && <p role="status" className="t-caption">Couldn't open the file. Try again in a moment.</p>}
