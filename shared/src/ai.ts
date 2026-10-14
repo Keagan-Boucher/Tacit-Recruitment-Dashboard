@@ -64,7 +64,7 @@ export const CvParseResult = z.object({
 });
 
 /** fileRef = Storage path, must be under users/{uid}/cvs/. */
-export const ParseCvRequest = z.object({ fileRef: z.string().min(1) });
+export const ParseCvRequest = z.object({ fileRef: z.string().min(1).max(512) });
 /** Not persisted by the proxy: the recruiter's Confirm on S09 writes the candidate. */
 export interface ParseCvResponse { result: CvParseResult; modelVersion: string }
 
@@ -87,9 +87,10 @@ export const BriefInterpretation = z.object({
 
 /** Exactly one of text (paste / call notes) or fileRef (upload, under users/{uid}/briefs/). */
 export const ParseBriefRequest = z
-  .object({ source: BriefSource, text: z.string().nullable(), fileRef: z.string().nullable() })
+  .object({ source: BriefSource, text: z.string().nullable(), fileRef: z.string().max(512).nullable() })
   .refine((r) => (r.text ? 1 : 0) + (r.fileRef ? 1 : 0) === 1, { message: "Send exactly one of text or fileRef" });
-export interface ParseBriefResponse { result: BriefInterpretation; modelVersion: string }
+/** `text` = the brief text that was interpreted (extracted from the file for uploads), stored as Role.briefText. */
+export interface ParseBriefResponse { result: BriefInterpretation; modelVersion: string; text: string }
 
 // ---- errors --------------------------------------------------------------------------------
 

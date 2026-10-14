@@ -57,6 +57,7 @@ export async function runStructured<T>(o: RunOptions<T>, ai: Ai): Promise<{ data
   ];
   const t0 = Date.now();
   let attempts = 0, inputTokens = 0, outputTokens = 0, ok = false;
+  let failure: string | undefined; // e.g. "RateLimitError:429" or "invalid_output"; never a message (can echo input)
   try {
     let lastError = "";
     while (attempts < 2) {
@@ -68,6 +69,8 @@ export async function runStructured<T>(o: RunOptions<T>, ai: Ai): Promise<{ data
         outputTokens += res.usage.outputTokens;
         content = res.content;
       } catch (e) {
+        const status = (e as { status?: unknown })?.status;
+        failure = `${(e as Error)?.name ?? "Error"}${typeof status === "number" ? `:${status}` : ""}`;
         throw new AiFailedError("AI request failed", e);
       }
       try {
@@ -88,12 +91,13 @@ export async function runStructured<T>(o: RunOptions<T>, ai: Ai): Promise<{ data
         );
       }
     }
+    failure = "invalid_output";
     throw new AiFailedError(`AI output invalid after repair: ${lastError}`);
   } finally {
     const costUsd = (inputTokens * PRICE_IN + outputTokens * PRICE_OUT) / 1e6;
     // No input text, output text or key in the log.
     console.log(
-      JSON.stringify({ task: o.task, modelVersion, attempts, inputTokens, outputTokens, costUsd: +costUsd.toFixed(6), ms: Date.now() - t0, ok }),
+      JSON.stringify({ task: o.task, modelVersion, attempts, inputTokens, outputTokens, costUsd: +costUsd.toFixed(6), ms: Date.now() - t0, ok, ...(failure ? { failure } : {}) }),
     );
   }
 }

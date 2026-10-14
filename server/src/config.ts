@@ -4,6 +4,8 @@ export interface Config {
   serviceAccountPath?: string;
   /** Firebase Storage bucket for uploaded CVs and briefs, e.g. tacit-3cdd4.firebasestorage.app */
   storageBucket?: string;
+  /** Uids allowed to call the proxy (ALLOWED_UIDS, comma-separated). Empty = any signed-in user. */
+  allowedUids: string[];
   aiBaseUrl?: string;
   aiApiKey?: string;
   aiModel?: string;
@@ -23,6 +25,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     allowedOrigin,
     serviceAccountPath: opt(env, "FIREBASE_SERVICE_ACCOUNT_PATH"),
     storageBucket: opt(env, "FIREBASE_STORAGE_BUCKET"),
+    allowedUids: (opt(env, "ALLOWED_UIDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     // OpenAI-compatible endpoint: Groq today (https://api.groq.com/openai/v1, openai/gpt-oss-120b).
     aiBaseUrl: opt(env, "AI_BASE_URL"),
     aiApiKey: opt(env, "AI_API_KEY"),
