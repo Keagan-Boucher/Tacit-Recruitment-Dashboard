@@ -1,12 +1,15 @@
-import { useMemo, useState } from "react";
-import type { MouseEvent, ReactNode } from "react";
-import { useNavigate } from "react-router";
-import type { Attribute, Candidate, Company, InterviewNote, Match, Override, Role, WidgetId } from "@tacit/shared";
+import { useMemo, useRef, useState } from "react";
+import type { CSSProperties, MouseEvent, ReactNode } from "react";
+import { useNavigate, useSearchParams } from "react-router";
+import { DEFAULT_USER_PREFS } from "@tacit/shared";
+import type { Attribute, Candidate, Company, DashboardWidget, InterviewNote, Match, Override, Role, WidgetId } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
-import { buttonClass, ErrorBanner, Icon } from "../../components";
+import { Button, buttonClass, ErrorBanner, Icon } from "../../components";
 import { usePrefs } from "../../features/prefs";
 import { useOwned } from "../../lib/data";
 import { buildBoard, EMPTY, type Snapshot } from "./board";
+import { zoomVar } from "./arrange";
+import { Customise } from "./Customise";
 import { Forgotten, PeopleMet, RolesInPlay, RolesToShortlist, Shelf, ToConfirm, Waiting, WorthACall } from "./Widgets";
 import styles from "./Dashboard.module.css";
 
@@ -30,7 +33,8 @@ export default function Dashboard() {
 function Board({ onRetry }: { onRetry: () => void }) {
   const state = useScreenState();
   const navigate = useNavigate();
-  const { prefs } = usePrefs();
+  const { prefs, savePrefs } = usePrefs();
+  const [params, setParams] = useSearchParams();
   const [now] = useState(() => new Date());
 
   const candidates = useOwned<Candidate>("candidates");
@@ -58,7 +62,47 @@ function Board({ onRetry }: { onRetry: () => void }) {
   const shown = snap ?? (error ? kept?.snap : undefined);
   const b = useMemo(() => shown && buildBoard(shown, now), [shown, now]);
 
+  // Customise mode: `?customise=1` (or dev `?state=customise`) edits a draft of prefs.dashboard; Done saves it, Cancel drops it.
+  const customising = state === "customise" || params.get("customise") === "1";
+  const [edit, setEdit] = useState<DashboardWidget[]>();
+  const editing = customising ? (edit ?? prefs.dashboard) : undefined;
+  const [shelfOpen, setShelfOpen] = useState(true);
+  const [said, setSaid] = useState("");
+  const [failed, setFailed] = useState(false);
+  const base = useRef<DashboardWidget[]>(undefined);
+
   const board = [...prefs.dashboard].filter((w) => w.visible).sort((a, b) => a.order - b.order);
+  const small = (id: WidgetId) => { const i = prefs.smallScreenOrder.indexOf(id); return i < 0 ? prefs.smallScreenOrder.length : i; };
+
+  function change(next: DashboardWidget[], msg: string) {
+    base.current ??= prefs.dashboard;
+    setEdit(next);
+    setSaid(msg);
+  }
+  function leave() {
+    setEdit(undefined);
+    setFailed(false);
+    base.current = undefined;
+    void navigate("/", { replace: true }); // clears ?customise and the dev ?state
+  }
+  async function done() {
+    setFailed(false);
+    try {
+      await savePrefs({ dashboard: editing });
+      leave();
+    } catch {
+      setFailed(true); // stay here with the edits kept; savePrefs already showed them
+    }
+  }
+  function cancel() {
+    // A failed save left the edits in the live prefs; put the saved layout back.
+    if (failed && base.current) void savePrefs({ dashboard: base.current }).catch(() => {});
+    leave();
+  }
+  const renderWidget = (w: DashboardWidget) => {
+    const Widget = WIDGETS[w.widgetId];
+    return Widget ? <Widget b={b} /> : <Shelf id={w.widgetId} />;
+  };
 
   // One handler for every in-widget link, so navigation stays client-side (the links are plain anchors).
   function goInApp(e: MouseEvent) {
@@ -79,10 +123,26 @@ function Board({ onRetry }: { onRetry: () => void }) {
   );
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${editing ? styles.arranging : ""}`} style={editing ? zoomVar : undefined}>
       <PageHeader
-        headline={headline}
+        headline={editing ? "Arrange your dashboard." : headline}
         actions={
+          editing ? (
+            <div className={styles.actions}>
+              {!shelfOpen && (
+                <Button icon="bx-dock-right" onClick={() => setShelfOpen(true)}>
+                  Widget shelf
+                </Button>
+              )}
+              <Button onClick={cancel}>Cancel</Button>
+              <Button icon="bx-reset" onClick={() => change(DEFAULT_USER_PREFS.dashboard, "Board reset to the default seven widgets. Press Done to save it.")}>
+                Reset to default
+              </Button>
+              <Button variant="primary" icon="bx-check" onClick={() => void done()}>
+                Done
+              </Button>
+            </div>
+          ) : (
           <div className={styles.actions}>
             {/* The command palette (S15) listens for Ctrl K; this is its button. */}
             <button
@@ -94,17 +154,21 @@ function Board({ onRetry }: { onRetry: () => void }) {
               <span className="t-body-m">Search people, roles, notes</span>
               <kbd className={`${styles.kbd} t-meta`}>Ctrl K</kbd>
             </button>
-            <a href="/widgets" className={buttonClass("ghost")} onClick={goInApp}>
-              <Icon name="bx-pencil" />
+            <Button icon="bx-pencil" onClick={() => setParams({ customise: "1" })}>
               Customise
-            </a>
+            </Button>
             <a href="/candidates" className={buttonClass("primary")} onClick={goInApp}>
               <Icon name="bx-plus" />
               New interview note
             </a>
           </div>
+          )
         }
       />
+      {failed && <ErrorBanner className={styles.banner} title="Couldn’t save your layout." detail="Your changes are still here." onRetry={() => void done()} />}
+      <p className="sr-only" role="status">
+        {said}
+      </p>
       {error && (
         <ErrorBanner
           className={styles.banner}
@@ -113,21 +177,22 @@ function Board({ onRetry }: { onRetry: () => void }) {
           onRetry={onRetry}
         />
       )}
-      <div className={styles.board} onClick={goInApp} role="region" aria-label="Today’s list" aria-busy={!b} aria-live="polite">
-        {!b && (
-          <p className="sr-only" role="status">
-            Getting today’s list ready.
-          </p>
-        )}
-        {board.map((w) => {
-          const Widget = WIDGETS[w.widgetId];
-          return (
-            <div key={w.widgetId} className={`${styles.cell} ${SIZE[w.size]}`}>
-              {Widget ? <Widget b={b} /> : <Shelf id={w.widgetId} />}
+      {editing ? (
+        <Customise draft={editing} onChange={change} render={renderWidget} sizeClass={(w) => SIZE[w.size] ?? ""} shelfOpen={shelfOpen} onCloseShelf={() => setShelfOpen(false)} />
+      ) : (
+        <div className={styles.board} onClick={goInApp} role="region" aria-label="Today’s list" aria-busy={!b} aria-live="polite">
+          {!b && (
+            <p className="sr-only" role="status">
+              Getting today’s list ready.
+            </p>
+          )}
+          {board.map((w) => (
+            <div key={w.widgetId} className={`${styles.cell} ${SIZE[w.size]}`} style={{ "--so": small(w.widgetId) } as CSSProperties}>
+              {renderWidget(w)}
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

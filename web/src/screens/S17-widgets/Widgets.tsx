@@ -97,7 +97,7 @@ export default function Widgets() {
             <Button icon="bx-refresh" onClick={reset}>
               Reset to default
             </Button>
-            <Link to="/" className={buttonClass("primary")}>
+            <Link to="/?customise=1" className={buttonClass("primary")}>
               <Icon name="bx-pencil" />
               Customise
             </Link>

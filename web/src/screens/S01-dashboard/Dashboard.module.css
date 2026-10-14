@@ -113,3 +113,60 @@ a.figure { align-items: center; }
 .cZero { background: var(--surface-2); color: var(--text-3); }
 .cStale { border-color: var(--stale); color: var(--stale); }
 .cStaleSolid { background: var(--stale-solid); color: var(--on-accent); }
+
+/* Small screens: one column, in the order saved on the Widgets page (S17). */
+@media (max-width: 700px) {
+  .cell { order: var(--so); }
+}
+
+/* Customise (Figma 145:319): the real board at 75%. Sizes below are Figma px / 0.75, because they sit inside the scaled board. */
+/* The page keeps to the left of the shelf: the board is 75% of its width, as in the frame. */
+.arranging { padding-right: calc((1 - var(--z)) * 100%); }
+.arrange { flex: 1; display: flex; flex-direction: column; gap: var(--gap); min-height: 0; padding-bottom: 80px; }
+.zoomBox { position: relative; flex: 1; min-height: 0; overflow: auto; scrollbar-width: thin; }
+.board.edit { position: absolute; inset: 4px auto auto 0; flex: none; width: calc(100% / var(--z)); height: calc(100% / var(--z)); margin: 0; transform: scale(var(--z)); transform-origin: 0 0; }
+.editCell { position: relative; }
+.frozen { flex: 1; display: flex; min-width: 0; min-height: 0; }
+.frozen > * { flex: 1; }
+.frozen section { border: 2px dashed var(--text-3); }
+.frozen .hero { border-color: var(--on-accent); }
+.frozen section > header { padding: 0 38px 0 24px; }
+.grip, .remove { position: absolute; z-index: 1; display: grid; place-items: center; padding: 0; border: 0; }
+.grip { left: 22px; top: 19px; width: 16px; height: 22px; border-radius: var(--radius-inner); background: none; color: var(--text-3); cursor: grab; touch-action: none; }
+.grip:active { cursor: grabbing; }
+.remove { right: 20px; top: 14px; width: 29px; height: 29px; border-radius: var(--radius-pill); background: var(--surface-3); color: var(--text); cursor: pointer; }
+.remove:hover { background: var(--text-3); color: var(--canvas); }
+/* 44 px on screen is 59 px inside the scaled board */
+.grip::before { content: ""; position: absolute; inset: -18px -21px; }
+.remove::before { content: ""; position: absolute; inset: -15px; }
+.heroCell .grip { left: 30px; top: 23px; color: var(--on-accent); }
+.heroCell .remove { right: 26px; top: 18px; background: var(--on-accent); color: var(--accent); }
+.heroCell .remove:hover { background: var(--surface-3); }
+
+/* The widget being moved leaves a lime drop target; the lifted copy follows the pointer. */
+.slot .frozen, .slot .grip, .slot .remove { visibility: hidden; }
+.dropHere { position: absolute; inset: 0; display: flex; justify-content: center; padding-top: 22px; border: 2px dashed var(--accent-text); border-radius: var(--radius-widget); color: var(--accent-text); }
+.lift { width: 100%; height: 100%; rotate: 3deg; border-radius: var(--radius-widget); box-shadow: var(--shadow-float); animation: lift 150ms var(--ease-out); }
+@keyframes lift { from { rotate: 0deg; box-shadow: none; } }
+.liftIn { display: flex; width: calc(100% / var(--z)); height: calc(100% / var(--z)); transform: scale(var(--z)); transform-origin: 0 0; }
+.liftIn > * { flex: 1; }
+.liftIn section { border: 2px dashed var(--accent-text); background: var(--surface-2); }
+.liftIn .hero { border-color: var(--on-accent); background: var(--accent); }
+
+.newRow { display: flex; align-items: center; min-height: 60px; padding-left: 20px; border: 1.5px dashed var(--text-3); border-radius: var(--radius-widget); color: var(--text-3); }
+.newRow[data-over] { border-color: var(--accent-text); color: var(--accent-text); }
+.hint { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; color: var(--text-2); }
+
+/* Widget shelf drawer: 312 wide, floats over the right edge */
+.shelf { position: fixed; z-index: 20; top: 16px; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 14px; width: 312px; max-width: calc(100vw - 32px); padding: 22px 20px 20px; overflow: auto; border: 1px solid var(--hairline); border-radius: var(--radius-widget); background: var(--surface); color: var(--text); box-shadow: var(--shadow-float); }
+.shelfTitle { display: flex; align-items: center; justify-content: space-between; margin: -6px 0 0; }
+.shelfTitle h2 { margin: 0; }
+.shelfList { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.shelfItem { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
+.shelfRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.shelfRow:first-child { justify-content: flex-start; }
+.preview { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-inner); background: var(--accent-wash); color: var(--accent-text); }
+.size { padding: 3px 8px; border-radius: var(--radius-pill); background: var(--surface-3); color: var(--text-2); }
+.add { padding: 6px 12px; }
+.manage { display: inline-flex; align-items: center; gap: 4px; margin-top: auto; padding: 14px 0; color: var(--accent-text); text-decoration: none; }
+.manage:hover { color: var(--text); }
