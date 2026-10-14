@@ -13,7 +13,7 @@ describe("proxy", () => {
   it("health is public", async () => {
     const r = await request(app).get("/api/health");
     expect(r.status).toBe(200);
-    expect(r.body).toEqual({ ok: true, modelConfigured: false });
+    expect(r.body).toEqual({ ok: true, modelConfigured: false, model: null });
   });
   it("CORS: only the allowed origin", async () => {
     const bad = await request(app).get("/api/health").set("Origin", "http://evil.test");

@@ -14,16 +14,15 @@ import RoleForm from "../screens/S13-role-form/RoleForm";
 import Widgets from "../screens/S17-widgets/Widgets";
 import CompaniesList from "../screens/S10-companies-list/CompaniesList";
 import CompanyProfile from "../screens/S11-company-profile/CompanyProfile";
-import { Placeholder } from "./Placeholder";
+import Settings from "../screens/S14-settings/Settings";
 import { Shell } from "./Shell";
 import NotFound, { RouteError } from "../screens/S16-not-found/NotFound";
 
-// One line per screen. To wire a finished screen, replace its <Placeholder/> with the screen component.
+// One line per screen.
 const DevGallery = import.meta.env.DEV ? lazy(() => import("../screens/dev-gallery/Gallery")) : null;
 
 const Crash = import.meta.env.DEV ? lazy(() => import("../screens/S16-not-found/Crash")) : null;
 
-const ph = (id: string, title: string) => <Placeholder id={id} title={title} />;
 
 export const routes: RouteObject[] = [
   // DEV only, outside the auth guard so the component gallery opens without a session.
@@ -50,7 +49,7 @@ export const routes: RouteObject[] = [
         { path: "/roles/new", element: <RoleForm /> },
         { path: "/roles/:roleId", element: <MatchView /> }, // S06 override dialog: ?dialog=override
         { path: "/brief", element: <BriefIntake /> },
-        { path: "/settings", element: ph("S14", "Settings") },
+        { path: "/settings", element: <Settings /> },
         { path: "/widgets", element: <Widgets /> },
         { path: "*", element: <NotFound /> },
       ] },

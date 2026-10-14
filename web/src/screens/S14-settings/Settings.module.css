@@ -1,0 +1,57 @@
+/* Figma S14: Appearance card full width from y 132, three cards below (432 wide, 16 gap). */
+.page { display: flex; flex-direction: column; }
+.page > :not(:first-child) { margin-bottom: 16px; }
+.account { display: flex; align-items: center; gap: 16px; }
+.who { color: var(--text-3); }
+.dim { margin: 4px 0 0; color: var(--text-2); }
+.page h2 { margin: 0; }
+
+.appearance.appearance, .panel.panel { padding: 22px 24px 24px; }
+.label { display: inline-flex; align-items: center; gap: 10px; }
+.appearance { display: flex; flex-direction: column; gap: 16px; }
+.themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 10px 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+}
+.tile:has(input:checked) { border: 2px solid var(--accent-text); padding: 9px 9px 0; }
+.tile:has(input:focus-visible) { box-shadow: var(--focus-ring); }
+/* The whole tile is the click target: stretch the label's hit area over it. */
+.tile .pick { position: static; padding-left: 4px; }
+.pick::after { content: ""; position: absolute; inset: 0; border-radius: inherit; cursor: pointer; }
+
+/* Preview sketch, positions are the Figma ones as percentages of the 393 x 229 box. */
+.mock { position: relative; aspect-ratio: 393 / 229; border-radius: var(--radius-widget); background: var(--canvas); overflow: hidden; }
+.mock i { position: absolute; display: block; border-radius: var(--radius-inner); background: var(--surface); }
+.side { left: 3.9%; top: 6.7%; width: 5.8%; height: 86.5%; }
+.mock .title { left: 14.5%; top: 8.3%; width: 38.8%; height: 8.3%; border-radius: var(--radius-pill); background: var(--text); }
+.mock .hero { left: 14.5%; top: 23.3%; width: 42.7%; height: 69.9%; background: var(--accent); }
+.t1, .t2, .t3, .t4 { width: 20.4%; height: 33.3%; }
+.t1, .t3 { left: 60.1%; }
+.t2, .t4 { left: 82.4%; }
+.t1, .t2 { top: 23.3%; }
+.t3, .t4 { top: 60%; }
+.split { position: relative; border-radius: var(--radius-widget); overflow: hidden; }
+.split .half { position: absolute; inset: 0; clip-path: inset(0 0 0 50%); }
+
+.rule { width: 100%; height: 1px; margin: 0; border: 0; background: var(--surface-3); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; }
+
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.panel { display: flex; flex-direction: column; gap: 12px; min-height: 263px; }
+.push { margin-top: auto; align-self: flex-start; }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 0 12px; margin: 0; }
+.facts dt, .facts dd { padding: 10px 0; margin: 0; }
+.facts dt { color: var(--text-3); }
+.facts dd { color: var(--text); text-align: right; }
+.hint { margin: 8px 0 0; color: var(--text-3); }
+
+@media (max-width: 1100px) { .cards { grid-template-columns: minmax(0, 1fr); } .panel { min-height: 0; } }
+@media (max-width: 800px) { .themes { grid-template-columns: minmax(0, 1fr); } }

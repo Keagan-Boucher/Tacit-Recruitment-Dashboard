@@ -7,7 +7,7 @@
   font-display: swap;
 }
 
-:root {
+:root, [data-theme="dark"] {
   --canvas: #0A0A0C; --surface: #151518; --surface-2: #1E1E23; --surface-3: #2A2A31;
   --hairline: rgb(255 255 255 / .08);
   --text: #F4F4F2; --text-2: #A1A1A8; --text-3: #93939C;

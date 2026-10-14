@@ -22,7 +22,7 @@ export function createApp(config: Config, verifyToken: TokenVerifier, services: 
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, modelConfigured: ai.provider !== null });
+    res.json({ ok: true, modelConfigured: ai.provider !== null, model: ai.provider ? ai.model : null }); // model id is not a secret
   });
 
   app.use("/api", requireAuth(verifyToken, config.allowedUids));
