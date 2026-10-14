@@ -111,8 +111,9 @@ export const MatchSuggestion = z.object({
 });
 export const MatchResult = z.object({ suggestions: z.array(MatchSuggestion) });
 
-/** Re-runs replace the role's earlier matches. The proxy reads role.interpretedBrief (or role.briefText). */
-export const MatchRequest = z.object({ roleId: z.string().min(1) });
+/** Runs replace the role's earlier matches. The proxy reads role.interpretedBrief (or role.briefText).
+ *  Without `force`, fresh matches for the same role, brief and prompt version are returned as they are (cached). */
+export const MatchRequest = z.object({ roleId: z.string().min(1), force: z.boolean().optional() });
 /** Match docs land in `matches` (roleId, rank); the web reads them live, so the response is just ids. */
 export interface MatchResponse { matchIds: string[]; modelVersion: string; cached: boolean }
 
