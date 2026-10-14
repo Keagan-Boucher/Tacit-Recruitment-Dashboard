@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AttributeType, BriefSource } from "./schemas.ts";
+import { AlignmentKind, AttributeType, BriefSource } from "./schemas.ts";
 
 // Model output schemas, sent to the provider as strict JSON Schema (z.toJSONSchema) and re-validated with Zod.
 // Groq strict mode: every property required, so "maybe" is nullable, never optional; no refinements here
@@ -92,6 +92,30 @@ export const ParseBriefRequest = z
 /** `text` = the brief text that was interpreted (extracted from the file for uploads), stored as Role.briefText. */
 export interface ParseBriefResponse { result: BriefInterpretation; modelVersion: string; text: string }
 
+// ---- /api/match ---------------------------------------------------------------------------
+
+const CitedReason = z.object({ text: z.string(), attributeIds: z.array(z.string()) });
+
+/** One shortlisted candidate. Array order = rank. No score field, by design. The proxy drops reasons whose
+ *  attributeIds aren't the candidate's confirmed attributes; a suggestion left with no reason for or against is dropped. */
+export const MatchSuggestion = z.object({
+  candidateId: z.string(),
+  reasonsFor: z.array(CitedReason),
+  /** Never empty: with nothing against, the model says so as a reason ("evidence is thin"), citing what it has. */
+  reasonsAgainst: z.array(CitedReason),
+  /** One row per brief requirement. not-seen rows carry no attributeIds. */
+  skillAlignment: z.array(
+    z.object({ requirement: z.string(), evidence: z.string(), kind: AlignmentKind, attributeIds: z.array(z.string()) }),
+  ),
+  questionsToAsk: z.array(z.string()),
+});
+export const MatchResult = z.object({ suggestions: z.array(MatchSuggestion) });
+
+/** Re-runs replace the role's earlier matches. The proxy reads role.interpretedBrief (or role.briefText). */
+export const MatchRequest = z.object({ roleId: z.string().min(1) });
+/** Match docs land in `matches` (roleId, rank); the web reads them live, so the response is just ids. */
+export interface MatchResponse { matchIds: string[]; modelVersion: string; cached: boolean }
+
 // ---- errors --------------------------------------------------------------------------------
 
 /** Every non-2xx from the proxy. `ai_failed` = the model failed after one repair retry; nothing was stored. */
@@ -109,3 +133,6 @@ export type CvParseResult = z.infer<typeof CvParseResult>;
 export type ParseCvRequest = z.infer<typeof ParseCvRequest>;
 export type BriefInterpretation = z.infer<typeof BriefInterpretation>;
 export type ParseBriefRequest = z.infer<typeof ParseBriefRequest>;
+export type MatchSuggestion = z.infer<typeof MatchSuggestion>;
+export type MatchResult = z.infer<typeof MatchResult>;
+export type MatchRequest = z.infer<typeof MatchRequest>;
