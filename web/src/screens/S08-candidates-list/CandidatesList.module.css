@@ -45,6 +45,9 @@
 .heard { flex: 0 0 150px; color: var(--text-3); }
 /* One line of chips: one that does not fit wraps out of sight instead of being cut in half. */
 .skills { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 24px 6px; height: 22px; overflow: hidden; }
+.why { flex: 1; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; }
+.note { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--text-3); }
+.banner { margin-bottom: 16px; }
 .evidence { flex: 0 0 300px; display: flex; align-items: center; }
 
 .cols { display: flex; align-items: center; gap: 16px; padding: 0 14px 0 16px; color: var(--text-3); }

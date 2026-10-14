@@ -1,16 +1,23 @@
 import { useState } from "react";
 import type { MouseEvent } from "react";
 import { Link, useNavigate } from "react-router";
-import { monthsSince, staleness } from "@tacit/shared";
+import { monthsSince, staleness, type SearchHit, type SearchResponse } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
 import { Button, buttonClass, Chip, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, ListRow, Skeleton } from "../../components";
+import { api } from "../../lib/api";
 import { useCandidates } from "../../lib/data";
 import styles from "./CandidatesList.module.css";
 import { FILTERS, fadeFor, groupByAge, lastSeen, lastSeenLabel, matchesFilter, matchesQuery, type FilterId, type Person } from "./view";
 
 const PEEK = 3; // rows a group shows before "See all"
 // Dev only: what ?state=search-results / search-no-results type into the search box.
-const DEV_QUERY: Record<string, string> = { "search-results": "Cape Town", "search-no-results": "Cobol" };
+const DEV_QUERY: Record<string, string> = { "search-results": "FICO", "search-no-results": "Cobol" };
+// Dev only: canned "Why it matched" for ?state=search-results, so snap needs no model call.
+const DEV_WHY: [string, SearchHit["kind"]][] = [
+  ["Did FI/CO configuration on two S/4HANA rollouts.", "stated"],
+  ["“Financial Accounting and Controlling” is FICO spelled out.", "interpreted"],
+  ["Ran month-end close inside SAP finance modules.", "interpreted"],
+];
 
 /** Retry remounts the screen, which opens a fresh Firestore listener (a failed listener does not recover by itself). */
 export default function CandidatesList() {
@@ -25,10 +32,32 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
   const [now] = useState(() => new Date());
   const [query, setQuery] = useState(DEV_QUERY[state] ?? "");
   const [filter, setFilter] = useState<FilterId>("all");
+  const [hits, setHits] = useState<SearchHit[] | null>(null); // set once "Search by meaning" has answered
+  const [asking, setAsking] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
 
   const error = state === "error" ? new Error("dev") : live.error;
   const all = state === "loading" || error ? undefined : state === "empty" ? [] : live.data;
+
+  async function searchByMeaning() {
+    const q = query.trim();
+    if (!q || asking) return;
+    setAsking(true);
+    setFailed(false);
+    try {
+      setHits((await api<SearchResponse>("/api/search", { query: q })).hits);
+    } catch {
+      setFailed(true); // keep the typed query and the local results
+    } finally {
+      setAsking(false);
+    }
+  }
+  const type = (v: string) => {
+    setQuery(v);
+    setHits(null);
+    setFailed(false);
+  };
 
   const addButton = (
     <Link to="/candidates/new" className={buttonClass("primary")}>
@@ -69,9 +98,14 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
   }
 
   const searching = query.trim() !== "";
-  const found = all.filter((c) => matchesQuery(c, query));
+  const sample = state === "search-results" && all.length ? all.slice(0, 3).map((c, i): SearchHit => ({ candidateId: c.id, whyMatched: DEV_WHY[i]![0], kind: DEV_WHY[i]![1], attributeIds: [] })) : null;
+  const meaning = hits ?? sample;
+  const byId = new Map(all.map((c) => [c.id, c]));
+  const why = new Map((meaning ?? []).map((h) => [h.candidateId, h]));
+  // Meaning results keep the model's order; typing falls back to the instant local filter.
+  const found = meaning ? meaning.flatMap((h) => byId.get(h.candidateId) ?? []) : all.filter((c) => matchesQuery(c, query));
   const shown = found.filter((c) => matchesFilter(c, filter, now));
-  const narrowed = searching || filter !== "all";
+  const narrowed = searching || filter !== "all" || Boolean(meaning);
   const count = (f: FilterId) => found.filter((c) => matchesFilter(c, f, now)).length;
   const groups = narrowed ? [] : groupByAge(shown, now);
 
@@ -86,17 +120,30 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
 
   const row = (c: Person, fade: 0 | 1 | 2) => {
     const seen = lastSeen(c);
+    const h = why.get(c.id);
     return (
       <li key={c.id}>
         <ListRow href={`/candidates/${c.id}`} title={c.fullName} meta={`${c.headline}, ${c.location}`} fade={fade} mainWidth={320}>
+          {h ? (
+            <span className={`${styles.why} t-body-s`}>
+              {h.whyMatched}
+              {h.kind === "interpreted" && (
+                <Chip tone="quiet" icon="bx-star">
+                  Interpreted
+                </Chip>
+              )}
+            </span>
+          ) : null}
           <span className={`${styles.heard} t-caption`}>{lastSeenLabel(seen, now)}</span>
-          <span className={styles.skills}>
-            {c.topSkills.slice(0, 2).map((s) => (
-              <Chip key={s} tone={fade === 2 ? "quiet" : "neutral"}>
-                {s}
-              </Chip>
-            ))}
-          </span>
+          {!h && (
+            <span className={styles.skills}>
+              {c.topSkills.slice(0, 2).map((s) => (
+                <Chip key={s} tone={fade === 2 ? "quiet" : "neutral"}>
+                  {s}
+                </Chip>
+              ))}
+            </span>
+          )}
           <span className={styles.evidence}>
             {staleness(seen, now) === "stale" && <Chip tone="stale">Stale · {monthsSince(seen, now)} mo</Chip>}
           </span>
@@ -130,10 +177,16 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
           hideLabel
           placeholder="Search by name, skill or location"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => type(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && void searchByMeaning()}
           leading={<Icon name="bx-search" size={18} />}
-          trailing={searching ? <IconButton icon="bx-x" label="Clear search" size={18} onClick={() => setQuery("")} /> : undefined}
+          trailing={searching ? <IconButton icon="bx-x" label="Clear search" size={18} onClick={() => type("")} /> : undefined}
         />
+        {searching && !meaning && (
+          <Button icon="bx-star" onClick={() => void searchByMeaning()} disabled={asking}>
+            {asking ? "Searching by meaning…" : "Search by meaning"}
+          </Button>
+        )}
         {FILTERS.map((f) => (
           <FilterChip key={f.id} selected={filter === f.id} count={count(f.id)} onClick={() => setFilter(f.id)}>
             {f.label}
@@ -141,8 +194,12 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
         ))}
       </div>
 
+      {failed && (
+        <ErrorBanner className={styles.banner} title="Couldn’t search by meaning." detail="Showing the words-only matches instead." onRetry={() => void searchByMeaning()} />
+      )}
+
       <p className="sr-only" role="status" aria-live="polite">
-        {narrowed ? `${shown.length} of ${all.length} match.` : ""}
+        {asking ? "Searching by meaning." : narrowed ? `${shown.length} of ${all.length} match.` : ""}
       </p>
 
       {/* The card is a click delegate only; every real control inside it is an anchor or button. */}
@@ -153,7 +210,7 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
             action={
               <Button
                 onClick={() => {
-                  setQuery("");
+                  type("");
                   setFilter("all");
                 }}
               >
@@ -161,13 +218,18 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
               </Button>
             }
           />
-        ) : narrowed ? (
+        ) : narrowed || meaning ? (
           <>
-            {/* ponytail: R-13 inserts the "Why it matched" column here (and the "Matched by meaning" note above the list). */}
+            {meaning && (
+              <p className={`${styles.note} t-caption`}>
+                <Icon name="bx-star" size={14} /> Matched by meaning, not just the words you typed.
+              </p>
+            )}
             <div className={`${styles.cols} t-meta`} aria-hidden="true">
               <span className={styles.who}>Person</span>
+              {meaning ? <span className={styles.why}>Why it matched</span> : null}
               <span className={styles.heard}>Last heard</span>
-              <span className={styles.skills}>Top skills</span>
+              {!meaning && <span className={styles.skills}>Top skills</span>}
               <span className={styles.evidence}>Evidence</span>
             </div>
             <ul className={styles.rows}>{shown.map((c) => row(c, fadeFor(c, now)))}</ul>
