@@ -8,6 +8,7 @@
     "shared"
   ],
   "scripts": {
+    "start": "npm run dev",
     "dev": "concurrently -k -n web,server -c green,blue \"npm run dev -w web\" \"npm run dev -w server\"",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",

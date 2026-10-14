@@ -1,0 +1,12 @@
+**/node_modules
+.git
+.claude
+dist
+coverage
+# secrets: mounted at runtime by compose.yaml, never copied into an image
+.env
+.env.*
+**/.env
+**/.env.*
+**/service-account.json
+*.log

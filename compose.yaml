@@ -1,0 +1,17 @@
+# `docker compose up` = the web app on http://localhost:5173 and the proxy on http://localhost:8787.
+services:
+  dev:
+    build: .
+    ports:
+      - "5173:5173"
+      - "8787:8787"
+    volumes:
+      - .:/app # your code (and the git-ignored secret files) from the laptop
+      # Keep the container's Linux node_modules; the laptop's own (Windows/macOS) ones must not shadow them.
+      - /app/node_modules
+      - /app/web/node_modules
+      - /app/server/node_modules
+      - /app/shared/node_modules
+    environment:
+      # File events don't cross the Windows/macOS -> Linux mount reliably; poll instead so saves hot-reload.
+      CHOKIDAR_USEPOLLING: "true"
