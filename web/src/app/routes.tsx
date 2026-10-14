@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import type { RouteObject } from "react-router";
 import { RedirectIfSignedIn, RequireAuth } from "../features/auth";
 import SignIn from "../screens/S07-sign-in/SignIn";
+import CandidatesList from "../screens/S08-candidates-list/CandidatesList";
 import { Placeholder } from "./Placeholder";
 import { Shell } from "./Shell";
 import NotFound, { RouteError } from "../screens/S16-not-found/NotFound";
@@ -28,7 +29,7 @@ export const routes: RouteObject[] = [
       { errorElement: <RouteError />, children: [ // a crash inside a screen keeps the shell
         ...(Crash ? [{ path: "/dev/crash", element: <Suspense fallback={null}><Crash /></Suspense> }] : []),
         { path: "/", element: ph("S01", "Dashboard") },
-        { path: "/candidates", element: ph("S08", "Candidates") },
+        { path: "/candidates", element: <CandidatesList /> },
         { path: "/candidates/new", element: ph("S09", "CV upload") },
         { path: "/candidates/:candidateId", element: ph("S03", "Candidate profile") },
         { path: "/candidates/:candidateId/notes/new", element: ph("S02", "Interview capture") },

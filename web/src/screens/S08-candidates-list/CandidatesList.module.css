@@ -1,0 +1,62 @@
+/* Figma S08: toolbar at y 128 (the header's own height), card 16 below it. */
+.page { display: flex; flex-direction: column; }
+.num { color: var(--accent-text); }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+.search { flex: none; width: 380px; max-width: 100%; }
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: calc(100dvh - 200px);
+  padding: 18px 20px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+}
+.loading { margin-bottom: 12px; color: var(--text-3); }
+
+.group { display: flex; flex-direction: column; gap: 8px; }
+.head { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
+.n { color: var(--text-3); }
+/* 44 px hit area, same footprint as the 16 px link in the design */
+.seeAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  margin: -14px 0 -14px auto;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.seeAll:hover { color: var(--text); }
+
+.rows { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+/* Figma row: 16 gaps between columns, 16 / 14 side padding */
+.rows a { gap: 16px; padding: 10px 14px 10px 16px; }
+
+/* Columns shared by rows and the search header */
+.who { flex: 0 0 320px; }
+.heard { flex: 0 0 150px; color: var(--text-3); }
+/* One line of chips: one that does not fit wraps out of sight instead of being cut in half. */
+.skills { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 24px 6px; height: 22px; overflow: hidden; }
+.evidence { flex: 0 0 300px; display: flex; align-items: center; }
+
+.cols { display: flex; align-items: center; gap: 16px; padding: 0 14px 0 16px; color: var(--text-3); }
+.cols::after { content: ""; flex: 0 0 18px; } /* the row chevron */
+.cols .skills { height: auto; }
+.cols + .rows { margin-top: -6px; }
+
+@media (max-width: 1240px) {
+  .evidence { flex-basis: 120px; }
+}
+@media (max-width: 900px) {
+  .who { flex-basis: 200px; }
+  .heard { flex-basis: 90px; }
+  .skills { display: none; }
+}
