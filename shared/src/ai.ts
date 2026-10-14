@@ -117,6 +117,21 @@ export const MatchRequest = z.object({ roleId: z.string().min(1), force: z.boole
 /** Match docs land in `matches` (roleId, rank); the web reads them live, so the response is just ids. */
 export interface MatchResponse { matchIds: string[]; modelVersion: string; cached: boolean }
 
+// ---- /api/search ---------------------------------------------------------------------------
+
+/** One candidate found by meaning. Array order = relevance. `interpreted` = the meaning matched, not the words
+ *  ("Financial Accounting and Controlling" for "FICO"); the UI labels it. The proxy drops hits whose attributeIds
+ *  aren't that candidate's confirmed attributes. */
+export const SearchHit = z.object({
+  candidateId: z.string(),
+  whyMatched: z.string(),
+  kind: z.enum(["stated", "interpreted"]),
+  attributeIds: z.array(z.string()),
+});
+export const SearchResult = z.object({ hits: z.array(SearchHit) });
+export const SearchRequest = z.object({ query: z.string().trim().min(1).max(200) });
+export interface SearchResponse { hits: SearchHit[]; modelVersion: string }
+
 // ---- errors --------------------------------------------------------------------------------
 
 /** Every non-2xx from the proxy. `ai_failed` = the model failed after one repair retry; nothing was stored. */
@@ -137,3 +152,6 @@ export type ParseBriefRequest = z.infer<typeof ParseBriefRequest>;
 export type MatchSuggestion = z.infer<typeof MatchSuggestion>;
 export type MatchResult = z.infer<typeof MatchResult>;
 export type MatchRequest = z.infer<typeof MatchRequest>;
+export type SearchHit = z.infer<typeof SearchHit>;
+export type SearchResult = z.infer<typeof SearchResult>;
+export type SearchRequest = z.infer<typeof SearchRequest>;
