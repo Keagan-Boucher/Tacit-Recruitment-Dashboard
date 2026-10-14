@@ -9,6 +9,8 @@ import CvUpload from "../screens/S09-cv-upload/CvUpload";
 import MatchView from "../screens/S04-match-view/MatchView";
 import Dashboard from "../screens/S01-dashboard/Dashboard";
 import BriefIntake from "../screens/S05-brief-intake/BriefIntake";
+import RolesList from "../screens/S12-roles-list/RolesList";
+import RoleForm from "../screens/S13-role-form/RoleForm";
 import { Placeholder } from "./Placeholder";
 import { Shell } from "./Shell";
 import NotFound, { RouteError } from "../screens/S16-not-found/NotFound";
@@ -41,8 +43,8 @@ export const routes: RouteObject[] = [
         { path: "/candidates/:candidateId/notes/new", element: <InterviewCapture /> },
         { path: "/companies", element: ph("S10", "Companies") },
         { path: "/companies/:companyId", element: ph("S11", "Company profile") },
-        { path: "/roles", element: ph("S12", "Roles") },
-        { path: "/roles/new", element: ph("S13", "New role") },
+        { path: "/roles", element: <RolesList /> },
+        { path: "/roles/new", element: <RoleForm /> },
         { path: "/roles/:roleId", element: <MatchView /> }, // S06 override dialog: ?dialog=override
         { path: "/brief", element: <BriefIntake /> },
         { path: "/settings", element: ph("S14", "Settings") },

@@ -1,0 +1,47 @@
+/* Figma S12: filters at y 128, table card 12 below, then the Recently filled card. */
+.page { display: flex; flex-direction: column; }
+.num { color: var(--accent-text); }
+.search { flex: none; width: clamp(150px, 22vw, 300px); }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+}
+.loading { margin-bottom: 12px; color: var(--text-3); }
+.head { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; color: var(--text-2); }
+.n { color: var(--text-3); }
+
+.rows { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+/* Figma row: 12 gaps between columns, 12 / 14 / 12 / 16 padding */
+.rows a { gap: 12px; padding: 12px 14px 12px 16px; }
+
+/* Columns shared by rows and the header */
+.role { flex: 0 0 470px; }
+.company { flex: 0 0 324px; color: var(--text-2); }
+.waiting { flex: 0 0 130px; display: flex; align-items: center; }
+.short { flex: 0 0 100px; padding-right: 32px; text-align: right; color: var(--text); }
+.evidence { flex: 1; min-width: 0; display: flex; align-items: center; }
+.placed { flex: 1; min-width: 0; color: var(--text-2); }
+.zero { color: var(--text-3); }
+
+.cols { display: flex; align-items: center; gap: 12px; padding: 0 14px 4px 16px; color: var(--text-3); }
+.cols::after { content: ""; flex: 0 0 18px; } /* the row chevron */
+.cols .short { color: var(--text-3); }
+
+@media (max-width: 1240px) {
+  .role { flex-basis: 300px; }
+  .company { flex-basis: 180px; }
+}
+@media (max-width: 900px) {
+  .role { flex-basis: 200px; }
+  .company, .evidence { display: none; }
+  .placed { display: none; }
+}
