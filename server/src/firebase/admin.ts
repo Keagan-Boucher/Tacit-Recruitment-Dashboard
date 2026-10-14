@@ -8,6 +8,7 @@ export function initFirebase(config: Config): TokenVerifier {
   if (!getApps().length) {
     initializeApp({
       credential: config.serviceAccountPath ? cert(config.serviceAccountPath) : applicationDefault(),
+      storageBucket: config.storageBucket,
     });
   }
   const auth = getAuth();
