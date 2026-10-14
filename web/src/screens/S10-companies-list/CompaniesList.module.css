@@ -1,0 +1,43 @@
+/* Figma S10: toolbar at y 128, cards 16 below it; four cards across at 1440. */
+.page { display: flex; flex-direction: column; }
+.num { color: var(--accent-text); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+.search { flex: none; width: 380px; max-width: 100%; }
+.loading { margin-bottom: 12px; color: var(--text-3); }
+.panel {
+  min-height: calc(100dvh - 200px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+  padding: 18px 20px 16px;
+}
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--gap); margin: 0; padding: 0; list-style: none; }
+.grid > li { display: flex; }
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 150ms var(--ease-out);
+}
+.card:hover { background: var(--surface-2); }
+.quiet { color: var(--text-2); }
+.title { display: flex; align-items: flex-start; gap: 8px; }
+.name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.name > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sector, .contact { color: var(--text-3); }
+.stats { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.stat { display: flex; align-items: baseline; gap: 6px; }
+.stat b { color: var(--accent-text); font-weight: inherit; }
+.zero b { color: var(--text-3); }
+.contact { display: flex; align-items: center; gap: 6px; }
+.fact { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--hairline); color: var(--text-2); }
+.skeletons { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--gap); }

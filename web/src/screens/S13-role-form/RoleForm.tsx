@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import type { Company, Placement, Role } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
 import { Button, buttonClass, Card, ErrorBanner, FieldError, Icon, Input, Skeleton } from "../../components";
@@ -36,7 +36,8 @@ export default function RoleForm() {
 
   const [brief, setBrief] = useState<InterpretedBrief | null>(null);
   const [title, setTitle] = useState("");
-  const [pick, setPick] = useState(""); // a company id, or NEW
+  const [params] = useSearchParams();
+  const [pick, setPick] = useState(params.get("companyId") ?? ""); // a company id, or NEW; S11 "Open a role" preselects
   const [newName, setNewName] = useState("");
   const [min, setMin] = useState("");
   const [max, setMax] = useState("");
@@ -55,7 +56,8 @@ export default function RoleForm() {
     setTitle(b.result.title?.trim() ?? "");
     const name = b.result.companyName?.trim() ?? "";
     const known = companies.data?.find((c) => c.name.toLowerCase() === name.toLowerCase());
-    if (known) setPick(known.id);
+    if (pick) { /* a company chosen already (or preselected from S11) wins over the brief */ }
+    else if (known) setPick(known.id);
     else if (name) {
       setPick(NEW);
       setNewName(name);
