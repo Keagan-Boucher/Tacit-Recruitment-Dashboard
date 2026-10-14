@@ -3,6 +3,7 @@ import type { RouteObject } from "react-router";
 import { RedirectIfSignedIn, RequireAuth } from "../features/auth";
 import SignIn from "../screens/S07-sign-in/SignIn";
 import CandidatesList from "../screens/S08-candidates-list/CandidatesList";
+import CandidateProfile from "../screens/S03-candidate-profile/CandidateProfile";
 import { Placeholder } from "./Placeholder";
 import { Shell } from "./Shell";
 import NotFound, { RouteError } from "../screens/S16-not-found/NotFound";
@@ -31,7 +32,7 @@ export const routes: RouteObject[] = [
         { path: "/", element: ph("S01", "Dashboard") },
         { path: "/candidates", element: <CandidatesList /> },
         { path: "/candidates/new", element: ph("S09", "CV upload") },
-        { path: "/candidates/:candidateId", element: ph("S03", "Candidate profile") },
+        { path: "/candidates/:candidateId", element: <CandidateProfile /> },
         { path: "/candidates/:candidateId/notes/new", element: ph("S02", "Interview capture") },
         { path: "/companies", element: ph("S10", "Companies") },
         { path: "/companies/:companyId", element: ph("S11", "Company profile") },

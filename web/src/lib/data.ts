@@ -40,6 +40,8 @@ export function useOwned<T>(col: string, filter?: [field: string, value: string 
     return onSnapshot(
       q,
       (s) => {
+        // An empty answer from the offline cache isn't "none yet": keep loading until the server answers.
+        if (s.empty && s.metadata.fromCache) return;
         const rows = s.docs.map((d) => ({ ...(toDates(d.data()) as T), id: d.id }));
         setState({ key, data: sort ? rows.sort(sort) : rows, error: undefined });
       },
@@ -60,7 +62,11 @@ export function useDocument<T>(col: string, id: string | undefined): Live<WithId
     if (!uid || !id) return;
     return onSnapshot(
       doc(db, col, id),
-      (s) => setState({ key, data: s.exists() ? { ...(toDates(s.data()) as T), id: s.id } : null, error: undefined }),
+      (s) => {
+        // A cache miss while offline isn't "not found" (S03 would show the 404 page): wait for the server.
+        if (!s.exists() && s.metadata.fromCache) return;
+        setState({ key, data: s.exists() ? { ...(toDates(s.data()) as T), id: s.id } : null, error: undefined });
+      },
       // Rules deny reading someone else's doc; to the recruiter that's the same as not found.
       (error) => setState(error.code === "permission-denied" ? { key, data: null, error: undefined } : { key, data: undefined, error }),
     );

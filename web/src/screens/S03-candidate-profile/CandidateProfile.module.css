@@ -1,0 +1,140 @@
+/* Three columns at 1440: 380 / 540 / 376 with 12 gaps. The last card in each column takes the leftover height. */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 380fr) minmax(0, 540fr) minmax(0, 376fr);
+  gap: var(--gap);
+  align-items: stretch;
+  min-height: calc(100dvh - 144px);
+}
+.col { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+.col > :last-child { flex: 1; }
+
+.panel, .observed, .notes, .history { display: flex; flex-direction: column; gap: 14px; }
+.notes { gap: 12px; }
+.panelHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.panelHead span { color: var(--text-3); }
+
+/* What the CV says */
+.facts { display: flex; flex-direction: column; gap: 14px; margin: 0; }
+.fact { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.fact dt { color: var(--text-3); }
+.fact dd { margin: 0; color: var(--text); }
+.skills { display: flex; flex-direction: column; gap: 8px; }
+.skills > p { color: var(--text-3); }
+.chipList { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+
+.file {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+  margin-top: auto;
+  padding: 16px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+}
+.fileHead { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.fileIcon {
+  display: inline-flex;
+  padding: 10px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+/* What you observed */
+.attrList { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.attr {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms var(--ease-out);
+}
+.attr:hover { background: var(--surface-3); }
+.attrOn { background: var(--surface-3); border-color: var(--accent-text); }
+.attrNum { flex: none; width: 14px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.attrBody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.quote { color: var(--text-2); }
+.source { color: var(--text-3); }
+.attr > :last-child:not(.attrBody) { flex: none; }
+.unkept {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 44px;
+  margin: -6px 0;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+.unkept:hover { text-decoration: underline; }
+
+/* Interview notes: older reads weaker (text colour steps down with the note's age). */
+.noteList { display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 0; list-style: none; }
+.note { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 16px; align-items: start; }
+.noteMeta { display: flex; flex-direction: column; gap: 4px; color: var(--text); }
+.noteMeta p:last-child { color: var(--text-3); }
+.noteText {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.fade1 .noteMeta, .fade1 .noteText { color: var(--text-2); }
+.fade2 .noteMeta, .fade2 .noteText { color: var(--text-3); }
+.fade1 .noteMeta p:last-child, .fade2 .noteMeta p:last-child { color: var(--text-3); }
+
+.phrase {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.fade2 .phrase { opacity: 0.85; }
+.phrase:hover { text-decoration-thickness: 2px; }
+.phraseOn { background: var(--accent-wash); text-decoration-thickness: 2px; font-weight: 500; }
+.phraseNum { margin-left: 1px; vertical-align: super; line-height: 0; text-decoration: none; color: var(--text-3); }
+.phraseOn .phraseNum { color: var(--accent-text); }
+
+/* Ask first */
+.ask { display: flex; flex-direction: column; gap: 14px; }
+.ask.ask { border-color: var(--stale); }
+.askChip { display: flex; flex-wrap: wrap; gap: 6px; }
+.ask p { color: var(--text-2); }
+
+/* Match history */
+.historyList { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none; }
+.historyRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+}
+.historyTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.historyTop p { flex: 1; min-width: 0; }
+.historyRow > p:nth-child(2) { color: var(--text-3); }
+.historyBody { color: var(--text-2); overflow-wrap: anywhere; }
+
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .col > :last-child { flex: none; }
+  .file { margin-top: 0; }
+}
+@media (max-width: 560px) {
+  .note { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+}
