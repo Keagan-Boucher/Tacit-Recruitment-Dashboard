@@ -76,6 +76,8 @@ export const Attribute = z.object({
   type: AttributeType,
   value: z.string(),
   confidence,
+  /** Why the model is unsure, e.g. "Basic or cost to company? Not said." Shown with a Low confidence chip. */
+  confidenceNote: z.string().optional(),
   sourceSpan: SourceSpan,
   observedAt: z.date(),
   confirmedByRecruiter: z.boolean(),

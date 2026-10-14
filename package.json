@@ -16,7 +16,8 @@
     "check": "npm run typecheck && npm run lint && npm run check:tokens && npm test",
     "snap": "node --env-file-if-exists=.env.snap .claude/skills/tacit-build/scripts/snap-screens.mjs",
     "test:rules": "npx -y firebase-tools@13.35.1 emulators:exec --only firestore,storage --project tacit-3cdd4 \"npx vitest run --config tests/rules/vitest.config.ts\"",
-    "seed": "node --env-file-if-exists=.env.snap --import tsx scripts/seed-synthetic.ts"
+    "seed": "node --env-file-if-exists=.env.snap --import tsx scripts/seed-synthetic.ts",
+    "eval": "node --env-file-if-exists=server/.env --import tsx evals/run.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
