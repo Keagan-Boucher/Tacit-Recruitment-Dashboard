@@ -71,6 +71,14 @@ describe("AI-derived collections", () => {
     await assertFails(deleteDoc(doc(alice(), "attributes/a1")));
     await assertFails(deleteDoc(doc(alice(), "matches/m1")));
   });
+  it("client may create only an override-sourced salary/availability attribute", async () => {
+    const ok = { ownerUid: A, sourceType: "override", type: "salary", overrideId: "o1", confirmedByRecruiter: true, value: "R60k" };
+    await assertSucceeds(setDoc(doc(alice(), "attributes/a3"), ok));
+    await assertFails(setDoc(doc(alice(), "attributes/a4"), { ...ok, sourceType: "note" }));
+    await assertFails(setDoc(doc(alice(), "attributes/a5"), { ...ok, type: "skill" }));
+    await assertFails(setDoc(doc(alice(), "attributes/a6"), { ...ok, confirmedByRecruiter: false }));
+    await assertFails(setDoc(doc(bob(), "attributes/a7"), ok));
+  });
   it("client cannot change attribute value or any match", async () => {
     await assertFails(updateDoc(doc(alice(), "attributes/a1"), { value: "forged" }));
     await assertFails(updateDoc(doc(alice(), "attributes/a1"), { confirmedByRecruiter: true, value: "forged" }));

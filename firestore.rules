@@ -18,6 +18,12 @@ service cloud.firestore {
     // AI-derived: proxy (Admin SDK) writes only. Client may only record a confirmation or an edit.
     match /attributes/{id} {
       allow read: if owns(resource.data);
+      // S06 "Anything new?": the recruiter's own words (salary, availability) heard today, tied to an override.
+      allow create: if owns(request.resource.data)
+        && request.resource.data.sourceType == 'override'
+        && request.resource.data.type in ['salary', 'availability']
+        && request.resource.data.overrideId is string
+        && request.resource.data.confirmedByRecruiter == true;
       allow update: if owns(resource.data)
         && onlyChanges(['confirmedByRecruiter', 'editedValue', 'updatedAt'])
         && request.resource.data.confirmedByRecruiter is bool
