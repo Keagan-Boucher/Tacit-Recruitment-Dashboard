@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Alignment, Attribute } from "@tacit/shared";
-import { budgetText, evidencedCount, provenance } from "./match";
+import { budgetText, evidencedCount, forgottenNow, provenance } from "./match";
 
 const now = new Date("2026-10-14T00:00:00Z");
 const attr = { id: "a", sourceType: "note", observedAt: new Date("2025-08-12T00:00:00Z") } as Attribute & { id: string };
@@ -24,5 +24,15 @@ describe("provenance link target", () => {
     const newer = { ...attr, id: "new", candidateId: "c1" } as Attribute & { id: string };
     const p = provenance(["old", "new"], new Map([["old", older], ["new", newer]]), now)!;
     expect(p).toMatchObject({ attributeId: "new", candidateId: "c1" });
+  });
+});
+
+describe("forgottenNow", () => {
+  const now = new Date("2026-10-19T12:00:00Z");
+  it("follows the candidate's live lastOpenedAt, so opening the profile clears it", () => {
+    expect(forgottenNow({ lastOpenedAt: new Date("2025-08-19T12:00:00Z") }, now)).toBe(true);
+    expect(forgottenNow({ lastOpenedAt: now }, now)).toBe(false);
+    expect(forgottenNow({ lastOpenedAt: undefined }, now)).toBe(true);
+    expect(forgottenNow(undefined, now)).toBe(false);
   });
 });

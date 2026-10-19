@@ -11,6 +11,7 @@ import type { WithId } from "../../lib/data";
 import { db } from "../../lib/firebase";
 import NotFound from "../S16-not-found/NotFound";
 import { MatchCard } from "../S04-match-view/MatchCard";
+import { forgottenNow } from "../S04-match-view/match";
 import { OverrideDialog } from "../S06-override-dialog/OverrideDialog";
 import styles from "./BriefIntake.module.css";
 
@@ -57,7 +58,7 @@ function Loaded({ roleId, people, unclear = [], onEdit, onRetry }: Props & { onR
   const rows = matches.data;
   const shown = all ? rows : rows.slice(0, SHOWN);
   const rest = rows.slice(SHOWN);
-  const focalId = (rows.find((m) => m.forgotten) ?? rows[0])?.id;
+  const focalId = (rows.find((m) => forgottenNow(people.find((c) => c.id === m.candidateId), clock)) ?? rows[0])?.id;
   const criteria = r.interpretedBrief
     ? screeningRows({ ...r.interpretedBrief, title: null, companyName: null, unclear })
     : [];

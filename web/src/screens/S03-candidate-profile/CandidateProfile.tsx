@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { Link, useParams, useSearchParams } from "react-router";
 import type { Company, Match, Override, Placement, Role } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
 import { buttonClass, Card, Chip, ErrorBanner, Icon, Skeleton } from "../../components";
 import { useAttributes, useCandidate, useNotes, useOwned } from "../../lib/data";
+import { db } from "../../lib/firebase";
 import NotFound from "../S16-not-found/NotFound";
 import { CvPanel } from "./CvPanel";
 import { MatchHistory, historyRows } from "./MatchHistory";
@@ -13,7 +15,7 @@ import styles from "./CandidateProfile.module.css";
 
 const MONTH_MS = 30.4375 * 86_400_000;
 
-/** S03: one candidate, what the CV claims beside what the recruiter observed. Read-only: opening a profile writes nothing. */
+/** S03: one candidate, what the CV claims beside what the recruiter observed. Opening it records lastOpenedAt and nothing else. */
 export default function CandidateProfile() {
   const [attempt, setAttempt] = useState(0);
   // Remounting re-subscribes every read, which is all "Try again" needs.
@@ -36,6 +38,12 @@ function Profile({ onRetry }: { onRetry: () => void }) {
   // Dev ?state=: the three that change what is read.
   const noNotes = state === "no-notes";
   const [picked, setPicked] = useState<string | null | undefined>(undefined);
+
+  // Opening the profile is what "Not opened in N months" counts from (decided 19 Oct). Best effort; dev ?state= renders don't count.
+  const found = !!candidate.data;
+  useEffect(() => {
+    if (candidateId && found && state === "default") updateDoc(doc(db, "candidates", candidateId), { lastOpenedAt: serverTimestamp() }).catch(() => {});
+  }, [candidateId, found, state]);
 
   const all = [candidate, notesLive, attrsLive, matches, overrides, placements, roles, companies];
   const error = all.find((l) => l.error)?.error;

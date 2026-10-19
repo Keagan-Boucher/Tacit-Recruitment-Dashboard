@@ -3,7 +3,7 @@ import type { Attribute, Candidate, Match, Override, Reason } from "@tacit/share
 import { monthsSince } from "@tacit/shared";
 import { Button, Card, Chip, Icon } from "../../components";
 import type { WithId } from "../../lib/data";
-import { ALIGN_LABEL, evidencedCount, provenance } from "./match";
+import { ALIGN_LABEL, evidencedCount, forgottenNow, provenance } from "./match";
 import styles from "./MatchView.module.css";
 
 type Props = {
@@ -80,7 +80,7 @@ export function MatchCard({ match: m, candidate: c, attrs, decision, focal, now,
           )}
           {c && <p className="t-body-s">{c.headline}</p>}
         </div>
-        {m.forgotten && (
+        {forgottenNow(c, now) && (
           <Chip icon="bx-history">
             {c?.lastOpenedAt ? `Not opened in ${monthsSince(c.lastOpenedAt, now)} months` : "Not opened yet"}
           </Chip>

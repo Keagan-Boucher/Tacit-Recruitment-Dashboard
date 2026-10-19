@@ -1,5 +1,5 @@
-import type { Alignment, Attribute, InterpretedBrief, Staleness } from "@tacit/shared";
-import { monthsSince, staleness } from "@tacit/shared";
+import type { Alignment, Attribute, Candidate, InterpretedBrief, Staleness } from "@tacit/shared";
+import { isForgotten, monthsSince, staleness } from "@tacit/shared";
 import type { WithId } from "../../lib/data";
 import { fmtDate } from "../S03-candidate-profile/profile";
 
@@ -30,6 +30,9 @@ export const ALIGN_LABEL = { stated: "Stated", interpreted: "Interpreted", "not-
 export type Provenance = { source: string; staleness: Staleness; months: number; attributeId: string; candidateId: string } | null;
 
 /** Where a reason or alignment row comes from: its newest cited attribute, with that attribute's age. Null when none resolves. */
+/** Forgotten now, from the candidate's live lastOpenedAt (opening S03 clears it), not the flag stamped when the match ran. */
+export const forgottenNow = (c: Pick<Candidate, "lastOpenedAt"> | undefined, now: Date) => !!c && isForgotten(c.lastOpenedAt, now);
+
 export function provenance(ids: string[], attrs: Map<string, WithId<Attribute>>, now: Date): Provenance {
   const found = ids.map((id) => attrs.get(id)).filter((a): a is WithId<Attribute> => !!a);
   if (!found.length) return null;

@@ -12,6 +12,7 @@ import NotFound from "../S16-not-found/NotFound";
 import { OverrideDialog } from "../S06-override-dialog/OverrideDialog";
 import { BriefPanel } from "./BriefPanel";
 import { MatchCard } from "./MatchCard";
+import { forgottenNow } from "./match";
 import styles from "./MatchView.module.css";
 
 const byRank = (a: Match, b: Match) => a.rank - b.rank;
@@ -100,7 +101,7 @@ function View({ onRetry }: { onRetry: () => void }) {
   const dialogMatch = params.get("dialog") === "override" ? rows.find((m) => m.id === params.get("match")) : undefined;
   const dialogCandidate = people.find((c) => c.id === dialogMatch?.candidateId);
 
-  const focalId = (rows.find((m) => m.forgotten) ?? rows[0])?.id;
+  const focalId = (rows.find((m) => forgottenNow(people.find((c) => c.id === m.candidateId), clock)) ?? rows[0])?.id;
   const rest = rows.slice(SHOWN);
   const shown = all ? rows : rows.slice(0, SHOWN);
 

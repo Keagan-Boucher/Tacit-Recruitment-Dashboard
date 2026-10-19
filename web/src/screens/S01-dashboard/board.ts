@@ -59,7 +59,7 @@ export function buildBoard(s: Snapshot, now: Date) {
 
   // Someone you forgot: the best-ranked undecided suggestion for a person not opened in months.
   const pick = undecided
-    .filter((m) => m.forgotten || isForgotten(cand.get(m.candidateId)!.lastOpenedAt, now))
+    .filter((m) => isForgotten(cand.get(m.candidateId)!.lastOpenedAt, now)) // live: opening the profile clears it
     .sort((a, b) => a.rank - b.rank || b.evidenceAgeDays - a.evidenceAgeDays)[0];
   const forgotten = pick && {
     match: pick,
