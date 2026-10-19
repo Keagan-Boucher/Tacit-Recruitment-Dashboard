@@ -17,3 +17,12 @@ describe("S04 helpers", () => {
     expect(provenance(["x"], new Map(), now)).toBeNull();
   });
 });
+
+describe("provenance link target", () => {
+  it("names the newest cited attribute and its candidate", () => {
+    const older = { ...attr, id: "old", candidateId: "c1", observedAt: new Date("2024-01-01T00:00:00Z") } as Attribute & { id: string };
+    const newer = { ...attr, id: "new", candidateId: "c1" } as Attribute & { id: string };
+    const p = provenance(["old", "new"], new Map([["old", older], ["new", newer]]), now)!;
+    expect(p).toMatchObject({ attributeId: "new", candidateId: "c1" });
+  });
+});

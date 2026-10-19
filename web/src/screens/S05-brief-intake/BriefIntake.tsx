@@ -8,6 +8,7 @@ import { BriefPicker, createRoleFromBrief } from "../../features/brief";
 import type { InterpretedBrief } from "../../features/brief";
 import { api } from "../../lib/api";
 import { useOwned } from "../../lib/data";
+import { companyFields, defaultCompany, type Hand } from "./company";
 import { Results } from "./Results";
 import styles from "./BriefIntake.module.css";
 
@@ -36,9 +37,8 @@ export default function BriefIntake() {
   const created = useRef<{ key: string; roleId: string } | null>(null);
 
   const [brief, setBrief] = useState<InterpretedBrief | null>(null);
-  const [mode, setMode] = useState<"existing" | "new">("existing");
-  const [existing, setExisting] = useState("");
-  const [newName, setNewName] = useState("");
+  // What the recruiter set by hand since the brief was read; it wins over the brief's own company.
+  const [hand, setHand] = useState<Hand>({});
   const [title, setTitle] = useState("");
   const [run, setRun] = useState<Run>("idle");
   const [roleId, setRoleId] = useState<string | null>(null);
@@ -47,21 +47,16 @@ export default function BriefIntake() {
   const working = run === "saving" || run === "matching" || state === "ai-working";
   const failed = run === "failed-save" || run === "failed-match" || state === "ai-failed";
   const showResults = (run === "done" && roleId) || state === "results";
+  // Derived each render, so a company list that finishes loading after the brief still finds the match.
+  const auto = defaultCompany(brief?.result.companyName, companies.data);
+  const { mode, existing, newName } = companyFields(hand, auto);
   const company = mode === "existing" ? existing : newName.trim();
   const ready = !!brief && !!title.trim() && !!company && !working;
 
   function interpreted(b: InterpretedBrief) {
     setBrief(b);
     setTitle(b.result.title?.trim() ?? "");
-    const name = b.result.companyName?.trim() ?? "";
-    const known = companies.data?.find((c) => c.name.toLowerCase() === name.toLowerCase());
-    if (known) {
-      setMode("existing");
-      setExisting(known.id);
-    } else if (name) {
-      setMode("new");
-      setNewName(name);
-    }
+    setHand({});
     setRun("idle");
   }
 
@@ -108,10 +103,10 @@ export default function BriefIntake() {
             <h2 id={`${groupName}-t`} className="t-title">Where does it go?</h2>
             <fieldset className={styles.options}>
               <legend className="sr-only">Where does it go?</legend>
-              <Radio className={styles.tile} name={groupName} checked={mode === "existing"} onChange={() => setMode("existing")} disabled={working}>
+              <Radio className={styles.tile} name={groupName} checked={mode === "existing"} onChange={() => setHand((h) => ({ ...h, mode: "existing" }))} disabled={working}>
                 Open a role for an existing company
               </Radio>
-              <Radio className={styles.tile} name={groupName} checked={mode === "new"} onChange={() => setMode("new")} disabled={working}>
+              <Radio className={styles.tile} name={groupName} checked={mode === "new"} onChange={() => setHand((h) => ({ ...h, mode: "new" }))} disabled={working}>
                 Open a role for a new company
               </Radio>
             </fieldset>
@@ -121,7 +116,7 @@ export default function BriefIntake() {
                 <label htmlFor={companyId} className={`${styles.fieldLabel} t-body-s-strong`}>Company</label>
                 <div className={styles.selectWrap}>
                   <Icon name="bx-buildings" size={18} />
-                  <select id={companyId} className={`${styles.select} t-body-m`} value={existing} disabled={working} onChange={(e) => setExisting(e.target.value)}>
+                  <select id={companyId} className={`${styles.select} t-body-m`} value={existing} disabled={working} onChange={(e) => setHand((h) => ({ ...h, existing: e.target.value }))}>
                     <option value="">Choose a company</option>
                     {companies.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
@@ -129,7 +124,7 @@ export default function BriefIntake() {
                 </div>
               </div>
             ) : (
-              <Input label="Company" value={newName} readOnly={working} leading={<Icon name="bx-buildings" size={18} />} onChange={(e) => setNewName(e.target.value)} />
+              <Input label="Company" value={newName} readOnly={working} leading={<Icon name="bx-buildings" size={18} />} onChange={(e) => setHand((h) => ({ ...h, newName: e.target.value }))} />
             )}
             <Input label="Role" value={title} readOnly={working} leading={<Icon name="bx-briefcase" size={18} />} placeholder={brief ? "" : "Read the brief first"} onChange={(e) => setTitle(e.target.value)} />
 

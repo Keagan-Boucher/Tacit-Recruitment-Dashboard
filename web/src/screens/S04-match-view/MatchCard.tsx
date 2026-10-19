@@ -25,7 +25,9 @@ function Source({ ids, attrs, now }: { ids: string[]; attrs: Map<string, WithId<
   if (!p) return null;
   return (
     <span className={styles.source}>
-      <span className="t-meta">{p.source}</span>
+      <Link to={`/candidates/${p.candidateId}?attr=${encodeURIComponent(p.attributeId)}`} className={`${styles.sourceLink} t-meta`}>
+        {p.source}<span className="sr-only"> — show source</span>
+      </Link>
       {p.staleness !== "fresh" && <Chip tone="stale">{p.staleness === "stale" ? "Stale" : "Ageing"} · {p.months} mo</Chip>}
     </span>
   );
@@ -88,7 +90,7 @@ export function MatchCard({ match: m, candidate: c, attrs, decision, focal, now,
 
       <div className={styles.reasonPair}>
         <Reasons tone="for" label="For" reasons={m.reasonsFor} empty="Nothing for in the notes yet." attrs={attrs} now={now} />
-        <Reasons tone="against" label="Against" reasons={m.reasonsAgainst} empty="Nothing against in the notes: evidence is thin." attrs={attrs} now={now} />
+        <Reasons tone="against" label="Against" reasons={m.reasonsAgainst} empty="Tacit couldn't ground a reason against in your notes. Check fit, location and pay yourself." attrs={attrs} now={now} />
       </div>
 
       {m.skillAlignment.length > 0 && (

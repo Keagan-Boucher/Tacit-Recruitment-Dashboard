@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Attribute, InterviewNote } from "@tacit/shared";
-import { askFirst, buildObserved, ordinal, pieces, unkeptByNote } from "./profile";
+import { activeAttribute, askFirst, buildObserved, ordinal, pieces, unkeptByNote } from "./profile";
 
 const now = new Date("2026-10-14T00:00:00Z");
 const note = { id: "n1", rawText: "Q?\nWants R60k minimum for a move. Calm.", capturedAt: new Date("2025-08-12T00:00:00Z") } as InterviewNote & { id: string };
@@ -42,4 +42,14 @@ describe("S03 provenance and staleness", () => {
     expect(askFirst(stale)?.check).toBe("salary");
     expect(ordinal(1) + ordinal(2) + ordinal(11)).toBe("1st2nd11th");
   });
+});
+
+describe("S03 ?attr= selection", () => {
+  const rows = [{ id: "a" }, { id: "b" }];
+  it("opens on the linked attribute until the recruiter picks", () => {
+    expect(activeAttribute(undefined, "b", rows, null)).toBe("b");
+    expect(activeAttribute("a", "b", rows, null)).toBe("a");
+    expect(activeAttribute(null, "b", rows, null)).toBeNull();
+  });
+  it("ignores an id that is not shown here", () => expect(activeAttribute(undefined, "zzz", rows, "a")).toBe("a"));
 });

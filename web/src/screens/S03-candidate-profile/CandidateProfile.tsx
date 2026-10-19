@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import type { Company, Match, Override, Placement, Role } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
 import { buttonClass, Card, Chip, ErrorBanner, Icon, Skeleton } from "../../components";
@@ -8,7 +8,7 @@ import NotFound from "../S16-not-found/NotFound";
 import { CvPanel } from "./CvPanel";
 import { MatchHistory, historyRows } from "./MatchHistory";
 import { NotesPanel, ObservedPanel } from "./Observations";
-import { askFirst, buildObserved, unkeptByNote } from "./profile";
+import { activeAttribute, askFirst, buildObserved, unkeptByNote } from "./profile";
 import styles from "./CandidateProfile.module.css";
 
 const MONTH_MS = 30.4375 * 86_400_000;
@@ -22,6 +22,7 @@ export default function CandidateProfile() {
 
 function Profile({ onRetry }: { onRetry: () => void }) {
   const { candidateId } = useParams();
+  const attrParam = useSearchParams()[0].get("attr");
   const state = useScreenState();
   const candidate = useCandidate(candidateId);
   const notesLive = useNotes(candidateId);
@@ -55,7 +56,7 @@ function Profile({ onRetry }: { onRetry: () => void }) {
     () => buildObserved(attrs, notes, overrides.data ?? [], now),
     [attrs, notes, overrides.data, now],
   );
-  const activeId = picked === undefined ? (state === "provenance-open" ? (observed.find((o) => o.span)?.id ?? null) : null) : picked;
+  const activeId = activeAttribute(picked, attrParam, observed, state === "provenance-open" ? (observed.find((o) => o.span)?.id ?? null) : null);
 
   // Selecting one side brings the other into view.
   useEffect(() => {

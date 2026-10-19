@@ -130,10 +130,7 @@ export function matchRouter({ ai, db }: { ai: Ai; db: Firestore }) {
                   questionsToAsk: s.questionsToAsk.map(strip).filter(clean),
                 };
                 if (!out.reasonsFor.length) continue;
-                // Both sides always show: if no reason against survived the citation checks, say so plainly instead of dropping the person.
-                if (!out.reasonsAgainst.length) {
-                  out.reasonsAgainst = [{ text: "Tacit couldn't ground a reason against in your notes. Check fit, location and pay yourself.", attributeIds: out.reasonsFor[0]!.attributeIds }];
-                }
+                // No grounded reason against keeps the person with an empty against list; the card says so, citing nothing.
                 const cited = [...out.reasonsFor, ...out.reasonsAgainst, ...out.skillAlignment].flatMap((x) => x.attributeIds);
                 seen.add(s.candidateId);
                 kept.push({ s: out, newest: new Date(Math.max(...cited.map((i) => own.get(i)!.observedAt.getTime()))) });

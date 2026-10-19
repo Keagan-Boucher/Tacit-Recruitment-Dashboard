@@ -27,7 +27,7 @@ export const evidencedCount = (rows: Alignment[]) => `${rows.filter((r) => r.kin
 
 export const ALIGN_LABEL = { stated: "Stated", interpreted: "Interpreted", "not-seen": "Not seen" } as const;
 
-export type Provenance = { source: string; staleness: Staleness; months: number } | null;
+export type Provenance = { source: string; staleness: Staleness; months: number; attributeId: string; candidateId: string } | null;
 
 /** Where a reason or alignment row comes from: its newest cited attribute, with that attribute's age. Null when none resolves. */
 export function provenance(ids: string[], attrs: Map<string, WithId<Attribute>>, now: Date): Provenance {
@@ -38,5 +38,7 @@ export function provenance(ids: string[], attrs: Map<string, WithId<Attribute>>,
     source: `${a.sourceType === "note" ? "Note" : "Your reason"}, ${fmtDate(a.observedAt)}`,
     staleness: staleness(a.observedAt, now),
     months: monthsSince(a.observedAt, now),
+    attributeId: a.id,
+    candidateId: a.candidateId,
   };
 }

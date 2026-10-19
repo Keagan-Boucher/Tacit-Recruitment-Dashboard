@@ -136,7 +136,7 @@ describe("POST /api/match", () => {
     expect(docs).toHaveLength(2);
     // stated row citing another candidate's fact is dropped; a not-seen row keeps its place with its ids cleared
     expect(docs[0]).toMatchObject({ candidateId: "c2", rank: 1 });
-    expect(docs[0].reasonsAgainst).toEqual([{ text: expect.stringContaining("couldn't ground a reason against"), attributeIds: ["a2"] }]);
+    expect(docs[0].reasonsAgainst).toEqual([]);
     expect(docs[1]).toMatchObject({ candidateId: "c1", rank: 2, skillAlignment: [{ requirement: "G", kind: "not-seen", attributeIds: [] }] });
   });
 

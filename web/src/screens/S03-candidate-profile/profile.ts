@@ -130,3 +130,12 @@ export function askFirst(observed: Observed[]) {
   if (newest.staleness !== "stale") return null;
   return { months: newest.months, check: recheckList(observed.filter((o) => o.staleness === "stale")) };
 }
+
+/**
+ * The selected attribute: the recruiter's own pick wins; before one, `?attr=` (a link from a match reason) if it names a row
+ * shown here, else the dev default. Null = nothing selected.
+ */
+export function activeAttribute(picked: string | null | undefined, attrParam: string | null, observed: Pick<Observed, "id">[], fallback: string | null): string | null {
+  if (picked !== undefined) return picked;
+  return attrParam && observed.some((o) => o.id === attrParam) ? attrParam : fallback;
+}
