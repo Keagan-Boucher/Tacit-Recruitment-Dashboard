@@ -14,7 +14,7 @@
   align-items: center;
   gap: 8px;
   padding: 13px 14px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-inner);
   background: var(--surface-2);
   color: var(--text);

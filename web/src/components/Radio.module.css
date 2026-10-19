@@ -44,7 +44,7 @@ input:focus-visible + .dot { box-shadow: var(--focus-ring); }
   gap: 6px;
   height: 32px;
   padding: 0 14px;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--control-border);
   border-radius: var(--radius-pill);
   color: var(--text-2);
   line-height: normal;

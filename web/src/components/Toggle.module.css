@@ -23,6 +23,7 @@
   height: 20px;
   border-radius: var(--radius-pill);
   background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--control-border); /* the off track needs 3:1 against the card */
   transition: background-color 200ms var(--ease-out);
 }
 .track::after {
@@ -36,5 +37,6 @@
   background: var(--text-3);
   transition: transform 200ms var(--ease-out), background-color 200ms var(--ease-out);
 }
-.toggle[aria-checked="true"] .track { background: var(--accent); }
+.toggle[aria-checked="true"] .track { background: var(--accent); box-shadow: none; }
 .toggle[aria-checked="true"] .track::after { background: var(--on-accent); transform: translateX(16px); }
+.toggle:focus-visible[aria-checked] .track { box-shadow: var(--focus-ring); } /* after the checked rule, so focus always shows */

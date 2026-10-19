@@ -10,6 +10,7 @@
 :root, [data-theme="dark"] {
   --canvas: #0A0A0C; --surface: #151518; --surface-2: #1E1E23; --surface-3: #2A2A31;
   --hairline: rgb(255 255 255 / .08);
+  --control-border: #6E6E78; /* inputs, toggles, chip outlines: 3:1 on surface and surface-2 (WCAG 1.4.11) */
   --text: #F4F4F2; --text-2: #A1A1A8; --text-3: #93939C;
   --accent: #D4FF3A; --on-accent: #0A0A0C; --accent-text: #D4FF3A; --accent-wash: rgb(212 255 58 / .12);
   --for: #3DD68C; --for-wash: #132D21; --against: #FF9592; --against-wash: #3B1219;
@@ -28,10 +29,12 @@
 [data-theme="light"] {
   --canvas: #F2F2F0; --surface: #FFFFFF; --surface-2: #EBEBE8; --surface-3: #DEDEDA;
   --hairline: rgb(10 10 12 / .08);
+  --control-border: #85858D;
   --text: #111113; --text-2: #4A4A52; --text-3: #5F5F67;
   --accent-text: #4D6100; --accent-wash: rgb(184 224 0 / .18);
-  --for: #218358; --for-wash: #E6F6EB; --against: #CE2C31; --against-wash: #FEEBEC;
-  --stale: #AB6400; --stale-wash: #FFF7C2;
+  /* 4.5:1 or better on every light surface and wash, down to surface-3 (WCAG 1.4.3) */
+  --for: #1A6E49; --for-wash: #E6F6EB; --against: #B42328; --against-wash: #FEEBEC;
+  --stale: #8F5300; --stale-wash: #FFF7C2;
   --scrim: rgb(10 10 12 / .4);
   --focus-ring: 0 0 0 2px var(--canvas), 0 0 0 4px var(--accent-text); /* lime on white is under 3:1 */
   color-scheme: light;
