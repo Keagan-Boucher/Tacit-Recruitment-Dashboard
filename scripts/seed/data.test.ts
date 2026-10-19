@@ -104,6 +104,14 @@ test("matches: both sides, real citations, three open roles covered", () => {
   for (const c of cands) { const l = chrono(c.id); l.forEach((n, i) => i && assert.ok(n.data.capturedAt > l[i - 1].data.capturedAt, `${n.id} out of order`)); }
 });
 
+test("seeded matches cite only confirmed attributes", () => {
+  const confirmed = new Set(attrs.filter((a) => a.data.confirmedByRecruiter).map((a) => a.id));
+  for (const { id, data: m } of matches)
+    for (const a of [...m.reasonsFor, ...m.reasonsAgainst, ...m.skillAlignment].flatMap((r) => r.attributeIds)) assert.ok(confirmed.has(a), `${id} cites unconfirmed ${a}`);
+  const thabo = attrs.filter((a) => a.data.candidateId === "cand_demo_thabo" && !a.data.confirmedByRecruiter).map((a) => d.keywords[a.id]).sort();
+  assert.deepEqual(thabo, ["hybrid", "notice"]);
+});
+
 test("no demographic or photographic fields; deterministic", () => {
   const bad = /^(gender|sex|age|dob|birth\w*|ethnicity|race|nationality|photo\w*|avatar|picture)$/i;
   for (const c of ["candidates", "interviewNotes", "attributes", "companies", "roles", "matches", "overrides", "placements"] as const)

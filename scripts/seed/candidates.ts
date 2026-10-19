@@ -10,7 +10,7 @@ const sk = (v: string, phrase: string, kw: string, c = 0.85): AttrSpec => ["skil
 function heroes(ctx: Ctx): CandRow[] {
   const n = (slug: string, i: number, m: number, s: ReturnType<typeof sec>[], o = {}) => addNote(ctx, slug, i, m, s, o);
 
-  // Thabo: current, strong, but over budget. Latest note's six attributes are still unconfirmed.
+  // Thabo: current, strong, but over budget. Latest note: the four attributes his match cites are confirmed; hybrid and notice stay unconfirmed (2 to keep or fix).
   n("demo_thabo", 1, 1.3, [sec(Q.now, "First call. Finance systems support at Sable Insurance, six years. Quiet, precise. Mentioned the S/4HANA migration but moved on quickly.",
     ["signal", "Six years in finance systems support", "Finance systems support at Sable Insurance, six years", "Sable", 0.8])]);
   n("demo_thabo", 2, 0.1, [
@@ -21,7 +21,7 @@ function heroes(ctx: Ctx): CandRow[] {
     sec(Q.mode, "Won't relocate to Joburg, open to hybrid in Durban.", ["work-mode", "Hybrid in Durban", "open to hybrid in Durban", "hybrid", 0.9]),
     sec(Q.pay, "Expects around R65k, notice is a calendar month. Asked if the notice can move, he said it can, by two weeks.",
       ["salary", "R65k", "around R65k", "R65k", 0.92], ["availability", "One calendar month notice", "notice is a calendar month", "notice", 0.85]),
-  ], { unconfirmed: true, role: "role_demo_fico" });
+  ], { unconfirmed: ["hybrid", "notice"], role: "role_demo_fico" });
 
   // Sipho: the forgotten candidate (R-11). Notes run oldest first.
   n("demo_forgotten", 1, 31, [sec(Q.now, "Quick catch-up. Just promoted to SAP support lead at Lumen, happy for now. Doing an SAP Activate course in the evenings. Not looking.",

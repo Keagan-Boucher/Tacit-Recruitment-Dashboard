@@ -38,7 +38,7 @@ export function addAttribute(ctx: Ctx, id: string, a: Omit<Attribute, "ownerUid"
 }
 
 /** Writes one note (rawText = question headings as plain lines) and its attributes. m = months ago. */
-export function addNote(ctx: Ctx, slug: string, n: number, m: number, sections: Section[], o: { role?: string; unconfirmed?: boolean } = {}) {
+export function addNote(ctx: Ctx, slug: string, n: number, m: number, sections: Section[], o: { role?: string; unconfirmed?: boolean | string[] } = {}) {
   const id = `note_${slug}_${n}`;
   const rawText = sections.map((s) => `${s.q}\n${s.text}`).join("\n\n");
   const capturedAt = monthsAgo(ctx.now, m);
@@ -52,10 +52,12 @@ export function addNote(ctx: Ctx, slug: string, n: number, m: number, sections: 
   });
   let i = 0;
   for (const s of sections) for (const spec of s.attrs) {
-    const [type, value, , , confidence = 0.85] = spec;
+    const [type, value, , kw, confidence = 0.85] = spec;
+    // unconfirmed: true leaves every attribute unconfirmed; a keyword list leaves only those.
+    const open = o.unconfirmed === true || (Array.isArray(o.unconfirmed) && o.unconfirmed.includes(kw));
     addAttribute(ctx, `attr_${slug}_${n}_${i++}`, {
       candidateId: `cand_${slug}`, sourceType: "note", noteId: id, type, value, confidence,
-      observedAt: capturedAt, confirmedByRecruiter: !o.unconfirmed,
+      observedAt: capturedAt, confirmedByRecruiter: !open,
     }, rawText, spec);
   }
 }
