@@ -66,7 +66,8 @@ export function matchRouter({ ai, db }: { ai: Ai; db: Firestore }) {
     const roleSnap = await db.collection("roles").doc(roleId).get();
     const role = roleSnap.data();
     if (!roleSnap.exists || !role || role.ownerUid !== uid) return void res.status(404).json(err("not_found", "Role not found"));
-    const modelVersion = `${ai.model}/match.v1`;
+    const prompt = loadPrompt("match", 2);
+    const modelVersion = `${ai.model}/match.v${prompt.version}`; // also the cache key: a prompt bump re-runs matching
 
     try {
       const old = await db.collection("matches").where("ownerUid", "==", uid).where("roleId", "==", roleId).get();
@@ -103,7 +104,7 @@ export function matchRouter({ ai, db }: { ai: Ai; db: Firestore }) {
         ].join("\n");
         await runStructured(
           {
-            task: "match", prompt: loadPrompt("match", 2), schema: MatchResult, input, reasoningEffort: "low",
+            task: "match", prompt, schema: MatchResult, input, reasoningEffort: "low",
             check: (d) => {
               const seen = new Set<string>();
               const allIds = [...facts.values()].flat().map((f) => f.id);

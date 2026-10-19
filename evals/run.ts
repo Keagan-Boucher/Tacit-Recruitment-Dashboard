@@ -1,16 +1,23 @@
-// npm run eval: runs the production interpretNote path on evals/notes against the live model.
+// npm run eval: interpret (evals/notes), match and search sections against the live model. EVAL_FAKE=1 swaps in a deterministic fake.
 import { readdirSync, readFileSync } from "node:fs";
 import { loadConfig } from "../server/src/config.ts";
 import { createAi } from "../server/src/ai/index.ts";
 import { mentionsDemographic } from "../server/src/ai/demographics.ts";
+import { loadPrompt } from "../server/src/ai/index.ts";
 import { interpretNote } from "../server/src/routes/interpret-note.ts";
+import { fakeAi } from "./fake.ts";
+import { runMatchEval } from "./match.ts";
+import { runSearchEval } from "./search.ts";
 
 type Exp = { type: string; quote: string };
 const here = new URL(".", import.meta.url);
 const read = (p: string) => readFileSync(new URL(p, here), "utf8").replace(/\r\n/g, "\n");
 const names = readdirSync(new URL("notes/", here)).filter((f) => f.endsWith(".txt")).map((f) => f.slice(0, -4)).sort();
 
-const ai = createAi(loadConfig({ ALLOWED_ORIGIN: "http://eval", ...process.env }));
+const ai = process.env.EVAL_FAKE ? fakeAi() : createAi(loadConfig({ ALLOWED_ORIGIN: "http://eval", ...process.env }));
+// Versions the routes load today (interpret-note.ts, match.ts, search.ts); each response also reports its own modelVersion.
+const prompts = [["interpret-note", 1], ["match", 2], ["search", 1]] as const;
+console.log(`model ${ai.model || "(not configured)"}  prompts ${prompts.map(([t, v]) => (loadPrompt(t, v), `${t}.v${v}`)).join(" ")}${process.env.EVAL_FAKE ? "  [EVAL_FAKE: deterministic fake, not a quality score]" : ""}`);
 
 const tp: Record<string, number> = {}, fp: Record<string, number> = {}, fn: Record<string, number> = {};
 const bump = (m: Record<string, number>, k: string) => (m[k] = (m[k] ?? 0) + 1);
@@ -51,4 +58,9 @@ out(`\n${"type".padEnd(20)}  TP  FP  FN`);
 [...new Set([...Object.keys(tp), ...Object.keys(fp), ...Object.keys(fn)])].sort().forEach((t) => row(t, tp[t] ?? 0, fp[t] ?? 0, fn[t] ?? 0));
 row("OVERALL", sum(tp), sum(fp), sum(fn));
 out(`\nnotes ${names.length}  errors ${errors}  span failures ${spanFails}  demographic leaks ${leaks}  cost $${cost.toFixed(4)}`);
-process.exit(spanFails || leaks ? 1 : 0); // errors and scores are reported, not gated
+// errors and scores are reported, not gated; spans, leaks and bad citations gate
+const costBefore = cost;
+const gateFails = (await runMatchEval(ai, out)) + (await runSearchEval(ai, out));
+out(`
+match + search cost ${(cost - costBefore).toFixed(4)}`);
+process.exit(spanFails || leaks || gateFails ? 1 : 0);

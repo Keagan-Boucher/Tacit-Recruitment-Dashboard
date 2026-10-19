@@ -8,7 +8,7 @@ import { matchRouter, preFilter, SHORTLIST_CAP, type Fact } from "./match.ts";
 
 const NOW = Date.now();
 const ago = (days: number) => new Date(NOW - days * 86_400_000);
-const MV = "vendor/m/match.v1";
+const MV = "vendor/m/match.v2";
 
 function fakeDb(seed: Record<string, Record<string, any>>) {
   const store = new Map<string, any>(Object.entries(seed).flatMap(([c, d]) => Object.entries(d).map(([id, v]) => [`${c}/${id}`, v])));
