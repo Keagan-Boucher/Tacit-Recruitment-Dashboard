@@ -2,15 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import {
-  closestCenter, DndContext, DragOverlay, KeyboardSensor, PointerSensor, useDroppable, useSensor, useSensors,
+  DndContext, DragOverlay, KeyboardSensor, PointerSensor, useDroppable, useSensor, useSensors,
   type Announcements, type DragEndEvent, type UniqueIdentifier,
 } from "@dnd-kit/core";
-import { rectSortingStrategy, SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import { SortableContext, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import type { DashboardWidget, WidgetId } from "@tacit/shared";
 import { Button, Icon, IconButton } from "../../components";
 import { useReduceMotion } from "../../features/prefs";
-import { boardOf, setVisible, TITLES } from "../S17-widgets/layout";
-import { NEW_ROW, reorder, ZOOM, zoomVar } from "./arrange";
+import { boardOf, setSize, setVisible, TITLES } from "../S17-widgets/layout";
+import { collide, NEW_ROW, nextSize, reorder, zoomVar } from "./arrange";
 import styles from "./Dashboard.module.css";
 
 // S01 customise (Figma 145:319): the real board at 75% with frozen widgets, a grip and a remove button on each, and the Widget shelf.
@@ -21,6 +21,8 @@ const ICONS: Record<WidgetId, string> = {
   "brief-inbox": "bx-file", "company-coverage": "bx-building", "match-history": "bx-history", "override-log": "bx-show",
 };
 const SIZE_LABEL = { "1x1": "1×1", "2x1": "2×1", "2x2": "2×2" } as const;
+// Cells are different sizes, so letting the others slide aside (rectSortingStrategy) breaks the grid; the target is outlined instead.
+const noShift = () => null;
 const title = (id: UniqueIdentifier) => TITLES[id as WidgetId] ?? String(id);
 
 type Props = {
@@ -42,7 +44,6 @@ export function Customise({ draft, onChange, render, sizeClass, shelfOpen, onClo
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const { setNodeRef: slotRef, isOver: slotOver } = useDroppable({ id: NEW_ROW });
 
   // The grip or Add button that just changed under the recruiter's hands keeps focus (a removed widget's button is gone).
   useEffect(() => {
@@ -68,6 +69,11 @@ export function Customise({ draft, onChange, render, sizeClass, shelfOpen, onClo
     focus.current = `add-${id}`;
     onChange(setVisible(draft, id, false), `Removed ${TITLES[id]}. It is on the Widget shelf.`);
   }
+  function resize(w: DashboardWidget) {
+    const size = nextSize(w.size);
+    focus.current = `size-${w.widgetId}`;
+    onChange(setSize(draft, w.widgetId, size), `${TITLES[w.widgetId]} is now ${SIZE_LABEL[size]}.`);
+  }
   function add(id: WidgetId) {
     focus.current = `grip-${id}`;
     onChange(setVisible(draft, id, true), `Added ${TITLES[id]} at the end of the board.`);
@@ -80,7 +86,7 @@ export function Customise({ draft, onChange, render, sizeClass, shelfOpen, onClo
     <>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={collide}
         onDragStart={(e) => setActive(e.active.id as WidgetId)}
         onDragEnd={onDragEnd}
         onDragCancel={() => setActive(undefined)}
@@ -91,19 +97,17 @@ export function Customise({ draft, onChange, render, sizeClass, shelfOpen, onClo
       >
         <div className={styles.arrange}>
           <div className={styles.zoomBox}>
-            <SortableContext items={ids} strategy={rectSortingStrategy}>
+            <SortableContext items={ids} strategy={noShift}>
               <div className={`${styles.board} ${styles.edit}`} role="region" aria-label="Your board">
                 {board.map((w) => (
-                  <Cell key={w.widgetId} w={w} cls={sizeClass(w)} onRemove={() => remove(w.widgetId)}>
+                  <Cell key={w.widgetId} w={w} cls={sizeClass(w)} onRemove={() => remove(w.widgetId)} onResize={() => resize(w)}>
                     {render(w)}
                   </Cell>
                 ))}
               </div>
             </SortableContext>
           </div>
-          <div ref={slotRef} className={`${styles.newRow} t-body-s`} data-over={slotOver || undefined}>
-            Drop here for a new row
-          </div>
+          <NewRow />
           <p className={`${styles.hint} t-body-s`}>
             <Icon name="bx-grid-vertical" />
             Drag the handle to move a widget, or press Space on it and use the arrow keys.
@@ -156,17 +160,22 @@ export function Customise({ draft, onChange, render, sizeClass, shelfOpen, onClo
   );
 }
 
-function Cell({ w, cls, onRemove, children }: { w: DashboardWidget; cls: string; onRemove: () => void; children: ReactNode }) {
-  const { setNodeRef, setActivatorNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: w.widgetId });
-  const name = TITLES[w.widgetId];
-  // The board is scaled, so a move measured on screen is 1 / ZOOM longer inside it.
-  const move = transform && `translate(${transform.x / ZOOM}px, ${transform.y / ZOOM}px)`;
+// Its own component: useDroppable only reaches a DndContext above it, and Customise is the one that renders the context.
+function NewRow() {
+  const { setNodeRef, isOver } = useDroppable({ id: NEW_ROW });
   return (
-    <div
-      ref={setNodeRef}
-      className={`${styles.cell} ${styles.editCell} ${cls} ${w.widgetId === "forgotten" ? styles.heroCell : ""} ${isDragging ? styles.slot : ""}`}
-      style={{ transform: move || undefined, transition }}
-    >
+    <div ref={setNodeRef} className={`${styles.newRow} t-body-s`} data-over={isOver || undefined}>
+      Drop here for a new row
+    </div>
+  );
+}
+
+function Cell({ w, cls, onRemove, onResize, children }: { w: DashboardWidget; cls: string; onRemove: () => void; onResize: () => void; children: ReactNode }) {
+  const { setNodeRef, setActivatorNodeRef, attributes, listeners, isDragging, isOver } = useSortable({ id: w.widgetId });
+  const name = TITLES[w.widgetId];
+  const next = SIZE_LABEL[nextSize(w.size)];
+  return (
+    <div ref={setNodeRef} className={`${styles.cell} ${styles.editCell} ${cls} ${w.widgetId === "forgotten" ? styles.heroCell : ""} ${isDragging ? styles.slot : ""}`}>
       <div className={styles.frozen} inert>
         {children}
       </div>
@@ -176,7 +185,11 @@ function Cell({ w, cls, onRemove, children }: { w: DashboardWidget; cls: string;
       <button type="button" className={styles.remove} aria-label={`Remove ${name} from the board`} onClick={onRemove}>
         <Icon name="bx-x" size={20} />
       </button>
-      {isDragging && <span className={`${styles.dropHere} t-body-s-strong`}>Drop here</span>}
+      <button id={`size-${w.widgetId}`} type="button" className={`${styles.resize} t-meta`} aria-label={`Size of ${name}: ${SIZE_LABEL[w.size]}. Change to ${next}`} onClick={onResize}>
+        <Icon name="bx-expand-alt" size={14} />
+        {SIZE_LABEL[w.size]}
+      </button>
+      {isOver && !isDragging && <span className={`${styles.dropHere} t-body-s-strong`}>Drop here</span>}
     </div>
   );
 }

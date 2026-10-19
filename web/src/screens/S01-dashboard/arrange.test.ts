@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { DEFAULT_USER_PREFS } from "@tacit/shared";
-import { boardOf } from "../S17-widgets/layout";
-import { NEW_ROW, reorder } from "./arrange";
+import { boardOf, setSize } from "../S17-widgets/layout";
+import { collide, NEW_ROW, nextSize, reorder } from "./arrange";
 
 const ids = (d: typeof DEFAULT_USER_PREFS.dashboard) => boardOf(d).map((w) => w.widgetId);
 
@@ -16,4 +16,27 @@ it("the new-row slot sends a widget to the end; an unknown target changes nothin
   const d = DEFAULT_USER_PREFS.dashboard;
   expect(ids(reorder(d, "forgotten", NEW_ROW)).at(-1)).toBe("forgotten");
   expect(reorder(d, "forgotten", "nope")).toBe(d);
+});
+
+it("the size button cycles 1x1, 2x1, 2x2 and round again, and a resize changes only that widget's size", () => {
+  expect(nextSize("1x1")).toBe("2x1");
+  expect(nextSize("2x1")).toBe("2x2");
+  expect(nextSize("2x2")).toBe("1x1");
+  const d = DEFAULT_USER_PREFS.dashboard;
+  const next = setSize(d, "waiting", nextSize("1x1"));
+  expect(next.find((w) => w.widgetId === "waiting")?.size).toBe("2x1");
+  const rest = (x: typeof d) => x.filter((w) => w.widgetId !== "waiting");
+  expect(rest(next)).toEqual(rest(d));
+  expect(next.find((w) => w.widgetId === "waiting")).toEqual({ ...d.find((w) => w.widgetId === "waiting"), size: "2x1" });
+});
+
+it("a mouse released on empty space is over nothing; the keyboard falls back to the nearest centre", () => {
+  const rect = { top: 0, left: 0, width: 100, height: 100, bottom: 100, right: 100 };
+  const base = {
+    active: { id: "a" }, collisionRect: { ...rect, top: 500, bottom: 600 },
+    droppableRects: new Map([["b", rect]]), droppableContainers: [{ id: "b", rect: { current: rect } }],
+  } as unknown as Parameters<typeof collide>[0];
+  expect(collide({ ...base, pointerCoordinates: { x: 50, y: 900 } })).toEqual([]);
+  expect(collide({ ...base, pointerCoordinates: { x: 50, y: 50 } }).map((c) => c.id)).toEqual(["b"]);
+  expect(collide({ ...base, pointerCoordinates: null }).map((c) => c.id)).toEqual(["b"]);
 });

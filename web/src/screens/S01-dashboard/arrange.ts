@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
-import type { UniqueIdentifier } from "@dnd-kit/core";
+import { closestCenter, pointerWithin, type CollisionDetection, type UniqueIdentifier } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import type { DashboardWidget, WidgetId } from "@tacit/shared";
-import { boardOf } from "../S17-widgets/layout";
+import type { DashboardWidget, WidgetId, WidgetSize } from "@tacit/shared";
+import { boardOf, SIZES } from "../S17-widgets/layout";
 
 /** The customise board is the real board drawn at this scale (Figma: 75%). */
 export const ZOOM = 0.75;
@@ -22,3 +22,13 @@ export function reorder(d: DashboardWidget[], from: WidgetId, to: UniqueIdentifi
   const slots = board.map((w) => w.order);
   return d.map((w) => (next.includes(w.widgetId) ? { ...w, order: slots[next.indexOf(w.widgetId)] ?? w.order } : w));
 }
+
+/** What the lifted widget is over. The centre of a big lifted copy is far from the pointer, so the pointer decides.
+ *  A mouse released on empty space is over nothing (the order stays); only the keyboard, which has no pointer, uses the centre. */
+export const collide: CollisionDetection = (args) => {
+  const hit = pointerWithin(args);
+  return hit.length || args.pointerCoordinates ? hit : closestCenter(args);
+};
+
+/** The size the size button switches to: 1x1, 2x1, 2x2, then round again (the sizes S17 offers). */
+export const nextSize = (s: WidgetSize): WidgetSize => SIZES[(SIZES.findIndex((o) => o.value === s) + 1) % SIZES.length]!.value;
