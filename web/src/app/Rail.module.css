@@ -66,3 +66,26 @@
   color: var(--text);
   font: 600 13px/1 var(--font);
 }
+
+/* Compact top bar: narrow or short screens (same query as Shell.module.css). */
+@media (max-width: 719px), (max-height: 599px) {
+  .rail {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    height: 60px;
+    min-height: 0;
+    flex-direction: row;
+    gap: 8px;
+    padding: 0 12px;
+  }
+  .gap { display: none; }
+  .item::after { left: 0; top: calc(100% + 10px); translate: none; }
+  .item:nth-last-child(-n + 5)::after { left: auto; right: 0; }
+}
+/* Seven 44 px destinations are all that fit at 320: the monogram and avatar drop out. */
+@media (max-width: 479px) {
+  .rail { left: 4px; right: 4px; gap: 0; padding: 0; justify-content: space-around; }
+  .rail > svg, .spacer, .avatar { display: none; }
+}

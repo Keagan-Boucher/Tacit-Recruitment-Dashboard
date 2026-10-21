@@ -3,3 +3,26 @@
   min-height: 100dvh;
   padding: 0 16px 16px 104px;
 }
+
+.skip {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 600 14px/1 var(--font);
+  text-decoration: none;
+  translate: 0 -200%;
+}
+.skip:focus-visible { translate: 0 0; }
+
+/* Compact top bar instead of the side rail: narrow screens, and short ones (200% zoom at 720 x 450). */
+@media (max-width: 719px), (max-height: 599px) {
+  .main { padding: 80px 16px 16px; }
+}

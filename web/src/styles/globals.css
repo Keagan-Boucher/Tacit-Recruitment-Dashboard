@@ -8,15 +8,22 @@ body {
 }
 h1, h2, h3, h4, p { margin: 0; }
 button, input, textarea, select { font: inherit; color: inherit; }
-:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+/* The transparent outline is what Windows high contrast (forced-colors) draws; the ring is the normal look. */
+:focus-visible { outline: 2px solid transparent; outline-offset: 2px; box-shadow: var(--focus-ring); }
+/* Programmatic focus targets after navigation (Shell): announced, not outlined. */
+main:focus, h1[tabindex="-1"]:focus { outline: none; box-shadow: none; }
 .tabular { font-variant-numeric: tabular-nums; }
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 [data-reduce-motion] *, [data-reduce-motion] *::before, [data-reduce-motion] *::after {
-  animation-duration: 0.01ms !important; transition-duration: 0.01ms !important;
+  animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important;
+}
+/* Compact top bar (same query as app/Shell.module.css): focus-scrolling keeps content below it. */
+@media (max-width: 719px), (max-height: 599px) {
+  html { scroll-padding-top: 80px; }
 }

@@ -7,16 +7,21 @@ type Props = {
   /** Render as its own page (no shell around it): used when the shell itself failed. */
   standalone?: boolean;
   figure: string;
+  /** Read after the figure by screen readers only. */
+  figureHint: string;
   message: string;
   actions: ReactNode;
 };
 
-function Layout({ standalone, figure, message, actions }: Props) {
+function Layout({ standalone, figure, figureHint, message, actions }: Props) {
   const Tag = standalone ? "main" : "div";
   return (
     <Tag className={standalone ? `${styles.page} ${styles.standalone}` : styles.page}>
       <section className={styles.block}>
-        <p className={`t-display-xl ${styles.figure}`}>{figure}</p>
+        <h1 className={`t-display-xl ${styles.figure}`}>
+          {figure}
+          <span className="sr-only"> {figureHint}</span>
+        </h1>
         <p className={`t-note ${styles.message}`}>{message}</p>
         <div className={styles.actions}>{actions}</div>
       </section>
@@ -33,7 +38,7 @@ const home = (variant: "primary" | "ghost") => (
 
 /** S16: unknown path. */
 export default function NotFound() {
-  return <Layout figure="404" message="This link is out of date, or the record was removed." actions={home("primary")} />;
+  return <Layout figure="404" figureHint="Page not found" message="This link is out of date, or the record was removed." actions={home("primary")} />;
 }
 
 /** S16 error variant: route `errorElement`. No stack trace on screen; the error goes to the console in DEV only. */
@@ -46,6 +51,7 @@ export function RouteError({ standalone = false }: { standalone?: boolean }) {
     <Layout
       standalone={standalone}
       figure="Oops"
+      figureHint="Something went wrong"
       message="This screen stopped working. Nothing was lost: notes are saved before anything else runs."
       actions={
         <>

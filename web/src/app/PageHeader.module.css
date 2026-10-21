@@ -3,10 +3,20 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 12px 24px;
   min-height: 128px;
   padding-top: 30px;
 }
 .title { position: relative; padding-top: 23px; min-width: 0; }
 .context { position: absolute; top: 0; left: 0; color: var(--text-3); white-space: nowrap; }
-.actions { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex: none; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; flex: none; max-width: 100%; }
+.title h1 { overflow-wrap: anywhere; }
+
+/* Compact top bar (same query as Shell.module.css): the fixed header offsets go. */
+@media (max-width: 719px), (max-height: 599px) {
+  .header { min-height: 0; padding-top: 0; }
+  .title { padding-top: 0; }
+  .context { position: static; white-space: normal; margin-bottom: 4px; }
+  .actions { margin-top: 0; }
+}
