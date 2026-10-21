@@ -27,20 +27,29 @@ export const evidencedCount = (rows: Alignment[]) => `${rows.filter((r) => r.kin
 
 export const ALIGN_LABEL = { stated: "Stated", interpreted: "Interpreted", "not-seen": "Not seen" } as const;
 
-export type Provenance = { source: string; staleness: Staleness; months: number; attributeId: string; candidateId: string } | null;
+export type SourceKind = "note" | "override" | "cv" | "brief";
+const SOURCE_NAME: Record<SourceKind, string> = { note: "Your note", override: "Your reason", cv: "CV", brief: "Brief" };
 
-/** Where a reason or alignment row comes from: its newest cited attribute, with that attribute's age. Null when none resolves. */
+/** The quiet line under a reason: "Your note · 12 Aug 2025", "Brief · 24 Oct 2026", "CV" (undated). `age` ("14 months ago") only when the cited fact is stale. */
+export function sourceLine(kind: SourceKind, observedAt: Date | undefined, st: Staleness = "fresh", months = 0) {
+  return {
+    text: observedAt ? `${SOURCE_NAME[kind]} · ${fmtDate(observedAt)}` : SOURCE_NAME[kind],
+    age: st === "stale" ? `${months} months ago` : null,
+  };
+}
+
+export type Provenance = { text: string; age: string | null; attributeId: string; candidateId: string } | null;
+
 /** Forgotten now, from the candidate's live lastOpenedAt (opening S03 clears it), not the flag stamped when the match ran. */
 export const forgottenNow = (c: Pick<Candidate, "lastOpenedAt"> | undefined, now: Date) => !!c && isForgotten(c.lastOpenedAt, now);
 
+/** Where a reason or alignment row comes from: its newest cited attribute, with that attribute's age. Null when none resolves. */
 export function provenance(ids: string[], attrs: Map<string, WithId<Attribute>>, now: Date): Provenance {
   const found = ids.map((id) => attrs.get(id)).filter((a): a is WithId<Attribute> => !!a);
   if (!found.length) return null;
   const a = found.reduce((x, y) => (y.observedAt > x.observedAt ? y : x));
   return {
-    source: `${a.sourceType === "note" ? "Note" : "Your reason"}, ${fmtDate(a.observedAt)}`,
-    staleness: staleness(a.observedAt, now),
-    months: monthsSince(a.observedAt, now),
+    ...sourceLine(a.sourceType, a.observedAt, staleness(a.observedAt, now), monthsSince(a.observedAt, now)),
     attributeId: a.id,
     candidateId: a.candidateId,
   };

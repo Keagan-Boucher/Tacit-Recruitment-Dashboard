@@ -26,30 +26,44 @@
 .fileActions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* Suggestions */
-.working { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text-2); }
+.status { margin: 0; }
+.status:empty { display: none; }
+.working { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
 .spark { color: var(--accent-text); }
-.card { display: flex; flex-direction: column; gap: 14px; }
+/* Who 232 / for / against, as the hierarchy frame: status is words ranked by size and weight, no pills. */
+.card.card { container-type: inline-size; display: flex; flex-direction: column; gap: 14px; padding: 16px 16px 16px 18px; }
 .focal.focal { border: 2px solid var(--accent-text); }
-.cardHead { display: flex; align-items: flex-start; gap: 14px; }
-.rank { color: var(--text-3); padding-top: 2px; }
-.who { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
-.who a { color: var(--text); text-decoration: none; }
-.who a:hover { text-decoration: underline; text-underline-offset: 3px; }
-.who p { margin: 0; color: var(--text-2); }
+.main { display: flex; align-items: stretch; gap: 14px; }
+.who { display: flex; flex: 0 0 232px; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.rank { color: var(--text-3); }
+.name a { color: var(--text); text-decoration: none; }
+.name a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.headline { margin: 0; color: var(--text-2); }
+.opened { margin: 0; color: var(--text-3); }
+.age { color: var(--stale); }
+.decide { margin-top: auto; padding-top: 6px; }
 .actions { display: flex; flex-wrap: wrap; gap: 6px; }
 
-.reasonPair { display: flex; gap: 12px; align-items: stretch; }
-@media (max-width: 700px) { .reasonPair { flex-direction: column; } }
-.reasons { display: flex; flex: 1 1 0; flex-direction: column; gap: 10px; min-width: 0; padding: 12px 14px 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
-.chipRow { display: flex; }
+.reasonPair { display: flex; flex: 1 1 0; gap: 14px; align-items: stretch; min-width: 0; }
+.reasons { display: flex; flex: 1 1 0; flex-direction: column; align-items: flex-start; gap: 10px; min-width: 0; padding: 12px 14px 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
+.label { display: flex; align-items: baseline; gap: 4px; margin: 0; color: var(--text-3); }
+.for { color: var(--for); }
+.against { color: var(--against); }
 .reasonList, .alignList, .questions { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
-.reasonList { gap: 10px; }
-.reasonList li { display: flex; flex-direction: column; gap: 3px; }
+.reasonList { gap: 10px; width: 100%; }
+.reasonList li { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
 .reasonList p, .none { margin: 0; color: var(--text); }
 .none { color: var(--text-2); }
-.source { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--text-3); }
-.sourceLink { border-radius: var(--radius-inner); color: inherit; text-decoration: none; }
-.sourceLink:hover { color: var(--text-2); text-decoration: underline; }
+.andMore { position: relative; padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
+.andMore::before { content: ""; position: absolute; inset: -14px -8px; }
+.andMore:hover { color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; }
+.sourceLink { align-self: flex-start; color: var(--text-3); text-decoration: none; }
+.sourceLink:hover { color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; }
+@container (max-width: 720px) {
+  .main, .reasonPair { flex-direction: column; }
+  .who { flex-basis: auto; }
+}
 
 .align { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
 .alignHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }

@@ -108,7 +108,7 @@ function View({ onRetry }: { onRetry: () => void }) {
   return (
     <>
       <PageHeader
-        context={<><Link to="/roles" className={styles.crumb}>Roles</Link>{company.data ? ` / ${company.data.name}` : ""}</>}
+        context={<nav aria-label="Breadcrumb"><Link to="/roles" className={styles.crumb}>Roles</Link>{company.data ? ` / ${company.data.name}` : ""}</nav>}
         headline={r.title}
         actions={
           <>
@@ -121,13 +121,20 @@ function View({ onRetry }: { onRetry: () => void }) {
       />
       <div className={styles.grid}>
         <BriefPanel role={r} />
-        <div className={styles.col} aria-live="polite" aria-busy={working}>
-          {working ? (
-            <>
-              <p className={`${styles.working} t-body-m-strong`} role="status">
+        <div className={styles.col} aria-busy={working}>
+          {/* The one live region on the column: what Tacit is doing, then what it found. The error banner announces itself. */}
+          <p role="status" className={`${styles.status} ${working ? styles.working : ""} t-body-m-strong`}>
+            {working ? (
+              <>
                 <Sparkle />
                 Checking {people.length} {people.length === 1 ? "person" : "people"} against the brief…
-              </p>
+              </>
+            ) : (
+              !empty && `${rows.length} ${rows.length === 1 ? "suggestion" : "suggestions"} from the ${people.length} people you have met`
+            )}
+          </p>
+          {working ? (
+            <>
               {[0, 1].map((i) => (
                 <Card key={i} className={styles.card}>
                   <Skeleton width={220} height={24} />
@@ -149,9 +156,6 @@ function View({ onRetry }: { onRetry: () => void }) {
                 )
               ) : (
                 <>
-                  <p className="t-body-m-strong">
-                    {rows.length} {rows.length === 1 ? "suggestion" : "suggestions"} from the {people.length} people you have met
-                  </p>
                   {shown.map((m) => (
                     <MatchCard
                       key={m.id}

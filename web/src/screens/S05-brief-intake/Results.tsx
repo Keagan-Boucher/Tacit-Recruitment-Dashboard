@@ -126,8 +126,9 @@ function Loaded({ roleId, people, unclear = [], onEdit, onRetry }: Props & { onR
           )}
         </Card>
 
-        <div className={styles.col} aria-live="polite">
-          {saveFailed && <p role="status" className="t-caption">Couldn’t save that decision. Try again.</p>}
+        <div className={styles.col}>
+          {/* The one live region on the column; it is empty until a decision fails to save. */}
+          <p role="status" className={`${styles.status} t-caption`}>{saveFailed && "Couldn’t save that decision. Try again."}</p>
           {rows.length === 0 ? (
             <EmptyState message={`Tacit checked ${people.length} people and nobody fits this brief yet. The role is saved.`} />
           ) : (

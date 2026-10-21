@@ -128,23 +128,24 @@ export default function BriefIntake() {
             )}
             <Input label="Role" value={title} readOnly={working} leading={<Icon name="bx-briefcase" size={18} />} placeholder={brief ? "" : "Read the brief first"} onChange={(e) => setTitle(e.target.value)} />
 
+            {/* One announcement each: the live region holds the working line; the error banner is its own status. */}
             <div aria-live="polite" className={styles.live}>
               {working && (
-                <p className={`${styles.say} t-body-s`} role="status">
+                <p className={`${styles.say} t-body-s`}>
                   <Sparkle />
                   {run === "saving"
                     ? "Saving the role…"
                     : `Checking ${people.length || "everyone"} ${people.length === 1 ? "person" : "people"} against the brief…`}
                 </p>
               )}
-              {failed && (
-                <ErrorBanner
-                  title={run === "failed-save" ? "Couldn’t save the role." : "Couldn’t read the matches reliably."}
-                  detail={run === "failed-save" ? "Your brief is still here." : "Your brief and the role are saved."}
-                  onRetry={find}
-                />
-              )}
             </div>
+            {failed && (
+              <ErrorBanner
+                title={run === "failed-save" ? "Couldn’t save the role." : "Couldn’t read the matches reliably."}
+                detail={run === "failed-save" ? "Your brief is still here." : "Your brief and the role are saved."}
+                onRetry={find}
+              />
+            )}
             <Button variant="primary" size="lg" fullWidth icon="bx-search" disabled={!ready} onClick={find}>
               Find people
             </Button>

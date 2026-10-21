@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Alignment, Attribute } from "@tacit/shared";
-import { budgetText, evidencedCount, forgottenNow, provenance } from "./match";
+import { budgetText, evidencedCount, forgottenNow, provenance, sourceLine } from "./match";
 
 const now = new Date("2026-10-14T00:00:00Z");
 const attr = { id: "a", sourceType: "note", observedAt: new Date("2025-08-12T00:00:00Z") } as Attribute & { id: string };
@@ -13,7 +13,7 @@ describe("S04 helpers", () => {
   });
   it("ages the cited attribute and skips unknown ids", () => {
     const p = provenance(["x", "a"], new Map([["a", attr]]), now)!;
-    expect(p).toMatchObject({ source: "Note, 12 Aug 2025", staleness: "stale", months: 14 });
+    expect(p).toMatchObject({ text: "Your note · 12 Aug 2025", age: "14 months ago" });
     expect(provenance(["x"], new Map(), now)).toBeNull();
   });
 });
@@ -34,5 +34,20 @@ describe("forgottenNow", () => {
     expect(forgottenNow({ lastOpenedAt: now }, now)).toBe(false);
     expect(forgottenNow({ lastOpenedAt: undefined }, now)).toBe(true);
     expect(forgottenNow(undefined, now)).toBe(false);
+  });
+});
+
+describe("sourceLine", () => {
+  const d = new Date("2025-08-12T00:00:00Z");
+  it("names the source and date", () => {
+    expect(sourceLine("note", d)).toEqual({ text: "Your note · 12 Aug 2025", age: null });
+    expect(sourceLine("override", d)).toEqual({ text: "Your reason · 12 Aug 2025", age: null });
+    expect(sourceLine("brief", new Date("2026-10-24T00:00:00Z"))).toEqual({ text: "Brief · 24 Oct 2026", age: null });
+    expect(sourceLine("cv", undefined)).toEqual({ text: "CV", age: null });
+  });
+  it("adds the age only when the cited fact is stale", () => {
+    expect(sourceLine("note", d, "stale", 14).age).toBe("14 months ago");
+    expect(sourceLine("note", d, "ageing", 9).age).toBeNull();
+    expect(sourceLine("note", d, "fresh", 1).age).toBeNull();
   });
 });

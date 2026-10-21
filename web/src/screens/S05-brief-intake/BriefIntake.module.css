@@ -42,7 +42,8 @@
   appearance: none;
   cursor: pointer;
 }
-.select:focus-visible { outline: none; box-shadow: none; }
+/* The wrapper's border shows focus; the transparent outline keeps a visible ring under forced colours. */
+.select:focus-visible { outline: 2px solid transparent; box-shadow: none; }
 .select option { background: var(--surface); color: var(--text); }
 
 .live:empty { display: none; }
@@ -61,6 +62,8 @@
 @media (max-width: 1000px) { .results { grid-template-columns: minmax(0, 1fr); } }
 .count { color: var(--accent-text); }
 .col { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+.status { margin: 0; }
+.status:empty { display: none; }
 .criteria { display: flex; flex-direction: column; gap: 12px; }
 .skelCard { display: flex; flex-direction: column; gap: 14px; }
 
