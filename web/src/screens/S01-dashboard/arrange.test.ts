@@ -8,7 +8,7 @@ const ids = (d: typeof DEFAULT_USER_PREFS.dashboard) => boardOf(d).map((w) => w.
 it("moves a widget to another widget's place and leaves the shelf alone", () => {
   const d = DEFAULT_USER_PREFS.dashboard;
   const next = reorder(d, "waiting", "forgotten");
-  expect(ids(next)).toEqual(["waiting", "forgotten", "roles-to-shortlist", "to-confirm", "people-met", "roles-in-play", "worth-a-call"]);
+  expect(ids(next)).toEqual(["waiting", "forgotten", "roles-to-shortlist", "to-confirm", "roles-in-play", "worth-a-call", "ask-next", "people-met"]);
   expect(next.filter((w) => !w.visible).map((w) => w.order)).toEqual(d.filter((w) => !w.visible).map((w) => w.order));
 });
 

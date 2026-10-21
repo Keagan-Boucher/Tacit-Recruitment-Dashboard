@@ -1,4 +1,5 @@
-import { buttonClass, Chip, Icon, Skeleton, WidgetCard } from "../../components";
+import type { AttributeType } from "@tacit/shared";
+import { buttonClass, Icon, Skeleton, WidgetCard } from "../../components";
 import type { Board, PlayRow } from "./board";
 import styles from "./Dashboard.module.css";
 
@@ -7,6 +8,9 @@ import styles from "./Dashboard.module.css";
 type P = { b?: Board };
 const SEE = 3; // rows a widget shows before "See all"
 const say = (b: Board, first: string, quiet: string) => <p className={`${styles.say} t-body-s-para`}>{b.hasPeople ? quiet : first}</p>;
+
+const ago = (months: number) => `${months} ${months === 1 ? "month" : "months"} ago`;
+const reasons = (n: number, side: "for" | "against") => `${n} ${n === 1 ? "reason" : "reasons"} ${side}`;
 
 const rowSk = (n: number, key = "r") => Array.from({ length: n }, (_, i) => <Skeleton key={`${key}${i}`} height={52} />);
 
@@ -17,21 +21,20 @@ export function Forgotten({ b }: P) {
       <WidgetCard title="Someone you forgot" tone="accent" className={styles.hero}>
         <div className={styles.heroBody}>
           <div className={styles.person}>
-            <div className={styles.skRow}>
-              <Skeleton tone="lime" width={160} height={26} radius="pill" />
-              <Skeleton tone="lime" width={92} height={26} radius="pill" />
-            </div>
             <Skeleton tone="lime" width={440} height={72} />
             <Skeleton tone="lime" width={540} height={16} radius="pill" />
             <Skeleton tone="lime" width={360} height={16} radius="pill" />
           </div>
           <div className={styles.case}>
-            {[0, 1].map((i) => (
-              <div key={i} className={styles.skRow}>
-                <Skeleton tone="lime" width={56} height={24} radius="pill" />
-                <Skeleton tone="lime" width={420} height={14} radius="pill" />
-              </div>
-            ))}
+            <div className={styles.columns}>
+              {[0, 1].map((i) => (
+                <div key={i} className={styles.reason}>
+                  <Skeleton tone="lime" width={90} height={13} radius="pill" />
+                  <Skeleton tone="lime" height={18} radius="pill" />
+                  <Skeleton tone="lime" width={180} height={18} radius="pill" />
+                </div>
+              ))}
+            </div>
             <div className={styles.footer}>
               <Skeleton tone="lime" width={300} height={14} radius="pill" />
               <Skeleton tone="lime" width={170} height={44} radius="pill" />
@@ -72,34 +75,24 @@ export function Forgotten({ b }: P) {
     <WidgetCard title="Someone you forgot" tone="accent" className={styles.hero}>
       <div className={styles.heroBody}>
         <div className={styles.person}>
-          <div>
-            {f.match.staleness === "stale" ? (
-              <Chip tone="stale" onLime size="lg">
-                Stale · {f.months} mo
-              </Chip>
-            ) : (
-              <Chip onLime size="lg">
-                Not opened in {f.notOpened} mo
-              </Chip>
-            )}
-          </div>
           <h3 className="t-display-xl">{c.fullName}</h3>
           <p className={`${styles.sub} t-note`}>
             {c.headline}, {c.location}. Could fit {f.role.title} at {f.company}.
+            {f.heardFor === undefined && f.heardAgainst === undefined && ` Not opened in ${f.notOpened} months.`}
           </p>
         </div>
-        <div className={styles.case} aria-live="polite">
-          <div className={styles.reason}>
-            <Chip tone="for" onLime size="lg">
-              For · {f.nFor}
-            </Chip>
-            <p className="t-body-m-para">{f.reasonFor ?? "Nothing recorded for this one yet."}</p>
-          </div>
-          <div className={styles.reason}>
-            <Chip tone="against" onLime size="lg">
-              Against · {f.nAgainst}
-            </Chip>
-            <p className="t-body-m-para">{f.reasonAgainst ?? "Nothing against on record."}</p>
+        <div className={styles.case}>
+          <div className={styles.columns}>
+            <div className={styles.reason}>
+              <p className={`${styles.label} t-body-s-strong`}>{reasons(f.nFor, "for")}</p>
+              <p className="t-title">{f.reasonFor ?? "Nothing recorded for this one yet."}</p>
+              {f.heardFor !== undefined && <p className="t-body-s-bold">Heard {ago(f.heardFor)}</p>}
+            </div>
+            <div className={styles.reason}>
+              <p className={`${styles.label} t-body-s-strong`}>{reasons(f.nAgainst, "against")}</p>
+              <p className="t-title">{f.reasonAgainst ?? "Nothing against on record."}</p>
+              {f.heardAgainst !== undefined && <p className="t-body-s-bold">Heard {ago(f.heardAgainst)}</p>}
+            </div>
           </div>
           <div className={styles.footer}>
             {f.ask ? (
@@ -146,7 +139,10 @@ export function RolesToShortlist({ b }: P) {
                   <span className={`${styles.line} t-body-s-strong`}>{p.role.title}</span>
                   <span className={`${styles.quiet} t-caption`}>{p.company}</span>
                 </span>
-                <Chip tone="accent">{p.waiting} new</Chip>
+                <span className={styles.count}>
+                  <span className="t-figure tabular">{p.waiting}</span>
+                  <span className={`${styles.quiet} t-caption`}>new</span>
+                </span>
               </a>
             </li>
           ))}
@@ -194,8 +190,8 @@ export function PeopleMet({ b }: P) {
       {!b || !p ? (
         <>
           <div className={styles.skRow}>
-            <Skeleton width={120} height={56} />
-            <Skeleton width={100} height={26} radius="pill" />
+            <Skeleton width={60} height={28} />
+            <Skeleton width={100} height={16} radius="pill" />
           </div>
           <Bars />
         </>
@@ -207,8 +203,8 @@ export function PeopleMet({ b }: P) {
       ) : (
         <>
           <a href="/candidates" className={`${styles.figure} ${styles.plain}`} aria-label={`${p.count} people you have met. See everyone.`}>
-            <span className={`${styles.big} t-display-l ${styles.text}`}>{p.count}</span>
-            {p.newThisMonth > 0 && <Chip tone="accent">+{p.newThisMonth} this month</Chip>}
+            <span className="t-figure tabular">{p.count}</span>
+            {p.newThisMonth > 0 && <span className={`${styles.dim} t-body-m-strong`}>+{p.newThisMonth} this month</span>}
           </a>
           <Bars values={p.bars.map((n) => n / max)} label={`People met per month, last 12 months: ${p.bars.join(", ")}.`} />
         </>
@@ -217,7 +213,7 @@ export function PeopleMet({ b }: P) {
   );
 }
 
-/** Twelve monthly bars, oldest first, the current month in lime. */
+/** Twelve monthly bars, oldest first, the current month a shade stronger. */
 function Bars({ values, flat, label }: { values?: number[]; flat?: boolean; label?: string }) {
   return (
     <div className={styles.bars} role={label ? "img" : undefined} aria-label={label} aria-hidden={label ? undefined : true}>
@@ -225,15 +221,15 @@ function Bars({ values, flat, label }: { values?: number[]; flat?: boolean; labe
         <span
           key={i}
           className={`${styles.bar} ${i === 11 && values ? styles.barNow : ""}`}
-          style={{ height: flat ? "3px" : values ? `${Math.max(8, (values[i] ?? 0) * 100)}%` : `${30 + ((i * 37) % 60)}%` }}
+          style={{ height: flat ? "3px" : values ? `${Math.max(20, (values[i] ?? 0) * 60)}%` : `${30 + ((i * 37) % 60)}%` }}
         />
       ))}
     </div>
   );
 }
 
-const cell = (n: number, stale = false) =>
-  stale ? (n >= 3 ? styles.cStaleSolid : n >= 1 ? styles.cStale : styles.cZero) : n >= 9 ? styles.cFill : n >= 3 ? styles.cLine : n >= 1 ? styles.cLow : styles.cZero;
+// Numbers only: zeros recede, the Stale column's numbers take the stale colour.
+const cell = (n: number, stale: boolean) => (n === 0 ? `${styles.cZero} t-body-m` : `${stale ? styles.cStale : ""} t-title`);
 
 const COLS = ["Suggested", "Waiting", "Shortlisted", "Not this one", "Stale"];
 
@@ -275,7 +271,7 @@ export function RolesInPlay({ b }: P) {
                     <span className={`${styles.quiet} t-meta`}>{p.company}</span>
                   </span>
                   {counts(p).map((n, i) => (
-                    <span key={COLS[i]} className={`${styles.hc} ${cell(n, i === 4)} t-body-s-strong tabular`}>
+                    <span key={COLS[i]} className={`${styles.hc} ${cell(n, i === 4)} tabular`}>
                       {n}
                     </span>
                   ))}
@@ -286,6 +282,8 @@ export function RolesInPlay({ b }: P) {
     </WidgetCard>
   );
 }
+
+const FACT: Partial<Record<AttributeType, string>> = { salary: "Salary: ", availability: "Availability: " };
 
 export function WorthACall({ b }: P) {
   const rows = b?.worth ?? [];
@@ -302,9 +300,18 @@ export function WorthACall({ b }: P) {
               <a href={`/candidates/${w.candidate.id}`} className={`${styles.item} ${styles.flat}`}>
                 <span className={styles.main}>
                   <span className={`${styles.line} t-body-s-strong`}>{w.candidate.fullName}</span>
-                  {w.text && <span className={`${styles.quiet} t-caption`}>{w.text}</span>}
+                  <span className={`${styles.quiet} ${styles.fact} t-caption`}>
+                    {w.text && (
+                      <>
+                        <span className={styles.factText}>
+                          {FACT[w.type!] ?? ""}“{w.text}”
+                        </span>
+                        <span>·</span>
+                      </>
+                    )}
+                    <span className={styles.age}>{ago(w.months)}</span>
+                  </span>
                 </span>
-                <Chip tone="stale">Stale · {w.months} mo</Chip>
               </a>
             </li>
           ))}
@@ -331,8 +338,41 @@ export function Waiting({ b }: P) {
                   <span className={`${styles.line} t-body-s-strong`}>{candidate.fullName}</span>
                   <span className={`${styles.quiet} t-meta`}>for {role.title}</span>
                 </span>
-                <Chip tone="for">For · {match.reasonsFor.length}</Chip>
-                <Chip tone="against">Against · {match.reasonsAgainst.length}</Chip>
+                <span className={`${styles.tally} t-body-s`}>
+                  <b className={`${styles.tFor} t-body-s-bold`}>{match.reasonsFor.length}</b> for ·{" "}
+                  <b className={`${styles.tAgainst} t-body-s-bold`}>{match.reasonsAgainst.length}</b> against
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </WidgetCard>
+  );
+}
+
+export function AskNext({ b }: P) {
+  const rows = b?.ask ?? [];
+  const none = "No questions waiting. Run a brief to get some.";
+  return (
+    <WidgetCard title="Ask on your next call" seeAll={b && rows.length > SEE ? { count: rows.length, href: "/roles" } : undefined}>
+      {!b ? (
+        rowSk(3)
+      ) : rows.length === 0 ? (
+        say(b, none, none)
+      ) : (
+        <ul className={styles.list}>
+          {rows.slice(0, SEE).map(({ match, candidate, role, question, months }) => (
+            <li key={match.id}>
+              <a href={`/roles/${role.id}`} className={`${styles.item} ${styles.flat}`}>
+                <span className={styles.main}>
+                  <span className={`${styles.line} t-body-m-strong`} title={question}>{question}</span>
+                  <span className={`${styles.quiet} ${styles.fact} t-caption`}>
+                    <span className={styles.factText}>{candidate.fullName}</span>
+                    <span>·</span>
+                    {months !== undefined ? <span className={styles.age}>heard {ago(months)}</span> : <span className={styles.rest}>for {role.title}</span>}
+                  </span>
+                </span>
               </a>
             </li>
           ))}

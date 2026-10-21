@@ -13,7 +13,7 @@ describe("S17 widgets", () => {
   });
   it("resizing and hiding change only that widget", () => {
     expect(setSize(d, "waiting", "2x2").find((w) => w.widgetId === "waiting")?.size).toBe("2x2");
-    expect(boardOf(setVisible(d, "forgotten", false))).toHaveLength(6);
+    expect(boardOf(setVisible(d, "forgotten", false))).toHaveLength(7);
   });
   it("move skips hidden widgets and stops at the edges", () => {
     const vis = new Set(["forgotten", "to-confirm", "waiting"] as const);

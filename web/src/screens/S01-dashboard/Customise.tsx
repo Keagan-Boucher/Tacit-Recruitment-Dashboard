@@ -17,7 +17,7 @@ import styles from "./Dashboard.module.css";
 
 const ICONS: Record<WidgetId, string> = {
   forgotten: "bx-user-voice", "roles-to-shortlist": "bx-list-check", "to-confirm": "bx-check-circle", "people-met": "bx-group",
-  "roles-in-play": "bx-briefcase", "worth-a-call": "bx-phone-call", waiting: "bx-time-five", "recent-notes": "bx-pencil",
+  "roles-in-play": "bx-briefcase", "worth-a-call": "bx-phone-call", waiting: "bx-time-five", "ask-next": "bx-help-circle", "recent-notes": "bx-pencil",
   "brief-inbox": "bx-file", "company-coverage": "bx-building", "match-history": "bx-history", "override-log": "bx-show",
 };
 const SIZE_LABEL = { "1x1": "1×1", "2x1": "2×1", "2x2": "2×2" } as const;

@@ -30,7 +30,18 @@ describe("parsePrefs", () => {
     expect(p.updatedAt).toEqual(at);
     expect(p.dashboard).toEqual(DEFAULT_USER_PREFS.dashboard);
   });
-  it("defaults on invalid data", () => expect(parsePrefs({ theme: "purple" })).toEqual(DEFAULT_USER_PREFS));
+  it("a layout saved before a widget existed gets it on the shelf, hidden, and the rest is untouched", () => {
+    const saved = DEFAULT_USER_PREFS.dashboard.filter((w) => w.widgetId !== "ask-next").map((w) => ({ ...w, order: w.order + 1 }));
+    const order = DEFAULT_USER_PREFS.smallScreenOrder.filter((id) => id !== "ask-next");
+    const p = parsePrefs({ dashboard: saved, smallScreenOrder: order });
+    const ask = p.dashboard.find((w) => w.widgetId === "ask-next");
+    expect(ask).toMatchObject({ visible: false, size: "1x1" });
+    expect(ask!.order).toBeGreaterThan(Math.max(...saved.map((w) => w.order)));
+    expect(p.dashboard.filter((w) => w.widgetId !== "ask-next")).toEqual(saved);
+    expect(p.smallScreenOrder.at(-1)).toBe("ask-next");
+    expect(parsePrefs({ dashboard: p.dashboard, smallScreenOrder: p.smallScreenOrder })).toEqual(p); // idempotent
+  });
+  it("defaults on invalid data",() => expect(parsePrefs({ theme: "purple" })).toEqual(DEFAULT_USER_PREFS));
 });
 
 describe("signInErrorMessage", () => {

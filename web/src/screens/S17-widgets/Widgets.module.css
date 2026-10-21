@@ -43,12 +43,13 @@
 .number em i { flex: 1; height: 4px; background: var(--surface-3); }
 .bars { align-items: flex-end; gap: 4px; }
 .bars i { flex: 1; border-radius: var(--radius-inner); background: var(--surface-3); }
-.bars i:last-child { background: var(--accent); }
+.bars i:last-child { background: var(--text-3); }
 .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-content: center; }
-.grid i { height: 14px; border-radius: var(--radius-inner); border: 1px solid var(--accent-text); background: none; }
-.grid i[data-c="f"] { background: var(--accent); border-color: var(--accent); }
-.grid i[data-c="n"] { background: var(--surface-3); border-color: transparent; }
-.grid i[data-c="s"] { background: var(--stale-solid); border-color: var(--stale-solid); }
+/* Roles in play is numbers now, not cells: short dashes, the Stale ones in the stale colour */
+.grid i { height: 6px; border-radius: var(--radius-pill); background: var(--text-3); }
+.grid i[data-c="f"] { background: var(--text); }
+.grid i[data-c="n"] { background: var(--surface-3); }
+.grid i[data-c="s"] { background: var(--stale); }
 
 /* Side column */
 .side { display: flex; flex-direction: column; gap: 12px; }

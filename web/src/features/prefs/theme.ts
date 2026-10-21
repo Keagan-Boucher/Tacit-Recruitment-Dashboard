@@ -21,7 +21,20 @@ export function parsePrefs(data: Record<string, unknown> | undefined): UserPrefs
   const u = data.updatedAt as { toDate?: () => Date } | undefined;
   const merged = { ...DEFAULT_USER_PREFS, ...data, updatedAt: u?.toDate ? u.toDate() : u };
   const r = UserPrefs.safeParse(merged);
-  return r.success ? r.data : DEFAULT_USER_PREFS;
+  return r.success ? withNewWidgets(r.data) : DEFAULT_USER_PREFS;
+}
+
+/** A layout saved before a widget existed has no entry for it: add it hidden (on the shelf) and last in the small-screen order. */
+function withNewWidgets(p: UserPrefs): UserPrefs {
+  const have = new Set(p.dashboard.map((w) => w.widgetId));
+  const missing = DEFAULT_USER_PREFS.dashboard.filter((w) => !have.has(w.widgetId));
+  if (missing.length === 0 && DEFAULT_USER_PREFS.smallScreenOrder.every((id) => p.smallScreenOrder.includes(id))) return p;
+  const top = Math.max(-1, ...p.dashboard.map((w) => w.order));
+  return {
+    ...p,
+    dashboard: [...p.dashboard, ...missing.map((w, i) => ({ ...w, visible: false, order: top + 1 + i }))],
+    smallScreenOrder: [...p.smallScreenOrder, ...DEFAULT_USER_PREFS.smallScreenOrder.filter((id) => !p.smallScreenOrder.includes(id))],
+  };
 }
 
 // Cache read by the inline script in index.html. Keep the keys in sync with it.

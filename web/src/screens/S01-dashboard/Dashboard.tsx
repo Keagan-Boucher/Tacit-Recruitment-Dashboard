@@ -10,7 +10,7 @@ import { useOwned } from "../../lib/data";
 import { buildBoard, EMPTY, type Snapshot } from "./board";
 import { zoomVar } from "./arrange";
 import { Customise } from "./Customise";
-import { Forgotten, PeopleMet, RolesInPlay, RolesToShortlist, Shelf, ToConfirm, Waiting, WorthACall } from "./Widgets";
+import { AskNext, Forgotten, PeopleMet, RolesInPlay, RolesToShortlist, Shelf, ToConfirm, Waiting, WorthACall } from "./Widgets";
 import styles from "./Dashboard.module.css";
 
 const WIDGETS: Partial<Record<WidgetId, (p: { b?: ReturnType<typeof buildBoard> }) => ReactNode>> = {
@@ -21,6 +21,7 @@ const WIDGETS: Partial<Record<WidgetId, (p: { b?: ReturnType<typeof buildBoard> 
   "roles-in-play": RolesInPlay,
   "worth-a-call": WorthACall,
   waiting: Waiting,
+  "ask-next": AskNext,
 };
 const SIZE = { "1x1": "", "2x1": styles.w2, "2x2": styles.w2h2 } as const;
 
@@ -81,6 +82,7 @@ function Board({ onRetry }: { onRetry: () => void }) {
   }
   function leave() {
     setEdit(undefined);
+    setSaid("");
     setFailed(false);
     base.current = undefined;
     void navigate("/", { replace: true }); // clears ?customise and the dev ?state
@@ -112,10 +114,15 @@ function Board({ onRetry }: { onRetry: () => void }) {
     void navigate(href);
   }
 
+  const summary = !b
+    ? "Getting today’s list ready."
+    : b.total === 0
+      ? b.hasPeople ? "Nothing needs you today." : "Nothing needs you yet."
+      : `${b.total} ${b.total === 1 ? "thing needs" : "things need"} you today.`;
   const headline = !b ? (
-    <span className={styles.dim}>Getting today’s list ready.</span>
+    <span className={styles.dim}>{summary}</span>
   ) : b.total === 0 ? (
-    b.hasPeople ? "Nothing needs you today." : "Nothing needs you yet."
+    summary
   ) : (
     <>
       <span className={styles.num}>{b.total}</span> {b.total === 1 ? "thing needs" : "things need"} you today.
@@ -135,7 +142,7 @@ function Board({ onRetry }: { onRetry: () => void }) {
                 </Button>
               )}
               <Button onClick={cancel}>Cancel</Button>
-              <Button icon="bx-reset" onClick={() => change(DEFAULT_USER_PREFS.dashboard, "Board reset to the default seven widgets. Press Done to save it.")}>
+              <Button icon="bx-reset" onClick={() => change(DEFAULT_USER_PREFS.dashboard, "Board reset to the default. Press Done to save it.")}>
                 Reset to default
               </Button>
               <Button variant="primary" icon="bx-check" onClick={() => void done()}>
@@ -166,8 +173,9 @@ function Board({ onRetry }: { onRetry: () => void }) {
         }
       />
       {failed && <ErrorBanner className={styles.banner} title="Couldn’t save your layout." detail="Your changes are still here." onRetry={() => void done()} />}
+      {/* The one place this screen announces: customise changes while arranging, otherwise how the list came out. */}
       <p className="sr-only" role="status">
-        {said}
+        {editing ? said : summary}
       </p>
       {error && (
         <ErrorBanner
@@ -180,12 +188,7 @@ function Board({ onRetry }: { onRetry: () => void }) {
       {editing ? (
         <Customise draft={editing} onChange={change} render={renderWidget} sizeClass={(w) => SIZE[w.size] ?? ""} shelfOpen={shelfOpen} onCloseShelf={() => setShelfOpen(false)} />
       ) : (
-        <div className={styles.board} onClick={goInApp} role="region" aria-label="Today’s list" aria-busy={!b} aria-live="polite">
-          {!b && (
-            <p className="sr-only" role="status">
-              Getting today’s list ready.
-            </p>
-          )}
+        <div className={styles.board} onClick={goInApp} role="region" aria-label="Today’s list" aria-busy={!b}>
           {board.map((w) => (
             <div key={w.widgetId} className={`${styles.cell} ${SIZE[w.size]}`} style={{ "--so": small(w.widgetId) } as CSSProperties}>
               {renderWidget(w)}

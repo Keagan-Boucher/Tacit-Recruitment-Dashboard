@@ -4,7 +4,7 @@
 .dim { color: var(--text-2); }
 .banner { margin: -14px 0 6px; }
 /* Figma S01: the actions end at x 1413, 11 short of the other screens. */
-.actions { display: flex; align-items: center; gap: 10px; margin-right: 11px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-right: 11px; }
 
 .search {
   display: inline-flex;
@@ -45,9 +45,20 @@
 @media (max-width: 1100px) {
   .board { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; }
 }
+/* Same breakpoint as the shell's top bar: below it the page grows with the board instead of squeezing the header. */
+@media (max-width: 719px), (max-height: 599px) {
+  .page { height: auto; min-height: 0; }
+}
 @media (max-width: 700px) {
-  .board { grid-template-columns: minmax(0, 1fr); }
+  .actions { margin-right: 0; }
+  .board { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; }
   .w2, .w2h2 { grid-column: auto; grid-row: auto; }
+  .cell { min-height: 210px; }
+  .person h3 { font-size: 56px; overflow-wrap: anywhere; }
+  .columns { flex-direction: column; gap: 16px; }
+  .footer { flex-wrap: wrap; }
+  .heat { overflow-x: auto; scrollbar-width: thin; } /* the stage names stay readable: the table scrolls inside its card, not the page */
+  .heatRow { min-width: 460px; }
 }
 
 /* Hero: lime, the focal point */
@@ -60,8 +71,11 @@
 .start .sub { max-width: 520px; }
 .uploadIcon { display: grid; place-items: center; width: 52px; height: 52px; border: 1.5px solid var(--on-accent); border-radius: var(--radius-pill); }
 .case { display: flex; flex-direction: column; gap: 16px; }
-.reason { display: flex; align-items: flex-start; gap: 12px; }
-.reason p { flex: 1; margin: 0; }
+/* Two labelled columns, equal weight: the label is quiet, the reason is the loud thing (Figma 214:2137). */
+.columns { display: flex; align-items: flex-start; gap: 32px; }
+.reason { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.reason p { margin: 0; }
+.label { opacity: 0.64; }
 .footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .ask { display: flex; align-items: center; gap: 8px; margin: 0; }
 .skRow { display: flex; align-items: center; gap: 8px; }
@@ -93,26 +107,28 @@
 .plain { color: inherit; text-decoration: none; }
 
 .figure { display: flex; align-items: baseline; gap: 10px; margin: 0; }
-a.figure { align-items: center; }
+a.figure { padding-block: 10px; margin-block: -10px; } /* 44 px target around a 24 px figure */
 .big { color: var(--accent-text); }
-.text { color: var(--text); }
+.count { display: flex; align-items: baseline; gap: 4px; }
+.fact { display: flex; gap: 4px; }
+.factText, .rest { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.age { flex: none; color: var(--stale); font-weight: 500; white-space: nowrap; } /* the age lives on the aged fact, in words */
+.tally { white-space: nowrap; color: var(--text-3); }
+.tFor { color: var(--for); }
+.tAgainst { color: var(--against); }
 
 /* People you have met: twelve months, oldest first */
 .bars { display: flex; align-items: flex-end; gap: 5px; height: 56px; margin-top: auto; }
 .bar { flex: 1; min-width: 0; border-radius: 3px; background: var(--surface-3); } /* token-ok: chart bars */
-.barNow { background: var(--accent); }
+.barNow { background: var(--text-3); }
 
 /* Roles in play */
 .heat { display: flex; flex-direction: column; gap: 7px; margin-top: -5px; }
 .heatRow { display: grid; grid-template-columns: minmax(110px, 210px) repeat(5, minmax(0, 1fr)); align-items: center; gap: 6px; }
 .colHead { color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hc { display: block; padding: 9px 10px; border: 1px solid transparent; border-radius: var(--radius-inner); }
-.cFill { background: var(--accent); color: var(--on-accent); }
-.cLine { border-color: var(--accent-text); color: var(--accent-text); }
-.cLow { background: var(--surface-2); color: var(--text); }
-.cZero { background: var(--surface-2); color: var(--text-3); }
-.cStale { border-color: var(--stale); color: var(--stale); }
-.cStaleSolid { background: var(--stale-solid); color: var(--on-accent); }
+.hc { display: block; padding: 7px 10px; } /* numbers only now, so the three rows fit the 242 px row beside the hero */
+.cZero { color: var(--text-3); }
+.cStale { color: var(--stale); }
 
 /* Small screens: one column, in the order saved on the Widgets page (S17). */
 @media (max-width: 700px) {

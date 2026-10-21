@@ -1,4 +1,4 @@
-import type { Attribute, Candidate, Company, InterviewNote, Match, Override, Role } from "@tacit/shared";
+import type { Attribute, Candidate, Company, InterviewNote, Match, Override, Reason, Role } from "@tacit/shared";
 import { isForgotten, monthsSince, staleness } from "@tacit/shared";
 import type { WithId } from "../../lib/data";
 
@@ -57,6 +57,14 @@ export function buildBoard(s: Snapshot, now: Date) {
     .sort((a, b) => b.waiting - a.waiting || b.suggested - a.suggested);
   const shortlist = play.filter((p) => p.suggested > 0 && p.shortlisted === 0 && p.waiting > 0);
 
+  // How long ago a reason's evidence was heard, only when its oldest cited fact has gone stale: the age sits on that fact, not on the person.
+  const attr = new Map(s.attributes.map((a) => [a.id, a]));
+  const heard = (r?: Reason) => {
+    const at = r?.attributeIds.flatMap((id) => attr.get(id)?.observedAt ?? []).sort((a, b) => a.getTime() - b.getTime())[0];
+    return at && staleness(at, now) === "stale" ? monthsSince(at, now) : undefined;
+  };
+  const ageMonths = (m: Match) => monthsSince(new Date(now.getTime() - m.evidenceAgeDays * 86_400_000), now);
+
   // Someone you forgot: the best-ranked undecided suggestion for a person not opened in months.
   const pick = undecided
     .filter((m) => isForgotten(cand.get(m.candidateId)!.lastOpenedAt, now)) // live: opening the profile clears it
@@ -70,8 +78,10 @@ export function buildBoard(s: Snapshot, now: Date) {
     nAgainst: pick.reasonsAgainst.length,
     reasonFor: pick.reasonsFor[0]?.text,
     reasonAgainst: pick.reasonsAgainst[0]?.text,
+    heardFor: heard(pick.reasonsFor[0]),
+    heardAgainst: heard(pick.reasonsAgainst[0]),
     ask: pick.questionsToAsk[0],
-    months: monthsSince(new Date(now.getTime() - pick.evidenceAgeDays * 86_400_000), now),
+    months: ageMonths(pick),
     notOpened: monthsSince(cand.get(pick.candidateId)!.lastOpenedAt ?? cand.get(pick.candidateId)!.createdAt, now),
   };
 
@@ -96,7 +106,7 @@ export function buildBoard(s: Snapshot, now: Date) {
     .flatMap((c) => {
       const mine = s.attributes.filter((a) => a.candidateId === c.id && a.confirmedByRecruiter).sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime());
       const at = mine[0]?.observedAt ?? c.lastInterviewAt;
-      return at && staleness(at, now) === "stale" ? [{ candidate: c, text: mine[0] && (mine[0].editedValue ?? mine[0].value), months: monthsSince(at, now) }] : [];
+      return at && staleness(at, now) === "stale" ? [{ candidate: c, type: mine[0]?.type, text: mine[0] && (mine[0].editedValue ?? mine[0].value), months: monthsSince(at, now) }] : [];
     })
     .sort((a, b) => b.months - a.months);
 
@@ -105,6 +115,17 @@ export function buildBoard(s: Snapshot, now: Date) {
     .filter((m) => m.id !== pick?.id)
     .sort((a, b) => a.rank - b.rank || b.generatedAt.getTime() - a.generatedAt.getTime())
     .map((m) => ({ match: m, candidate: cand.get(m.candidateId)!, role: roleById.get(m.roleId)! }));
+
+  // Ask on your next call: the first question of each person's best open suggestion, strongest first; a stale match carries its age.
+  const asked = new Set<string>();
+  const ask = [...undecided]
+    .sort((a, b) => a.rank - b.rank || b.generatedAt.getTime() - a.generatedAt.getTime())
+    .flatMap((m) => {
+      const question = m.questionsToAsk[0];
+      if (!question || asked.has(m.candidateId)) return [];
+      asked.add(m.candidateId);
+      return [{ match: m, candidate: cand.get(m.candidateId)!, role: roleById.get(m.roleId)!, question, months: m.staleness === "stale" ? ageMonths(m) : undefined }];
+    });
 
   return {
     total: shortlist.length + (confirm?.count ?? 0) + worth.length,
@@ -115,6 +136,7 @@ export function buildBoard(s: Snapshot, now: Date) {
     people: { count: s.candidates.length, newThisMonth, bars },
     play,
     worth,
+    ask,
     waiting,
   };
 }

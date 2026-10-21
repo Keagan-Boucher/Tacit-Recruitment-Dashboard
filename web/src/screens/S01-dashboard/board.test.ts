@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import type { Candidate, Match, Override, Role } from "@tacit/shared";
+import type { Attribute, Candidate, Match, Override, Role } from "@tacit/shared";
 import { buildBoard, EMPTY, type Snapshot } from "./board";
 
 const now = new Date("2026-10-20");
@@ -20,6 +20,26 @@ it("a decided match leaves the queue; a reversed decision brings it back", () =>
   expect(buildBoard({ ...snap, overrides: [ov] }, now).forgotten).toBeUndefined();
   expect(buildBoard({ ...snap, overrides: [ov] }, now).shortlist).toHaveLength(0); // already shortlisted
   expect(buildBoard({ ...snap, overrides: [{ ...ov, reversedAt: now }] }, now).forgotten).toBeDefined();
+});
+
+it("ask on your next call: first question per person, best rank first, a stale match carries its age", () => {
+  const fresh = { ...match("m1", "new", 1), staleness: "fresh", evidenceAgeDays: 20 } as Match & { id: string };
+  const second = { ...match("m3", "new", 3), questionsToAsk: ["other"] } as Match & { id: string };
+  const none = { ...match("m4", "none", 4), questionsToAsk: [] } as Match & { id: string };
+  const s = { ...snap, candidates: [...snap.candidates, cand("none", 1)], matches: [match("m2", "old", 2), second, fresh, none] };
+  const rows = buildBoard(s, now).ask;
+  expect(rows.map((r) => [r.candidate.id, r.question, r.months])).toEqual([["new", "q", undefined], ["old", "q", 13]]);
+  const ov = { ...base, id: "o1", matchId: "m2", roleId: "r1", candidateId: "old", companyId: "c1", decision: "reject", reasonCodes: [], reasonText: "x", decidedAt: ago(0) } as Override & { id: string };
+  expect(buildBoard({ ...s, overrides: [ov] }, now).ask.map((r) => r.candidate.id)).toEqual(["new"]);
+  expect(buildBoard(EMPTY, now).ask).toEqual([]);
+});
+
+it("the hero's age sits on the aged cited fact only", () => {
+  const at = (months: number) => ({ ...base, id: "a", candidateId: "old", type: "salary", value: "R60k", observedAt: ago(months) }) as unknown as Attribute & { id: string };
+  const withAttr = (months: number) => buildBoard({ ...snap, attributes: [at(months)] }, now).forgotten;
+  expect(withAttr(14)?.heardFor).toBe(14);
+  expect(withAttr(3)?.heardFor).toBeUndefined();
+  expect(withAttr(14)?.heardAgainst).toBeUndefined(); // no against reason in the fixture
 });
 
 it("an empty snapshot is a quiet board", () => {

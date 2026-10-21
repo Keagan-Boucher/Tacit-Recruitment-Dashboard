@@ -22,7 +22,7 @@ export const Theme = z.enum(["dark", "light", "system"]);
 export const WidgetSize = z.enum(["1x1", "2x1", "2x2"]);
 export const WidgetId = z.enum([
   "forgotten", "roles-to-shortlist", "to-confirm", "people-met", "roles-in-play", "worth-a-call",
-  "waiting", "recent-notes", "brief-inbox", "company-coverage", "match-history", "override-log",
+  "waiting", "ask-next", "recent-notes", "brief-inbox", "company-coverage", "match-history", "override-log",
 ]);
 
 export const SourceSpan = z
@@ -200,10 +200,10 @@ export const UserPrefs = z.object({
   updatedAt: z.date().optional(),
 });
 
-// Default board, row-major, from design-system.md (Figma was unreachable). 4x3 = 12 cells.
+// Default board, row-major, from the Figma hierarchy frames (214:2137). 4x3 = 12 cells.
 const board: [WidgetId, WidgetSize][] = [
-  ["forgotten", "2x2"], ["roles-to-shortlist", "1x1"], ["to-confirm", "1x1"],
-  ["people-met", "2x1"], ["roles-in-play", "2x1"], ["worth-a-call", "1x1"], ["waiting", "1x1"],
+  ["forgotten", "2x2"], ["roles-to-shortlist", "1x1"], ["to-confirm", "1x1"], ["roles-in-play", "2x1"],
+  ["worth-a-call", "1x1"], ["ask-next", "1x1"], ["waiting", "1x1"], ["people-met", "1x1"],
 ];
 const shelf: WidgetId[] = ["recent-notes", "brief-inbox", "company-coverage", "match-history", "override-log"];
 

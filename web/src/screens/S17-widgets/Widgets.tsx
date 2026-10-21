@@ -10,7 +10,7 @@ import styles from "./Widgets.module.css";
 type Kind = "hero" | "lines" | "number" | "bars" | "grid" | "list";
 const KIND: Record<WidgetId, Kind> = {
   forgotten: "hero", "roles-to-shortlist": "lines", "to-confirm": "number", "people-met": "bars", "roles-in-play": "grid",
-  "worth-a-call": "lines", waiting: "list", "recent-notes": "list", "brief-inbox": "lines", "company-coverage": "list",
+  "worth-a-call": "lines", waiting: "list", "ask-next": "list", "recent-notes": "list", "brief-inbox": "lines", "company-coverage": "list",
   "match-history": "lines", "override-log": "list",
 };
 const BARS = [1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6];

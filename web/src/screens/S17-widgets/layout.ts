@@ -9,6 +9,7 @@ export const TITLES: Record<WidgetId, string> = {
   "roles-in-play": "Roles in play",
   "worth-a-call": "Worth a call",
   waiting: "Also waiting on you",
+  "ask-next": "Ask on your next call",
   "recent-notes": "Recent notes",
   "brief-inbox": "Brief inbox",
   "company-coverage": "Company coverage",
