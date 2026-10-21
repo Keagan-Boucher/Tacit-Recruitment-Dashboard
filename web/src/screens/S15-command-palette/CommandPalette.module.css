@@ -25,6 +25,7 @@
 .results { display: flex; flex-direction: column; gap: 2px; padding: 8px; overflow-y: auto; }
 .list { display: flex; flex-direction: column; gap: 2px; }
 .group { padding: 10px 12px 6px; color: var(--text-3); }
+.count { color: var(--text-3); }
 .message { padding: 12px 12px 8px; color: var(--text); }
 
 .option { position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-radius: var(--radius-inner); cursor: pointer; }

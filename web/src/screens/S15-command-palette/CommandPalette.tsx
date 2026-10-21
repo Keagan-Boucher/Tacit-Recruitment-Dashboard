@@ -7,9 +7,9 @@ import { devParam } from "../../app/dev";
 import { Chip, Icon } from "../../components";
 import { useCandidates, useOwned } from "../../lib/data";
 import styles from "./CommandPalette.module.css";
-import { buildGroups, type Hit } from "./search";
+import { paletteGroups, type Hit } from "./search";
 
-const ICON = { candidate: "bx-group", company: "bx-buildings", role: "bx-briefcase" } as const;
+const ICON = { candidate: "bx-group", company: "bx-buildings", role: "bx-briefcase", search: "bx-search", new: "bx-plus" } as const;
 
 /** Ctrl or Cmd + K from any railed page opens it. Dev: `?palette=open` (query "fico", or "mainframe" with `&state=no-results`, or `&q=`). */
 export function CommandPalette() {
@@ -80,11 +80,10 @@ function Palette({ seed, onClose }: { seed: string; onClose: () => void }) {
 
   const error = [people, companies, roles].find((l) => l.error)?.error;
   const ready = !error && people.data && companies.data && roles.data;
-  const found = ready ? buildGroups(people.data!, companies.data!, roles.data!, query.trim(), now) : [];
-  // A miss says so, then offers the recent items underneath (as the no-results frame does).
-  const miss = ready && found.length === 0 && query.trim() !== "";
-  const groups = miss ? buildGroups(people.data!, companies.data!, roles.data!, "", now) : found;
+  // A miss says so, then suggests searching the notes and lists a few recent items (as the no-results frame does).
+  const { groups, miss } = ready ? paletteGroups(people.data!, companies.data!, roles.data!, query, now) : { groups: [], miss: false };
   const flat = groups.flatMap((g) => g.hits);
+  const results = flat.filter((h) => h.kind === "candidate" || h.kind === "company" || h.kind === "role").length;
   const current = Math.min(active, flat.length - 1);
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   const optionId = (h: Hit) => `${listId}-${h.key}`;
@@ -133,13 +132,14 @@ function Palette({ seed, onClose }: { seed: string; onClose: () => void }) {
       <div className={styles.results}>
         {/* announces "Nothing matches" or the result count; the visible text is the same message */}
         <div aria-live="polite" className={message ? `${styles.message} t-body-m-strong` : "sr-only"}>
-          {message || `${flat.length} ${flat.length === 1 ? "result" : "results"}`}
+          {message || `${results} ${results === 1 ? "result" : "results"}`}
         </div>
         <div id={listId} role="listbox" aria-label="Results" className={styles.list}>
           {groups.map((g, gi) => (
             <div key={g.label} role="group" aria-labelledby={`${listId}-g${gi}`} className={styles.list}>
               <p id={`${listId}-g${gi}`} className={`${styles.group} t-caption-strong`}>
                 {g.label}
+                {g.count !== undefined && <span className={styles.count}> {g.count}</span>}
               </p>
               {g.hits.map((h) => (
                 <div
@@ -152,15 +152,17 @@ function Palette({ seed, onClose }: { seed: string; onClose: () => void }) {
                   onClick={() => go(h)}
                 >
                   <span className={styles.iconBox}>
-                    <Icon name={ICON[h.kind]} size={16} />
+                    <Icon name={h.recent ? "bx-history" : ICON[h.kind]} size={16} />
                   </span>
                   <span className={styles.text}>
                     <span className={`${styles.title} t-body-m-strong`}>
-                      <Marked text={h.title} terms={terms} />
+                      <Marked text={h.title} terms={h.kind === "search" || h.kind === "new" ? [] : terms} />
                     </span>
-                    <span className={`${styles.sub} t-caption`}>
-                      <Marked text={h.sub} terms={terms} />
-                    </span>
+                    {h.sub && (
+                      <span className={`${styles.sub} t-caption`}>
+                        <Marked text={h.sub} terms={terms} />
+                      </span>
+                    )}
                   </span>
                   {h.staleMonths !== undefined && <Chip tone="stale">Stale · {h.staleMonths} mo</Chip>}
                   {h === flat[current] && <kbd className={`${styles.kbd} t-meta`}>Enter</kbd>}

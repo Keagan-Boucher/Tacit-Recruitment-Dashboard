@@ -84,6 +84,13 @@ function Companies({ onRetry }: { onRetry: () => void }) {
             <span className={styles.num}>{all.length}</span> {all.length === 1 ? "company" : "companies"}, {plural(openRoles, "open role")}.
           </>
         }
+        actions={
+          // Same destination as the dashboard's button: pick whose interview this is.
+          <Link to="/candidates" className={buttonClass("primary")}>
+            <Icon name="bx-plus" />
+            New interview note
+          </Link>
+        }
       />
       <div className={styles.toolbar} role="search">
         <Input

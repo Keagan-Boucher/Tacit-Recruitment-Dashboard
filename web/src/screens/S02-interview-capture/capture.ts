@@ -137,3 +137,55 @@ export function budgetLine(b: { min: number; max: number; currency: string }): s
 /** Candidate projection after skills are kept: newest kept first, no repeats, at most four. */
 export const mergeTopSkills = (kept: string[], existing: string[]) =>
   [...new Set([...kept, ...existing])].slice(0, 4);
+
+// ---- editor sections -------------------------------------------------------------------------
+
+/**
+ * The note as the editor shows it: free text before the first heading (`head` null), then each heading line with the
+ * text under it. `body` is null when nothing follows the heading line, not even its line break, so
+ * `joinSections(splitSections(t))` gives back `t` character for character. The stored text stays one plain string.
+ */
+export type Section = { head: string | null; body: string | null };
+
+export function splitSections(text: string, questions: string[]): Section[] {
+  const out: Section[] = [];
+  let cur: { head: string | null; body: string[] } | null = null;
+  const flush = () => cur && out.push({ head: cur.head, body: cur.body.length ? cur.body.join("\n") : null });
+  lines(text).forEach((l, i) => {
+    if (questions.includes(l.trim())) {
+      flush();
+      cur = { head: l, body: [] };
+    } else {
+      if (i === 0) cur = { head: null, body: [] };
+      cur!.body.push(l);
+    }
+  });
+  flush();
+  return out;
+}
+
+export const joinSections = (sections: Section[]) =>
+  sections.map((s) => (s.head === null ? (s.body ?? "") : s.head + (s.body === null ? "" : `\n${s.body}`))).join("\n");
+
+/** Where each section's editable body starts in the whole text. */
+function bodyStarts(sections: Section[]): number[] {
+  let start = 0;
+  return sections.map((s) => {
+    const body = start + (s.head === null ? 0 : s.head.length + 1);
+    start += joinSections([s]).length + 1;
+    return body;
+  });
+}
+
+/** The body (and the offset inside it) that a cursor offset in the whole text falls in. An offset inside a heading line lands at the start of its body. */
+export function locate(sections: Section[], offset: number): { index: number; at: number } {
+  const starts = bodyStarts(sections);
+  let index = 0;
+  starts.forEach((b, i) => {
+    if (offset >= b - (sections[i]!.head === null ? 0 : sections[i]!.head!.length + 1)) index = i;
+  });
+  return { index, at: Math.max(0, Math.min(offset - starts[index]!, sections[index]!.body?.length ?? 0)) };
+}
+
+/** Offset in the whole text of `at` inside section `index`'s body. */
+export const offsetIn = (sections: Section[], index: number, at: number) => bodyStarts(sections)[index]! + at;

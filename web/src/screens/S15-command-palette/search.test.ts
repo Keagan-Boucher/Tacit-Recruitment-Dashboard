@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Company, Role } from "@tacit/shared";
-import { buildGroups } from "./search";
+import { buildGroups, paletteGroups } from "./search";
 import type { Person } from "../S08-candidates-list/view";
 
 const now = new Date("2026-10-14T12:00:00Z");
@@ -23,5 +23,27 @@ describe("palette search", () => {
   it("shows recent items per group on an empty query and nothing for a miss", () => {
     expect(buildGroups(people, [company], [role], "", now).map((g) => g.label)).toEqual(["Recent people", "Recent companies", "Recent roles"]);
     expect(buildGroups(people, [company], [role], "mainframe", now)).toEqual([]);
+  });
+});
+
+describe("palette groups", () => {
+  it("adds group counts and an Actions group with the notes search first", () => {
+    const { groups, miss } = paletteGroups(people, [company], [role], "fico", now);
+    expect(miss).toBe(false);
+    expect(groups.map((g) => [g.label, g.count])).toEqual([["People", 2], ["Roles", 1], ["Actions", undefined]]);
+    expect(groups.at(-1)!.hits.map((h) => [h.title, h.to])).toEqual([["Search notes for “fico”", "/candidates?q=fico"], ["New interview note", "/candidates"]]);
+  });
+  it("offers only New interview note when nothing is typed", () => {
+    const { groups } = paletteGroups(people, [company], [role], "  ", now);
+    expect(groups.map((g) => g.label)).toEqual(["Recent people", "Recent companies", "Recent roles", "Actions"]);
+    expect(groups.at(-1)!.hits.map((h) => h.key)).toEqual(["action-new"]);
+  });
+  it("on a miss puts Suggested first, then two recent rows (a person and a role)", () => {
+    const { groups, miss } = paletteGroups(people, [company], [role], "main frame & more", now);
+    expect(miss).toBe(true);
+    expect(groups.map((g) => g.label)).toEqual(["Suggested", "Recent"]);
+    expect(groups[0]!.hits[0]!.to).toBe("/candidates?q=main%20frame%20%26%20more");
+    expect(groups[1]!.hits.map((h) => h.kind)).toEqual(["candidate", "role"]);
+    expect(groups[1]!.hits.every((h) => h.recent && !h.sub && h.staleMonths === undefined)).toBe(true);
   });
 });

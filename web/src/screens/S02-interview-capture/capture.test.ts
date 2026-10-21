@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { askedQuestions, budgetLine, citedAttributes, headingAt, insertHeading, mergeTopSkills, noteLines, noteTitle, pickDraft, stripHeadings } from "./capture";
+import { askedQuestions, budgetLine, citedAttributes, headingAt, insertHeading, joinSections, locate, mergeTopSkills, noteLines, noteTitle, offsetIn, pickDraft, splitSections, stripHeadings } from "./capture";
 
 const Q = ["Where are you now?", "Why are you looking to leave?", "Salary and notice"];
 const join = (ls: { parts: { text: string }[] }[]) => ls.map((l) => l.parts.map((p) => p.text).join("")).join("\n");
@@ -88,5 +88,50 @@ describe("labels", () => {
   it("formats the budget and merges skills", () => {
     expect(budgetLine({ min: 52000, max: 55000, currency: "ZAR" })).toBe("R52k to R55k a month");
     expect(mergeTopSkills(["B", "A"], ["A", "C", "D", "E"])).toEqual(["B", "A", "C", "D"]);
+  });
+});
+
+describe("editor sections", () => {
+  const texts = [
+    "",
+    "Just free text.\nTwo lines.",
+    "Where are you now?",
+    "Where are you now?\n",
+    "Where are you now?\nBored.\n\nWhy are you looking to leave?\nGrowth.\n\nSalary and notice \nR65k.",
+    "Intro line\n\nWhere are you now?\nBored.\nStill here.\nWhy are you looking to leave?\nSalary and notice\n\n",
+    "\n\nWhere are you now?\n\n\n",
+  ];
+
+  it("joins back to exactly the stored text", () => {
+    for (const t of texts) expect(joinSections(splitSections(t, Q))).toBe(t);
+  });
+
+  it("splits free text before the first heading from the answers under each heading", () => {
+    expect(splitSections("Intro\n\nWhere are you now?\nBored.\nStill.\nSalary and notice", Q)).toEqual([
+      { head: null, body: "Intro\n" },
+      { head: "Where are you now?", body: "Bored.\nStill." },
+      { head: "Salary and notice", body: null },
+    ]);
+    expect(splitSections("", Q)).toEqual([{ head: null, body: "" }]);
+  });
+
+  it("round-trips an edit of one answer and what insertHeading produces", () => {
+    const made = insertHeading("Intro.", 6, Q[0]!).text;
+    const s = splitSections(made, Q);
+    expect(s.map((x) => x.head)).toEqual([null, Q[0]]);
+    s[1]!.body = "Bored.";
+    expect(joinSections(s)).toBe("Intro.\n\nWhere are you now?\nBored.");
+    expect([...askedQuestions(joinSections(s), Q)]).toEqual([Q[0]]);
+  });
+
+  it("maps a cursor offset to the answer it is in, and back", () => {
+    const t = "Intro\n\nWhere are you now?\nBored.\nSalary and notice\nR65k";
+    const s = splitSections(t, Q);
+    const bored = t.indexOf("Bored") + 2;
+    expect(locate(s, bored)).toEqual({ index: 1, at: 2 });
+    expect(offsetIn(s, 1, 2)).toBe(bored);
+    expect(locate(s, t.indexOf("Where") + 3)).toEqual({ index: 1, at: 0 });
+    expect(locate(s, t.length)).toEqual({ index: 2, at: 4 });
+    expect(locate(s, 0)).toEqual({ index: 0, at: 0 });
   });
 });

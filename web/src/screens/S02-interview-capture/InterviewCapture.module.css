@@ -76,19 +76,25 @@
 
 /* The editor and the read-only note share one scroll area. */
 .writing { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* Question labels sit above their answers, as in the read-only view; the whole stack scrolls as one. */
+.sections { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; cursor: text; }
+.section { display: flex; flex-direction: column; flex: none; }
+.section + .section { margin-top: 14px; }
+.section:last-child { flex: 1 0 auto; }
+.sectionHead { color: var(--text-3); cursor: text; }
 .editor {
-  flex: 1;
+  display: block;
   width: 100%;
-  min-height: 0;
   padding: 0;
   border: 0;
   background: none;
   color: var(--text);
   caret-color: var(--accent-text);
   resize: none;
-  overflow-y: auto;
+  overflow: hidden;
   white-space: pre-wrap;
 }
+.section:last-child .editor { flex: 1 0 auto; }
 .editor:focus-visible { outline: none; box-shadow: none; }
 .editor::placeholder { color: var(--text-3); opacity: 1; }
 .editor[readonly] { color: var(--text-2); }

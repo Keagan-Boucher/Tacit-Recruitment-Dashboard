@@ -11,6 +11,7 @@ import { useCandidate, useDocument, useNote, useNoteAttributes, useNotes, useOwn
 import { db } from "../../lib/firebase";
 import NotFound from "../S16-not-found/NotFound";
 import { askedQuestions, citedAttributes, fmtTime, headingAt, insertHeading, mergeTopSkills, noteLines, noteTitle, pickDraft } from "./capture";
+import { Editor, type EditorHandle } from "./Editor";
 import { GuideChips } from "./GuideChips";
 import { Heard, Reader, type Row } from "./Heard";
 import { EarlierNote, Failed, Hint, RoleCard, Working } from "./Side";
@@ -167,7 +168,7 @@ function Capture(p: Props) {
     const open = questions.find((q) => !askedQuestions(p.initialText, questions).has(q));
     return new Set(dev !== null && dev !== "default" && dev !== "typing-saved" && open ? [open] : []);
   });
-  const editor = useRef<HTMLTextAreaElement>(null);
+  const editor = useRef<EditorHandle>(null);
   const cursor = useRef<number | null>(null);
   const pendingCursor = useRef<number | null>(null);
   const [tick, setTick] = useState(0);
@@ -302,8 +303,7 @@ function Capture(p: Props) {
     if (pendingCursor.current === null || !editor.current) return;
     const at = pendingCursor.current;
     pendingCursor.current = null;
-    editor.current.focus();
-    editor.current.setSelectionRange(at, at);
+    editor.current.focusAt(at);
     cursor.current = at;
   }, [text, tick, editing]);
 
@@ -365,16 +365,14 @@ function Capture(p: Props) {
 
           <div className={styles.writing}>
             {editing ? (
-              <textarea
+              <Editor
                 ref={editor}
-                className={`${styles.editor} t-note`}
-                aria-label="Interview note"
+                text={text}
+                questions={questions}
                 placeholder={`Write what you hear from ${first}. It saves as you go.`}
-                value={text}
                 autoFocus={dev === null}
-                spellCheck
-                onChange={(e) => edit(e.target.value)}
-                onSelect={(e) => (cursor.current = e.currentTarget.selectionStart)}
+                onChange={edit}
+                onCursor={(at) => (cursor.current = at)}
               />
             ) : (
               <Reader lines={lines} activeId={activeId} onSelect={setActiveId} locked={showMode === "working"} />
