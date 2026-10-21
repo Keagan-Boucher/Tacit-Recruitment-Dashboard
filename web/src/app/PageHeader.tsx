@@ -13,7 +13,7 @@ export function PageHeader({ context, headline, actions }: Props) {
   return (
     <header className={styles.header}>
       <div className={styles.title}>
-        {context ? <p className={`t-body-s ${styles.context}`}>{context}</p> : null}
+        {context ? <div className={`t-body-s ${styles.context}`}>{context}</div> : null}
         <h1 className="t-headline">{headline}</h1>
       </div>
       {actions ? <div className={styles.actions}>{actions}</div> : null}

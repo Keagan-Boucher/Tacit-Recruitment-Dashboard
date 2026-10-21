@@ -195,7 +195,7 @@ export function BriefPicker({ onInterpreted, initialSource = "paste" }: Props) {
   return (
     <div className={styles.root}>
       <Card className={styles.card} aria-busy={busy || undefined}>
-        <h3 className="t-title">The brief</h3>
+        <h2 className="t-title">The brief</h2>
         <ModeSwitch
           value={source}
           onChange={(v) => {
@@ -329,7 +329,7 @@ function Understood({ r }: { r: BriefInterpretation }) {
   return (
     <Card className={styles.card}>
       <div>
-        <h3 className="t-title">What Tacit read from the brief</h3>
+        <h2 className="t-title">What Tacit read from the brief</h2>
         {context && <p className={`${styles.context} t-body-s`}>{context}</p>}
       </div>
       <ul className={styles.rows}>
