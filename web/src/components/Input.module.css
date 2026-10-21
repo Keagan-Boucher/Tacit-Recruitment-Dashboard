@@ -25,6 +25,8 @@
 .invalid { border-color: var(--against); }
 /* 1.5 px lime stroke on focus: the 1 px border plus a half-pixel ring */
 .control:focus-within { border-color: var(--accent-text); box-shadow: 0 0 0 0.5px var(--accent-text); }
+/* Windows high contrast flattens the border change, so draw a system-colour outline instead (WCAG 2.4.7) */
+@media (forced-colors: active) { .control:focus-within { outline: 2px solid Highlight; outline-offset: 2px; } }
 
 .native {
   flex: 1;
