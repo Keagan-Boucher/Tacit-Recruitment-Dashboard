@@ -66,7 +66,7 @@ export function groupByAge(people: Person[], now: Date): Group[] {
 export type SourceFilterId = "all" | "cv" | "note" | "stale";
 export const SOURCE_FILTERS: { id: SourceFilterId; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "cv", label: "From CVs" },
+  // shortcut: "From CVs" is hidden while CV facts aren't citable attributes (always 0); restore { id: "cv", label: "From CVs" } after the MVP.
   { id: "note", label: "From notes" },
   { id: "stale", label: "Stale evidence" },
 ];
