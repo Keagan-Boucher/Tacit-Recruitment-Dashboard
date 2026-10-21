@@ -85,12 +85,24 @@ export const Attribute = z.object({
   modelVersion: z.string(),
 });
 
+/** Where one company fact came from; the UI labels it ("Your note", "Client feedback", "Placements", or the email sender). */
+export const CompanyFactSource = z.enum(["note", "email", "client-feedback", "placements"]);
+export const CompanyFact = z.object({
+  text: z.string().min(1),
+  source: CompanyFactSource,
+  /** Who said it, e.g. the email sender. */
+  by: z.string().optional(),
+  observedAt: z.date(),
+});
+
 export const Company = z.object({
   ...doc,
   name: z.string(),
   sector: z.string(),
   hiringPattern: z.string(),
   notes: z.string(),
+  /** Per-fact provenance. Optional: companies without it fall back to hiringPattern / notes text. */
+  facts: z.array(CompanyFact).optional(),
 });
 
 // Fields in the recruiter's screening order; the UI shows them in this order.
@@ -102,6 +114,18 @@ export const InterpretedBrief = z.object({
   mustHave: z.array(z.string()),
   niceToHave: z.array(z.string()),
   seniority: z.string(),
+  /** Verbatim brief phrase per value, "" = none. Absent on roles made before parse-brief.v2 (no source line). Mirrors ai.ts BriefQuotes. */
+  quotes: z
+    .object({
+      workMode: z.string(),
+      travel: z.string(),
+      budget: z.string(),
+      location: z.string(),
+      seniority: z.string(),
+      mustHave: z.array(z.string()),
+      niceToHave: z.array(z.string()),
+    })
+    .optional(),
 });
 
 export const Role = z.object({
@@ -230,6 +254,8 @@ export type SourceSpan = z.infer<typeof SourceSpan>;
 export type Candidate = z.infer<typeof Candidate>;
 export type InterviewNote = z.infer<typeof InterviewNote>;
 export type Attribute = z.infer<typeof Attribute>;
+export type CompanyFactSource = z.infer<typeof CompanyFactSource>;
+export type CompanyFact = z.infer<typeof CompanyFact>;
 export type Company = z.infer<typeof Company>;
 export type InterpretedBrief = z.infer<typeof InterpretedBrief>;
 export type Role = z.infer<typeof Role>;

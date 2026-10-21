@@ -1,4 +1,4 @@
-import type { Company, Placement, QuestionGuide, Role } from "@tacit/shared";
+import type { Company, CompanyFact, Placement, QuestionGuide, Role } from "@tacit/shared";
 import { daysAgo, monthsAgo, type Doc } from "./build.ts";
 
 type Own = (at: Date) => { ownerUid: string; createdAt: Date; updatedAt: Date };
@@ -15,27 +15,83 @@ const COMPANIES: [id: string, name: string, sector: string, pattern: string, not
 ];
 const COMPANY_AGE = [24, 24, 23, 0.8, 22, 21, 20, 19];
 
-export const buildCompanies = (own: Own, now: Date): Doc<Company>[] =>
-  COMPANIES.map(([id, name, sector, hiringPattern, notes], i) => ({ id, data: { ...own(monthsAgo(now, COMPANY_AGE[i])), name, sector, hiringPattern, notes } }));
+// Per-fact provenance (S11): [text, source, by | null, observedAt as [unit, amount] ago]. Consistent with hiringPattern / notes / placements.
+type FactRow = [string, CompanyFact["source"], string | null, ["d" | "m", number]];
+const FACTS: Record<string, FactRow[]> = {
+  co_demo_vantage: [
+    ["Hybrid, two days in the Durban office.", "note", null, ["d", 4]],
+    ["Pays on budget, rarely above it.", "client-feedback", null, ["m", 4]],
+    ["Wants S/4HANA hands-on, not ECC only.", "client-feedback", null, ["m", 19]],
+    ["Mid-market SAP hires at R52k and R55k a month.", "placements", null, ["m", 14]], // stale on purpose: older than 12 months
+  ],
+  co_karoo_health: [
+    ["Oracle shop moving from EBS to Fusion.", "email", "Priya Pillay", ["m", 3]],
+    ["Wants Oracle Fusion, not EBS.", "note", null, ["d", 10]],
+    ["Hires analysts and one finance lead a year.", "placements", null, ["m", 13]],
+  ],
+  co_bluewater_fintech: [
+    ["NetSuite for finance; admins report to the CFO.", "note", null, ["m", 2]],
+    ["Wants Johannesburg-based SAP people for anything on-site.", "client-feedback", null, ["m", 30]],
+  ],
+  co_umoya_mobile: [
+    ["New client. SuccessFactors rollout for HR.", "note", null, ["d", 20]],
+    ["First role with you. Nobody placed yet.", "note", null, ["d", 20]],
+  ],
+  co_protea_retail: [
+    ["Hiring freeze lifted in March.", "email", "Lerato Mahlangu", ["m", 7]],
+    ["Hires juniors in bursts after budget approval.", "placements", null, ["m", 20]],
+  ],
+  co_sable_insurance: [
+    ["Mostly contract engagements around the ECC finance module.", "placements", null, ["m", 18]],
+    ["Prefers contract to permanent.", "client-feedback", null, ["m", 5]],
+  ],
+  co_fynbos_analytics: [
+    ["Thandi Mokoena is the hiring contact.", "email", "Thandi Mokoena", ["m", 6]],
+    ["Occasional project managers for client rollouts.", "placements", null, ["m", 16]],
+  ],
+  co_highveld_mining: [
+    ["Hires SAP PMs for plant system rollouts.", "placements", null, ["m", 15]],
+    ["SAP PM budget of R70k.", "client-feedback", null, ["m", 8]],
+  ],
+};
 
-const brief = (workMode: string, travel: string, min: number, max: number, location: string, mustHave: string[], niceToHave: string[], seniority: string) =>
-  ({ workMode, travel, budget: { min, max, currency: "ZAR" }, location, mustHave, niceToHave, seniority });
+export const buildCompanies = (own: Own, now: Date): Doc<Company>[] =>
+  COMPANIES.map(([id, name, sector, hiringPattern, notes], i) => ({
+    id,
+    data: {
+      ...own(monthsAgo(now, COMPANY_AGE[i])), name, sector, hiringPattern, notes,
+      facts: FACTS[id]!.map(([text, source, by, [u, n]]) => ({ text, source, ...(by ? { by } : {}), observedAt: u === "d" ? daysAgo(now, n) : monthsAgo(now, n) })),
+    },
+  }));
+
+// quotes are verbatim substrings of briefText ("" = the brief does not say it); checked in data.test.ts.
+type Quotes = NonNullable<NonNullable<Role["interpretedBrief"]>["quotes"]>;
+const brief = (workMode: string, travel: string, min: number, max: number, location: string, mustHave: string[], niceToHave: string[], seniority: string, quotes?: Quotes) =>
+  ({ workMode, travel, budget: { min, max, currency: "ZAR" }, location, mustHave, niceToHave, seniority, ...(quotes ? { quotes } : {}) });
+const q = (workMode: string, travel: string, budget: string, location: string, seniority: string, mustHave: string[], niceToHave: string[]): Quotes =>
+  ({ workMode, travel, budget, location, seniority, mustHave, niceToHave });
 
 // [id, company, title, briefText, status, openedDaysAgo (open) | monthsAgo [opened, closed] (filled/expired), brief?]
 type RoleRow = [string, string, string, string, Role["status"], number | [number, number], Role["interpretedBrief"]?];
 const ROLES: RoleRow[] = [
-  ["role_demo_fico", "co_demo_vantage", "SAP FICO consultant (S/4HANA)", "SAP FICO consultant for our S/4HANA rollout. Hands-on FI/CO on S/4. Group reporting a bonus.", "open", 3,
-    brief("Hybrid, two days in the office", "None mentioned", 52000, 55000, "Durban or Cape Town", ["FI/CO configuration on S/4HANA"], ["Asset accounting", "Group reporting"], "Consultant, 5 or more years")],
+  ["role_demo_fico", "co_demo_vantage", "SAP FICO consultant (S/4HANA)", "SAP FICO consultant for our S/4HANA rollout. Hands-on FI/CO on S/4. Group reporting a bonus. Hybrid, two days in the office. Budget is R52k-R55k a month. Durban or Cape Town. Consultant level, 5 or more years.", "open", 3,
+    brief("Hybrid, two days in the office", "None mentioned", 52000, 55000, "Durban or Cape Town", ["FI/CO configuration on S/4HANA"], ["Asset accounting", "Group reporting"], "Consultant, 5 or more years",
+      q("Hybrid, two days in the office", "", "R52k-R55k a month", "Durban or Cape Town", "5 or more years", ["Hands-on FI/CO on S/4"], ["", "Group reporting"]))],
   ["role_karoo_oracle_fin", "co_karoo_health", "Oracle Financials analyst", "Oracle GL and AP analyst for the finance team. We are moving to Fusion, so Fusion exposure counts for more than EBS.", "open", 9,
-    brief("Hybrid", "None", 75000, 85000, "Cape Town", ["Oracle GL and AP", "Oracle Fusion exposure"], ["Month-end close ownership"], "Analyst, 3 or more years")],
+    brief("Hybrid", "None", 75000, 85000, "Cape Town", ["Oracle GL and AP", "Oracle Fusion exposure"], ["Month-end close ownership"], "Analyst, 3 or more years",
+      q("", "", "", "", "", ["Oracle GL and AP", "Fusion exposure"], [""]))],
   ["role_bluewater_netsuite", "co_bluewater_fintech", "NetSuite administrator", "NetSuite administrator reporting to the CFO. Saved searches, approvals workflow, some SuiteScript. Fully remote.", "open", 12,
-    brief("Remote", "None", 44000, 48000, "Remote, South Africa", ["NetSuite administration", "SuiteScript"], ["Approval workflows"], "Administrator, 3 or more years")],
+    brief("Remote", "None", 44000, 48000, "Remote, South Africa", ["NetSuite administration", "SuiteScript"], ["Approval workflows"], "Administrator, 3 or more years",
+      q("Fully remote", "", "", "", "", ["NetSuite administrator", "SuiteScript"], ["approvals workflow"]))],
   ["role_protea_abap", "co_protea_retail", "Junior SAP ABAP developer", "Junior ABAP developer, reports and Fiori apps for our retail ERP team.", "open", 36,
-    brief("Hybrid", "None", 30000, 35000, "Cape Town", ["ABAP"], ["Fiori"], "Junior, 1 to 3 years")],
+    brief("Hybrid", "None", 30000, 35000, "Cape Town", ["ABAP"], ["Fiori"], "Junior, 1 to 3 years",
+      q("", "", "", "", "Junior", ["ABAP"], ["Fiori"]))],
   ["role_vantage_sap_pm", "co_demo_vantage", "SAP project manager", "Project manager for the S/4HANA rollout across three depots. Steering committee and vendor management.", "open", 15,
-    brief("On-site, Durban", "Occasional depot visits", 85000, 90000, "Durban", ["SAP rollout project management"], ["Retail or logistics background"], "Senior, 8 or more years")],
+    brief("On-site, Durban", "Occasional depot visits", 85000, 90000, "Durban", ["SAP rollout project management"], ["Retail or logistics background"], "Senior, 8 or more years",
+      q("", "", "", "", "", ["Project manager for the S/4HANA rollout"], [""]))],
   ["role_umoya_sf", "co_umoya_mobile", "SAP SuccessFactors consultant", "SuccessFactors Employee Central consultant for our HR rollout.", "open", 21,
-    brief("Hybrid", "None mentioned", 65000, 70000, "Johannesburg", ["Employee Central"], ["Recruiting module"], "Consultant, 3 or more years")],
+    brief("Hybrid", "None mentioned", 65000, 70000, "Johannesburg", ["Employee Central"], ["Recruiting module"], "Consultant, 3 or more years",
+      q("", "", "", "", "", ["Employee Central"], [""]))],
   ["role_vantage_netsuite", "co_demo_vantage", "NetSuite administrator", "NetSuite administrator for the finance team, remote.", "filled", [11, 9]],
   ["role_karoo_finance_lead", "co_karoo_health", "Finance systems lead", "Finance systems lead on Oracle EBS, owning the migration plan.", "filled", [19, 16]],
   ["role_vantage_sap_fi_analyst", "co_demo_vantage", "SAP FI analyst", "SAP FI analyst for the Durban finance team.", "filled", [22, 19]],

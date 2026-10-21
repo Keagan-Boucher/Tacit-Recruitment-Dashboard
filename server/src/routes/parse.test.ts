@@ -3,7 +3,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AiProvider } from "../ai/provider.ts";
 import type { BucketLike } from "../files.ts";
-import { parseRouter } from "./parse.ts";
+import { checkQuotes, parseRouter } from "./parse.ts";
 
 const field = (value: string | null) => ({ value, readAs: value, confidence: 0.9, note: null });
 const CV = {
@@ -13,6 +13,7 @@ const CV = {
 const BRIEF = {
   title: "SAP FICO Consultant", companyName: "Vantage", workMode: "Hybrid", travel: null,
   budget: { min: 52000, max: 55000, currency: "ZAR" }, location: "Durban", mustHave: ["FI/CO"], niceToHave: [], seniority: null, unclear: [],
+  quotes: { workMode: "hybrid", travel: "", budget: "R52k-R55k", location: "", seniority: "", mustHave: ["FI/CO"], niceToHave: [] },
 };
 
 const provider = (...outs: unknown[]): AiProvider => {
@@ -64,6 +65,23 @@ describe("POST /api/parse-brief", () => {
     expect(a.body.result.budget.max).toBe(55000);
     const b = await request(setup(provider(BRIEF))).post("/api/parse-brief").send({ source: "upload", text: null, fileRef: "users/u1/briefs/a.txt" });
     expect(b.status).toBe(200);
+  });
+  it("keeps real quotes (case/whitespace-insensitive), blanks invented ones, aligns list items", async () => {
+    const out = {
+      ...BRIEF,
+      mustHave: ["FI/CO", "S/4HANA", "SQL"],
+      quotes: { ...BRIEF.quotes, workMode: "HYBRID,  R52k", travel: "lots of travel", mustHave: ["fi/co", "invented skill"] },
+    };
+    const r = await request(setup(provider(out))).post("/api/parse-brief").send({ source: "paste", text: "Hybrid, R52k-R55k. FI/CO needed", fileRef: null });
+    expect(r.status).toBe(200);
+    expect(r.body.modelVersion).toBe("v/m/parse-brief.v2");
+    // kept quotes come back as the brief wrote them
+    expect(r.body.result.quotes).toEqual({ workMode: "Hybrid, R52k", travel: "", budget: "R52k-R55k", location: "", seniority: "", mustHave: ["FI/CO", "", ""], niceToHave: [] });
+  });
+  it("blanks a demographic quote", () => {
+    const text = "Must be a young male candidate, hybrid";
+    const d = { ...BRIEF, quotes: { ...BRIEF.quotes, workMode: "hybrid", seniority: "young male candidate" } };
+    expect(checkQuotes(text)(d).quotes).toMatchObject({ workMode: "hybrid", seniority: "" });
   });
   it("rejects both or neither", async () => {
     const app = setup(provider(BRIEF));

@@ -85,12 +85,27 @@ export const BriefInterpretation = z.object({
   unclear: z.array(z.string()),
 });
 
+/** Verbatim brief phrase behind each value, "" = nothing in the brief says it. Lists are item-by-item (same order and
+ *  length as mustHave / niceToHave). The proxy blanks any quote that is not in the brief text. Stored (optional) as
+ *  Role.interpretedBrief.quotes; same shape as in schemas.ts. */
+export const BriefQuotes = z.object({
+  workMode: z.string(),
+  travel: z.string(),
+  budget: z.string(),
+  location: z.string(),
+  seniority: z.string(),
+  mustHave: z.array(z.string()),
+  niceToHave: z.array(z.string()),
+});
+/** What parse-brief.v2 returns: the v1 fields plus quotes. */
+export const QuotedBriefInterpretation = BriefInterpretation.extend({ quotes: BriefQuotes });
+
 /** Exactly one of text (paste / call notes) or fileRef (upload, under users/{uid}/briefs/). */
 export const ParseBriefRequest = z
   .object({ source: BriefSource, text: z.string().nullable(), fileRef: z.string().max(512).nullable() })
   .refine((r) => (r.text ? 1 : 0) + (r.fileRef ? 1 : 0) === 1, { message: "Send exactly one of text or fileRef" });
 /** `text` = the brief text that was interpreted (extracted from the file for uploads), stored as Role.briefText. */
-export interface ParseBriefResponse { result: BriefInterpretation; modelVersion: string; text: string }
+export interface ParseBriefResponse { result: QuotedBriefInterpretation; modelVersion: string; text: string }
 
 // ---- /api/match ---------------------------------------------------------------------------
 
@@ -148,6 +163,8 @@ export type CvParseJob = z.infer<typeof CvParseJob>;
 export type CvParseResult = z.infer<typeof CvParseResult>;
 export type ParseCvRequest = z.infer<typeof ParseCvRequest>;
 export type BriefInterpretation = z.infer<typeof BriefInterpretation>;
+export type BriefQuotes = z.infer<typeof BriefQuotes>;
+export type QuotedBriefInterpretation = z.infer<typeof QuotedBriefInterpretation>;
 export type ParseBriefRequest = z.infer<typeof ParseBriefRequest>;
 export type MatchSuggestion = z.infer<typeof MatchSuggestion>;
 export type MatchResult = z.infer<typeof MatchResult>;

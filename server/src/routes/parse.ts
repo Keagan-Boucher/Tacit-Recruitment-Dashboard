@@ -1,6 +1,8 @@
 import { Router, type Response } from "express";
-import { BriefInterpretation, CvParseResult, LOW_CONFIDENCE, ParseBriefRequest, ParseCvRequest, type ApiErrorBody } from "@tacit/shared";
+import { CvParseResult, LOW_CONFIDENCE, ParseBriefRequest, ParseCvRequest, QuotedBriefInterpretation, type ApiErrorBody } from "@tacit/shared";
+import { mentionsDemographic } from "../ai/demographics.ts";
 import { aiErrorResponse, loadPrompt, runStructured, type Ai } from "../ai/index.ts";
+import { locateQuote } from "./interpret-note.ts";
 import { FileError, MAX_CHARS, readUploadText, type BucketLike } from "../files.ts";
 
 const err = (code: ApiErrorBody["code"], error: string): ApiErrorBody => ({ code, error });
@@ -20,6 +22,27 @@ function needNotes(cv: CvParseResult): CvParseResult {
     throw new Error(`Every field with confidence below ${LOW_CONFIDENCE} needs a short note saying why (e.g. "Not stated in the CV").`);
   }
   return cv;
+}
+
+/** Keep a quote only if it really is in the brief (whitespace/case-insensitive) and not demographic; else "". Never invent provenance. */
+export function checkQuotes(text: string) {
+  const one = (q: string) => {
+    const at = locateQuote(text, q);
+    const found = at ? text.slice(at.start, at.end) : "";
+    return found && !mentionsDemographic(found) ? found : "";
+  };
+  return (d: QuotedBriefInterpretation): QuotedBriefInterpretation => {
+    const q = d.quotes;
+    // Lists are item-by-item: pad or cut to the item count so index i always means item i.
+    const list = (a: string[], n: number) => Array.from({ length: n }, (_, i) => one(a[i] ?? ""));
+    return {
+      ...d,
+      quotes: {
+        workMode: one(q.workMode), travel: one(q.travel), budget: one(q.budget), location: one(q.location), seniority: one(q.seniority),
+        mustHave: list(q.mustHave, d.mustHave.length), niceToHave: list(q.niceToHave, d.niceToHave.length),
+      },
+    };
+  };
 }
 
 /** Nothing here is persisted: the recruiter's Confirm on S09 / S13 writes the record. */
@@ -51,7 +74,7 @@ export function parseRouter({ ai, bucket }: { ai: Ai; bucket: BucketLike }) {
       if (pasted.length > MAX_CHARS) return void res.status(400).json(err("bad_request", "That brief is too long. Paste the key part."));
       const input = body.data.fileRef ? (await readUploadText(bucket, req.uid!, body.data.fileRef, "briefs")).text : pasted;
       const { data, modelVersion } = await runStructured(
-        { task: "parse-brief", prompt: loadPrompt("parse-brief", 1), schema: BriefInterpretation, input },
+        { task: "parse-brief", prompt: loadPrompt("parse-brief", 2), schema: QuotedBriefInterpretation, input, check: checkQuotes(input) },
         ai,
       );
       res.json({ result: data, modelVersion, text: input });

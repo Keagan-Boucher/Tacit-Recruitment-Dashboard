@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { test } from "node:test";
-import type { Attribute, Candidate, Company, InterviewNote, Match, Override, Placement, Role } from "@tacit/shared";
+import { CompanyFact, type Attribute, type Candidate, type Company, type InterviewNote, type Match, type Override, type Placement, type Role } from "@tacit/shared";
 import { DAY } from "./build.ts";
 import { buildDataset } from "./dataset.ts";
 
@@ -102,6 +102,27 @@ test("matches: both sides, real citations, three open roles covered", () => {
   for (const m of matches.filter((x) => x.data.roleId === "role_demo_fico")) assert.ok(m.data.skillAlignment.every((a) => reqs.includes(a.requirement)), m.id);
   const chrono = (c: string) => notes.filter((n) => n.data.candidateId === c).sort((a, b) => a.id.localeCompare(b.id));
   for (const c of cands) { const l = chrono(c.id); l.forEach((n, i) => i && assert.ok(n.data.capturedAt > l[i - 1].data.capturedAt, `${n.id} out of order`)); }
+});
+
+test("seeded brief quotes are verbatim substrings of briefText, aligned to the lists", () => {
+  for (const { id, data: r } of roles) {
+    const q = r.interpretedBrief?.quotes;
+    if (!q) continue;
+    assert.equal(q.mustHave.length, r.interpretedBrief!.mustHave.length, id);
+    assert.equal(q.niceToHave.length, r.interpretedBrief!.niceToHave.length, id);
+    for (const quote of [q.workMode, q.travel, q.budget, q.location, q.seniority, ...q.mustHave, ...q.niceToHave])
+      assert.ok(quote === "" || r.briefText.includes(quote), `${id}: "${quote}" not in briefText`);
+  }
+  assert.ok(roles.find((r) => r.id === "role_demo_fico")!.data.interpretedBrief!.quotes!.workMode);
+});
+
+test("company facts parse, are in the past, and Vantage has a stale placements salary fact", () => {
+  for (const { id, data: c } of companies) {
+    assert.ok(c.facts?.length, id);
+    for (const f of c.facts!) { CompanyFact.parse(f); assert.ok(f.observedAt < now, `${id} fact in the future`); }
+  }
+  const v = companies.find((c) => c.id === "co_demo_vantage")!.data.facts!;
+  assert.ok(v.some((f) => f.source === "placements" && /R52k/.test(f.text) && now.getTime() - f.observedAt.getTime() > 365 * DAY));
 });
 
 test("seeded matches cite only confirmed attributes", () => {
