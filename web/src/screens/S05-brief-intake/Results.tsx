@@ -5,6 +5,7 @@ import type { Attribute, Candidate, Company, Match, Override, Role } from "@taci
 import { PageHeader } from "../../app";
 import { Button, buttonClass, Card, Chip, EmptyState, ErrorBanner, Icon, Skeleton } from "../../components";
 import { useAuth } from "../../features/auth";
+import { BriefRows } from "../../features/brief/BriefRows";
 import { screeningRows } from "../../features/brief/helpers";
 import { useDocument, useOwned } from "../../lib/data";
 import type { WithId } from "../../lib/data";
@@ -17,7 +18,6 @@ import styles from "./BriefIntake.module.css";
 
 const byRank = (a: Match, b: Match) => a.rank - b.rank;
 const SHOWN = 3;
-const none = (v: string) => !/^none( mentioned)?$/i.test(v.trim());
 
 type Props = { roleId: string; people: WithId<Candidate>[]; unclear?: string[]; onEdit: () => void };
 
@@ -59,9 +59,7 @@ function Loaded({ roleId, people, unclear = [], onEdit, onRetry }: Props & { onR
   const shown = all ? rows : rows.slice(0, SHOWN);
   const rest = rows.slice(SHOWN);
   const focalId = (rows.find((m) => forgottenNow(people.find((c) => c.id === m.candidateId), clock)) ?? rows[0])?.id;
-  const criteria = r.interpretedBrief
-    ? screeningRows({ ...r.interpretedBrief, title: null, companyName: null, unclear })
-    : [];
+  const criteria = r.interpretedBrief ? screeningRows(r.interpretedBrief, r.interpretedBrief.quotes) : [];
   const dialogMatch = rows.find((m) => m.id === rejecting);
   const dialogCandidate = people.find((c) => c.id === dialogMatch?.candidateId);
 
@@ -105,19 +103,7 @@ function Loaded({ roleId, people, unclear = [], onEdit, onRetry }: Props & { onR
       <div className={styles.results}>
         <Card className={styles.criteria} role="region" aria-labelledby="read-title">
           <h2 id="read-title" className="t-title">What Tacit read from the brief</h2>
-          <ul className={styles.rows}>
-            {criteria.map((c) => {
-              const values = c.values.filter(none);
-              return (
-                <li key={c.key} className={styles.row}>
-                  <span className={`${styles.label} t-meta`}>{c.label}</span>
-                  <span className={styles.values}>
-                    {values.length ? values.map((v) => <span key={v} className={`${styles.value} t-chip`}>{v}</span>) : <Chip tone="quiet">Not mentioned</Chip>}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <BriefRows rows={criteria} />
           {unclear.length > 0 && (
             <div className={styles.ask}>
               <span><Chip icon="bx-help-circle">Ask the client · {unclear.length}</Chip></span>

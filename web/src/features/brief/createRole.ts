@@ -36,6 +36,8 @@ export function buildRoleDoc({ uid, brief, title, companyId, now }: { uid: strin
       mustHave: r.mustHave,
       niceToHave: r.niceToHave,
       seniority: r.seniority ?? "",
+      // Firestore rejects undefined, so a result without quotes saves no key.
+      ...(r.quotes ? { quotes: r.quotes } : {}),
     },
     status: "open",
     openedAt: now,

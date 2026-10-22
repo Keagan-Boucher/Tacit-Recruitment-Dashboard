@@ -9,12 +9,18 @@ const picked = (result = {}, extra = {}) => ({
     title: "SAP FICO consultant", companyName: "Vantage Logistics", workMode: null, travel: null,
     budget: { min: null, max: null, currency: null }, location: "Durban or Cape Town",
     mustHave: ["FI/CO on S/4HANA"], niceToHave: [], seniority: null, unclear: [], ...result,
-  },
+  } as never,
   modelVersion: "m", briefText: "We need a FICO consultant.", briefSource: "paste" as const, ...extra,
 });
 const build = (p = picked()) => buildRoleDoc({ uid: "u1", brief: p, title: "  SAP FICO consultant ", companyId: "c1", now });
 
+const quotes = { workMode: "hybrid is fine", travel: "", budget: "", location: "Durban or Cape Town", seniority: "", mustHave: ["hands-on FI/CO"], niceToHave: [] };
+
 describe("buildRoleDoc", () => {
+  it("keeps the brief quotes on the saved role, and saves no quotes key without them", () => {
+    expect(build(picked({ quotes })).interpretedBrief?.quotes).toEqual(quotes);
+    expect("quotes" in build().interpretedBrief!).toBe(false);
+  });
   it("maps nulls to empty strings, 0 and ZAR, and passes Role", () => {
     const r = build();
     expect(r).toMatchObject({ title: "SAP FICO consultant", status: "open", ownerUid: "u1", companyId: "c1", openedAt: now });

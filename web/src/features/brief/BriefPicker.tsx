@@ -1,7 +1,7 @@
 import type { DragEvent, KeyboardEvent } from "react";
 import { useId, useRef, useState } from "react";
 import { ref as storageRef, uploadBytes } from "firebase/storage";
-import type { BriefInterpretation, ParseBriefResponse } from "@tacit/shared";
+import type { ParseBriefResponse, QuotedBriefInterpretation } from "@tacit/shared";
 import { Button, Card, Chip, FieldError, Icon, Textarea } from "../../components";
 import { ApiError, api } from "../../lib/api";
 import { storage } from "../../lib/firebase";
@@ -17,10 +17,11 @@ import {
   type BriefProblem,
   type BriefSource,
 } from "./helpers";
+import { BriefRows } from "./BriefRows";
 import styles from "./BriefPicker.module.css";
 
 export type InterpretedBrief = {
-  result: BriefInterpretation;
+  result: QuotedBriefInterpretation;
   modelVersion: string;
   /** What was interpreted. For uploads this is the text the proxy extracted; becomes Role.briefText. */
   briefText: string;
@@ -113,7 +114,7 @@ export function BriefPicker({ onInterpreted, initialSource = "paste" }: Props) {
   const [dragging, setDragging] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [problem, setProblem] = useState<BriefProblem | null>(null);
-  const [interp, setInterp] = useState<BriefInterpretation | null>(null);
+  const [interp, setInterp] = useState<QuotedBriefInterpretation | null>(null);
 
   const busy = phase === "uploading" || phase === "reading";
   const text = source === "upload" ? "" : texts[source];
@@ -324,7 +325,7 @@ export function BriefPicker({ onInterpreted, initialSource = "paste" }: Props) {
 }
 
 /** Compact "what Tacit understood", in the recruiter's screening order, plus what to ask the client. */
-function Understood({ r }: { r: BriefInterpretation }) {
+function Understood({ r }: { r: QuotedBriefInterpretation }) {
   const context = [r.title, r.companyName].filter(Boolean).join(" · ");
   return (
     <Card className={styles.card}>
@@ -332,24 +333,7 @@ function Understood({ r }: { r: BriefInterpretation }) {
         <h2 className="t-title">What Tacit read from the brief</h2>
         {context && <p className={`${styles.context} t-body-s`}>{context}</p>}
       </div>
-      <ul className={styles.rows}>
-        {screeningRows(r).map((row) => (
-          <li key={row.key} className={styles.row}>
-            <span className={`${styles.label} t-meta`}>{row.label}</span>
-            <span className={styles.values}>
-              {row.values.length ? (
-                row.values.map((v) => (
-                  <span key={v} className={`${styles.value} t-chip`}>
-                    {v}
-                  </span>
-                ))
-              ) : (
-                <Chip tone="quiet">Not mentioned</Chip>
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <BriefRows rows={screeningRows(r, r.quotes)} />
       {r.unclear.length > 0 && (
         <div className={styles.ask}>
           <span>

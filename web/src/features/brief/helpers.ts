@@ -1,4 +1,4 @@
-import type { ApiErrorBody, BriefInterpretation, ParseBriefRequest } from "@tacit/shared";
+import type { ApiErrorBody, BriefInterpretation, BriefQuotes, ParseBriefRequest } from "@tacit/shared";
 
 export type BriefSource = ParseBriefRequest["source"];
 
@@ -50,20 +50,35 @@ export function formatBudget(b: BriefInterpretation["budget"]): string | null {
   return `${sym}${money(b.max ?? b.min!)}`;
 }
 
-export type ScreeningRow = { key: string; label: string; values: string[] };
+/** One line of "What Tacit read": a value and the brief phrase it came from, or `value: null` when the brief didn't say.
+ *  `quote` is null when there is nothing to cite (old roles without quotes, or the model found no phrase). */
+export type ScreeningRow = { key: string; label: string; value: string | null; quote: string | null };
 
-/** The recruiter's screening order. An empty `values` means the brief didn't say. */
-export function screeningRows(r: BriefInterpretation): ScreeningRow[] {
-  const one = (v: string | null) => (v?.trim() ? [v.trim()] : []);
-  const budget = formatBudget(r.budget);
+type Read = Pick<BriefInterpretation, "workMode" | "travel" | "budget" | "location" | "mustHave" | "niceToHave" | "seniority">;
+
+// Roles store a missing field as "", a missing budget as 0 to 0, and older ones as "None mentioned".
+const said = (v: string | null | undefined) => (v?.trim() && !/^none( mentioned)?$/i.test(v.trim()) ? v.trim() : null);
+
+/** The recruiter's screening order, one row per value (lists get one row per item, each with its own quote, which the
+ *  index-aligned `quotes` lists make possible). A field the brief left out is one row with `value: null`. */
+export function screeningRows(r: Read, quotes?: BriefQuotes): ScreeningRow[] {
+  const q = (s: string | undefined) => s?.trim() || null;
+  const single = (key: string, label: string, v: string | null | undefined, quote: string | undefined): ScreeningRow[] => [
+    { key, label, value: said(v), quote: said(v) ? q(quote) : null },
+  ];
+  const list = (key: "mustHave" | "niceToHave", label: string): ScreeningRow[] => {
+    const rows = r[key].flatMap((v, i) => (said(v) ? [{ key: `${key}-${i}`, label, value: said(v), quote: q(quotes?.[key][i]) }] : []));
+    return rows.length ? rows : [{ key, label, value: null, quote: null }];
+  };
+  const noBudget = r.budget.min === 0 && r.budget.max === 0;
   return [
-    { key: "workMode", label: "Work mode", values: one(r.workMode) },
-    { key: "travel", label: "Travel", values: one(r.travel) },
-    { key: "budget", label: "Budget", values: budget ? [budget] : [] },
-    { key: "location", label: "Location", values: one(r.location) },
-    { key: "mustHave", label: "Must have", values: r.mustHave.filter((v) => v.trim()) },
-    { key: "niceToHave", label: "Nice to have", values: r.niceToHave.filter((v) => v.trim()) },
-    { key: "seniority", label: "Seniority", values: one(r.seniority) },
+    ...single("workMode", "Work mode", r.workMode, quotes?.workMode),
+    ...single("travel", "Travel", r.travel, quotes?.travel),
+    ...single("budget", "Budget", noBudget ? null : formatBudget(r.budget), quotes?.budget),
+    ...single("location", "Location", r.location, quotes?.location),
+    ...list("mustHave", "Must have"),
+    ...list("niceToHave", "Nice to have"),
+    ...single("seniority", "Seniority", r.seniority, quotes?.seniority),
   ];
 }
 
