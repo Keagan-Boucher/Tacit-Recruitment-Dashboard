@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router";
-import { monthsSince, staleness } from "@tacit/shared";
 import type { Company, Override, Placement, Role } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
-import { buttonClass, Chip, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, Skeleton } from "../../components";
+import { buttonClass, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, Skeleton } from "../../components";
 import { useOwned } from "../../lib/data";
 import { lastSeenLabel } from "../S08-candidates-list/view";
+import { monthYear, staleAge } from "../S11-company-profile/facts";
 import styles from "./CompaniesList.module.css";
 import { buildRows, FILTERS, matchesFilter, matchesQuery, type FilterId, type Row } from "./view";
 
@@ -137,8 +137,8 @@ function Companies({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function CompanyCard({ row: { company, openRoles, placements, lastContact }, now }: { row: Row; now: Date }) {
-  const stale = staleness(lastContact, now) === "stale";
+function CompanyCard({ row: { company, openRoles, placements, lastContact, paySeen }, now }: { row: Row; now: Date }) {
+  const payAge = paySeen && staleAge(paySeen, now);
   return (
     <Link to={`/companies/${company.id}`} className={`${styles.card} ${openRoles === 0 ? styles.quiet : ""}`}>
       <span className={styles.title}>
@@ -164,7 +164,11 @@ function CompanyCard({ row: { company, openRoles, placements, lastContact }, now
       </span>
       <span className={styles.fact}>
         <span className="t-body-s-para">{company.notes || company.hiringPattern || "Nothing recorded yet."}</span>
-        {stale && <span><Chip tone="stale">Stale · {monthsSince(lastContact, now)} mo</Chip></span>}
+        {paySeen && payAge && (
+          <span className={`${styles.pay} t-caption`}>
+            Pay seen · {monthYear(paySeen)} · <span className={`${styles.age} t-caption-strong`}>{payAge}</span>
+          </span>
+        )}
       </span>
     </Link>
   );

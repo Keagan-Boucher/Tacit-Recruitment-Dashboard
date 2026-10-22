@@ -1,9 +1,8 @@
-import { monthsSince, staleness } from "@tacit/shared";
 import type { Company, Role } from "@tacit/shared";
 import type { WithId } from "../../lib/data";
-import { lastSeen, matchesQuery, type Person } from "../S08-candidates-list/view";
+import { matchesQuery, type Person } from "../S08-candidates-list/view";
 
-export type Hit = { key: string; kind: "candidate" | "company" | "role" | "search" | "new"; to: string; title: string; sub: string; staleMonths?: number; recent?: boolean };
+export type Hit = { key: string; kind: "candidate" | "company" | "role" | "search" | "new"; to: string; title: string; sub: string; recent?: boolean };
 /** `count` is the true number of matches (a group lists at most PER_GROUP_FOUND of them); only set for search results. */
 export type HitGroup = { label: string; hits: Hit[]; count?: number };
 
@@ -17,7 +16,7 @@ const newest = <T extends { updatedAt: Date }>(key: (x: T) => Date = (x) => x.up
  * otherwise every word of the query must appear in the item's text (case-insensitive). Empty groups are dropped.
  */
 // ponytail: plain substring match over the recruiter's own data; swap for /api/search (R-13) if "by meaning" is wanted here.
-export function buildGroups(people: Person[], companies: WithId<Company>[], roles: WithId<Role>[], query: string, now: Date): HitGroup[] {
+export function buildGroups(people: Person[], companies: WithId<Company>[], roles: WithId<Role>[], query: string): HitGroup[] {
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   const has = (...parts: string[]) => terms.every((t) => parts.join(" ").toLowerCase().includes(t));
   const names = new Map(companies.map((c) => [c.id, c.name]));
@@ -39,7 +38,6 @@ export function buildGroups(people: Person[], companies: WithId<Company>[], role
         to: `/candidates/${p.id}`,
         title: p.fullName,
         sub: [p.headline, p.location].filter(Boolean).join(", "),
-        staleMonths: staleness(lastSeen(p), now) === "stale" ? monthsSince(lastSeen(p), now) : undefined,
       })),
     },
     {
@@ -75,15 +73,15 @@ const RECENT_ON_MISS = 2;
  * What the palette shows: results (or recent items) then an Actions group. A miss swaps that for
  * Suggested ("Search notes for …", first so Enter runs it) and a short Recent list: one person, one role.
  */
-export function paletteGroups(people: Person[], companies: WithId<Company>[], roles: WithId<Role>[], query: string, now: Date): { groups: HitGroup[]; miss: boolean } {
+export function paletteGroups(people: Person[], companies: WithId<Company>[], roles: WithId<Role>[], query: string): { groups: HitGroup[]; miss: boolean } {
   const q = query.trim();
-  const found = buildGroups(people, companies, roles, q, now);
+  const found = buildGroups(people, companies, roles, q);
   if (!q || found.length > 0) return { groups: [...found, { label: "Actions", hits: q ? [searchNotes(q), NEW_NOTE] : [NEW_NOTE] }], miss: false };
   const order = ["candidate", "role", "company"];
-  const recent = buildGroups(people, companies, roles, "", now)
+  const recent = buildGroups(people, companies, roles, "")
     .map((g) => g.hits[0]!)
     .sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind))
     .slice(0, RECENT_ON_MISS)
-    .map((h) => ({ ...h, sub: "", staleMonths: undefined, recent: true }));
+    .map((h) => ({ ...h, sub: "", recent: true }));
   return { groups: [{ label: "Suggested", hits: [searchNotes(q)] }, ...(recent.length ? [{ label: "Recent", hits: recent }] : [])], miss: true };
 }

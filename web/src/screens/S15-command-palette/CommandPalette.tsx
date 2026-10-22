@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router";
 import type { Company, Role } from "@tacit/shared";
 import { useDevOverlay, useScreenState } from "../../app";
 import { devParam } from "../../app/dev";
-import { Chip, Icon } from "../../components";
+import { Icon } from "../../components";
 import { useCandidates, useOwned } from "../../lib/data";
 import styles from "./CommandPalette.module.css";
 import { paletteGroups, type Hit } from "./search";
@@ -73,7 +73,6 @@ function Palette({ seed, onClose }: { seed: string; onClose: () => void }) {
   const people = useCandidates();
   const companies = useOwned<Company>("companies");
   const roles = useOwned<Role>("roles");
-  const [now] = useState(() => new Date());
   const [query, setQuery] = useState(seed);
   const [active, setActive] = useState(0);
   const listId = useId();
@@ -81,7 +80,7 @@ function Palette({ seed, onClose }: { seed: string; onClose: () => void }) {
   const error = [people, companies, roles].find((l) => l.error)?.error;
   const ready = !error && people.data && companies.data && roles.data;
   // A miss says so, then suggests searching the notes and lists a few recent items (as the no-results frame does).
-  const { groups, miss } = ready ? paletteGroups(people.data!, companies.data!, roles.data!, query, now) : { groups: [], miss: false };
+  const { groups, miss } = ready ? paletteGroups(people.data!, companies.data!, roles.data!, query) : { groups: [], miss: false };
   const flat = groups.flatMap((g) => g.hits);
   const results = flat.filter((h) => h.kind === "candidate" || h.kind === "company" || h.kind === "role").length;
   const current = Math.min(active, flat.length - 1);
@@ -164,7 +163,6 @@ function Palette({ seed, onClose }: { seed: string; onClose: () => void }) {
                       </span>
                     )}
                   </span>
-                  {h.staleMonths !== undefined && <Chip tone="stale">Stale · {h.staleMonths} mo</Chip>}
                   {h === flat[current] && <kbd className={`${styles.kbd} t-meta`}>Enter</kbd>}
                 </div>
               ))}

@@ -40,4 +40,6 @@
 .zero b { color: var(--text-3); }
 .contact { display: flex; align-items: center; gap: 6px; }
 .fact { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--hairline); color: var(--text-2); }
+.pay { color: var(--text-3); }
+.age { color: var(--stale); }
 .skeletons { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--gap); }
