@@ -1,21 +1,39 @@
-/* Figma S11: three columns of equal width with 12 gaps; the last card in each column takes the leftover height. */
+/* Figma S11 (hierarchy): three columns of equal width with 12 gaps; the last card in each column takes the leftover height. */
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); align-items: stretch; min-height: calc(100dvh - 168px); }
 .col { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
 .col > :last-child { flex: 1; }
-.meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.meta { margin: 0 0 16px; color: var(--text-2); }
 .card { display: flex; flex-direction: column; gap: 8px; }
 .head { display: flex; align-items: baseline; gap: 8px; padding-bottom: 6px; }
 .head span { color: var(--text-3); }
 .list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .empty { color: var(--text-2); }
 
+/* A quiet group inside a card: Caption Strong label, then its rows. */
+.sub { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
+.sub > h3 { margin: 0; }
+.label { color: var(--text-2); }
+
+/* What you know: the fact is the loud thing, its source and age sit under it. */
 .block { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
 .block p { margin: 0; }
-.source { color: var(--text-3); }
+.source { margin: 0; color: var(--text-3); }
+.factSource { display: flex; align-items: center; gap: 6px; }
 .quiet { color: var(--text-2); }
+.age { color: var(--stale); }
 
 /* Roles use ListRow (a plain anchor); keep the Figma padding. */
 .rows a { gap: 10px; padding: 12px 12px 12px 14px; }
+/* Nothing hidden: ListRow clips its title and meta to one line; here they wrap. */
+.rows a * { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.rows a .new { white-space: nowrap; overflow-wrap: normal; }
+.new { display: inline-flex; align-items: baseline; gap: 4px; color: var(--text-3); }
+.numeral { color: var(--text); }
+
+.placed { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 10px 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
+.role { flex: 1 1 8rem; min-width: 0; color: var(--text-3); }
+.when { color: var(--text-3); white-space: nowrap; }
+.when > span { color: var(--text); }
 
 .entry { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
 .entry > p { margin: 0; }
@@ -26,11 +44,9 @@
 .link { color: inherit; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; border-radius: var(--radius-inner); }
 .link:hover { text-decoration-color: currentColor; }
 
-.groups { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.group { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
-.groupHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.groupHead p { margin: 0; }
-.cases { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; color: var(--text-2); }
+.claims { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.claim { display: flex; flex-direction: column; gap: 2px; }
+.claim p { margin: 0; }
 
 @media (max-width: 1100px) { .grid { grid-template-columns: minmax(0, 1fr); min-height: 0; } }
 
