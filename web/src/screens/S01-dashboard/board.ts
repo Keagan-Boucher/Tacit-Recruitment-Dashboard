@@ -1,5 +1,5 @@
 import type { Attribute, Candidate, Company, InterviewNote, Match, Override, Reason, Role } from "@tacit/shared";
-import { isForgotten, monthsSince, staleness } from "@tacit/shared";
+import { factStaleness, isForgotten, isPerishable, monthsSince } from "@tacit/shared";
 import type { WithId } from "../../lib/data";
 
 // Pure view-model for the dashboard: everything the seven widgets show, from the recruiter's own docs.
@@ -57,11 +57,11 @@ export function buildBoard(s: Snapshot, now: Date) {
     .sort((a, b) => b.waiting - a.waiting || b.suggested - a.suggested);
   const shortlist = play.filter((p) => p.suggested > 0 && p.shortlisted === 0 && p.waiting > 0);
 
-  // How long ago a reason's evidence was heard, only when its oldest cited fact has gone stale: the age sits on that fact, not on the person.
+  // How long ago a reason's evidence was heard, only when its oldest cited perishable fact (salary, availability, work mode, current work) has gone stale: the age sits on that fact, not on the person.
   const attr = new Map(s.attributes.map((a) => [a.id, a]));
   const heard = (r?: Reason) => {
-    const at = r?.attributeIds.flatMap((id) => attr.get(id)?.observedAt ?? []).sort((a, b) => a.getTime() - b.getTime())[0];
-    return at && staleness(at, now) === "stale" ? monthsSince(at, now) : undefined;
+    const old = r?.attributeIds.flatMap((id) => attr.get(id) ?? []).filter((a) => factStaleness(a.type, a.observedAt, now) === "stale").sort((a, b) => a.observedAt.getTime() - b.observedAt.getTime())[0];
+    return old && monthsSince(old.observedAt, now);
   };
   const ageMonths = (m: Match) => monthsSince(new Date(now.getTime() - m.evidenceAgeDays * 86_400_000), now);
 
@@ -101,12 +101,11 @@ export function buildBoard(s: Snapshot, now: Date) {
   }
   const newThisMonth = [...first.values()].filter((d) => monthIndex(d) === monthIndex(now)).length;
 
-  // Worth a call: the newest confirmed evidence is over a year old.
+  // Worth a call: the newest confirmed perishable fact (salary, availability, work mode, current work) is over a year old. Other facts never age.
   const worth = s.candidates
     .flatMap((c) => {
-      const mine = s.attributes.filter((a) => a.candidateId === c.id && a.confirmedByRecruiter).sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime());
-      const at = mine[0]?.observedAt ?? c.lastInterviewAt;
-      return at && staleness(at, now) === "stale" ? [{ candidate: c, type: mine[0]?.type, text: mine[0] && (mine[0].editedValue ?? mine[0].value), months: monthsSince(at, now) }] : [];
+      const a = s.attributes.filter((x) => x.candidateId === c.id && x.confirmedByRecruiter && isPerishable(x.type)).sort((x, y) => y.observedAt.getTime() - x.observedAt.getTime())[0];
+      return a && factStaleness(a.type, a.observedAt, now) === "stale" ? [{ candidate: c, type: a.type, text: a.editedValue ?? a.value, months: monthsSince(a.observedAt, now) }] : [];
     })
     .sort((a, b) => b.months - a.months);
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { groupByAge, highlight, hitSource, lastSeenLabel, matchesFilter, matchesQuery, matchesSource, sourceCounts, type CitedAttr, type Person } from "./view";
+import type { Attribute } from "@tacit/shared";
+import { groupByAge, highlight, hitSource, lastSeenLabel, matchesFilter, matchesQuery, matchesSource, sourceCounts, staleIds, type CitedAttr, type Person } from "./view";
 
 const now = new Date("2026-10-14T12:00:00Z");
 const ago = (days: number) => new Date(now.getTime() - days * 86_400_000);
@@ -28,29 +29,38 @@ describe("candidates list view", () => {
     expect(matchesQuery(p, "")).toBe(true);
   });
 
+  it("stale means a stale perishable fact, not an old interview", () => {
+    const a = (candidateId: string, type: Attribute["type"], days: number, confirmedByRecruiter = true) => ({ candidateId, type, observedAt: ago(days), confirmedByRecruiter });
+    const stale = staleIds([a("c1", "salary", 500), a("c2", "skill", 500), a("c3", "availability", 30), a("c4", "work-mode", 500, false), a("c5", "salary", 500), a("c5", "availability", 30)], now);
+    expect([...stale]).toEqual(["c1"]); // c5's newest perishable fact is fresh
+    expect(matchesFilter(person("c1", 5), "stale", now, stale)).toBe(true);
+    expect(matchesFilter(person("c2", 500), "stale", now, stale)).toBe(false); // old interview, nothing perishable
+  });
+
   it("filters", () => {
-    expect(matchesFilter(person("a", 500), "stale", now)).toBe(true);
-    expect(matchesFilter(person("a", 5), "stale", now)).toBe(false);
+    expect(matchesFilter(person("a", 500), "stale", now)).toBe(false);
+    expect(matchesFilter(person("a", 5), "stale", now, new Set(["a"]))).toBe(true);
     expect(matchesFilter(person("a", 5, { parseStatus: "flagged" }), "cv", now)).toBe(true);
     expect(matchesFilter(person("a", 5, { lastOpenedAt: ago(5) }), "unopened", now)).toBe(false);
   });
 });
 
 describe("search results: sources and highlighting", () => {
-  const attr = (id: string, days: number, sourceType: CitedAttr["sourceType"] = "note"): [string, CitedAttr] => [id, { id, candidateId: "c1", observedAt: ago(days), sourceType }];
-  const attrs = new Map([attr("a1", 30), attr("a2", 430), attr("a3", 40, "cv"), attr("a4", 10, "override")]);
+  const attr = (id: string, days: number, sourceType: CitedAttr["sourceType"] = "note", type: CitedAttr["type"] = "salary"): [string, CitedAttr] => [id, { id, candidateId: "c1", type, observedAt: ago(days), sourceType }];
+  const attrs = new Map([attr("a1", 30), attr("a2", 430), attr("a3", 40, "cv"), attr("a4", 10, "override"), attr("a5", 430, "note", "skill")]);
 
-  it("cites the newest attribute with its date, and the age only when stale", () => {
+  it("cites the newest attribute with its date, and the age only when a perishable fact is stale", () => {
     expect(hitSource({ kind: "stated", attributeIds: ["a1", "a2"] }, attrs, now)).toMatchObject({ text: "Your note · 14 Sep 2026", staleMonths: undefined, attributeId: "a1" });
     expect(hitSource({ kind: "interpreted", attributeIds: ["a2"] }, attrs, now)).toMatchObject({ text: "Interpreted from your note · 10 Aug 2025", staleMonths: 14 });
+    expect(hitSource({ kind: "stated", attributeIds: ["a5"] }, attrs, now)).toMatchObject({ text: "Your note · 10 Aug 2025", staleMonths: undefined }); // old skill: date only
     expect(hitSource({ kind: "stated", attributeIds: ["a3"] }, attrs, now)?.text).toBe("CV · 4 Sep 2026");
     expect(hitSource({ kind: "stated", attributeIds: ["a4"] }, attrs, now)?.text).toBe("Your reason · 4 Oct 2026");
     expect(hitSource({ kind: "stated", attributeIds: ["gone"] }, attrs, now)).toBeNull();
   });
 
   it("counts hits by source", () => {
-    const s = ["a1", "a2", "a3", "a4", "gone"].map((id) => hitSource({ kind: "stated", attributeIds: [id] }, attrs, now));
-    expect(sourceCounts(s)).toEqual({ all: 5, cv: 1, note: 3, stale: 1 });
+    const s = ["a1", "a2", "a3", "a4", "a5", "gone"].map((id) => hitSource({ kind: "stated", attributeIds: [id] }, attrs, now));
+    expect(sourceCounts(s)).toEqual({ all: 6, cv: 1, note: 4, stale: 1 }); // the old skill (a5) is a note but not stale
     expect(s.filter((x) => matchesSource(x, "stale"))).toHaveLength(1);
   });
 

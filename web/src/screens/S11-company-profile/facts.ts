@@ -6,7 +6,7 @@ export type FactLine = {
   text: string;
   /** "Your note · 24 Oct 2026", "Megan Naidoo, by email · 3 Jun 2026" */
   source: string;
-  /** "14 months ago", only when the fact is stale. */
+  /** "14 months ago", only when a pay fact (placements) is stale; every other source shows its date only. */
   age: string | null;
   /** The line under a stale fact; null when fresh. */
   ask: string | null;
@@ -34,7 +34,7 @@ export function placedAmount(reason: string) {
 }
 
 function line(text: string, kind: CompanyFact["source"], name: string, observedAt: Date, now: Date): FactLine {
-  const age = staleAge(observedAt, now);
+  const age = kind === "placements" ? staleAge(observedAt, now) : null; // only pay goes out of date; notes, emails and feedback are events
   return {
     text, kind, at: observedAt, source: `${name} · ${factDate(kind, observedAt)}`,
     age,

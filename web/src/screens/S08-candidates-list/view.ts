@@ -1,5 +1,5 @@
-import { isForgotten, monthsSince, staleness } from "@tacit/shared";
-import type { Candidate, SearchHit } from "@tacit/shared";
+import { factStaleness, isForgotten, isPerishable, monthsSince } from "@tacit/shared";
+import type { Attribute, AttributeType, Candidate, SearchHit } from "@tacit/shared";
 import type { WithId } from "../../lib/data";
 import { fmtDate } from "../S03-candidate-profile/profile";
 
@@ -26,13 +26,26 @@ export function lastSeenLabel(d: Date, now = new Date()) {
   return `${monthsSince(d, now)} mo ago`;
 }
 
-const matchers: Record<FilterId, (c: Person, now: Date) => boolean> = {
+/**
+ * Who has gone stale: the candidates whose newest confirmed perishable fact (salary, availability, work mode, current work)
+ * is over a year old. Other facts never age, so a person met long ago with nothing perishable on file is not stale.
+ */
+export function staleIds(attrs: readonly Pick<Attribute, "candidateId" | "type" | "observedAt" | "confirmedByRecruiter">[], now: Date): ReadonlySet<string> {
+  const newest = new Map<string, Pick<Attribute, "type" | "observedAt">>();
+  for (const a of attrs) {
+    const n = newest.get(a.candidateId);
+    if (a.confirmedByRecruiter && isPerishable(a.type) && (!n || a.observedAt > n.observedAt)) newest.set(a.candidateId, a);
+  }
+  return new Set([...newest].filter(([, a]) => factStaleness(a.type, a.observedAt, now) === "stale").map(([id]) => id));
+}
+
+const matchers: Record<FilterId, (c: Person, now: Date, stale: ReadonlySet<string>) => boolean> = {
   all: () => true,
   unopened: (c, now) => isForgotten(c.lastOpenedAt, now),
-  stale: (c, now) => staleness(lastSeen(c), now) === "stale",
+  stale: (c, _now, stale) => stale.has(c.id),
   cv: (c) => c.parseStatus !== "ok",
 };
-export const matchesFilter = (c: Person, f: FilterId, now: Date) => matchers[f](c, now);
+export const matchesFilter = (c: Person, f: FilterId, now: Date, stale: ReadonlySet<string> = new Set()) => matchers[f](c, now, stale);
 
 /** Every word of the query must appear in the name, headline, location or a top skill (case-insensitive). */
 // ponytail: R-13 swaps this for /api/search (search by meaning, "Why it matched"); until then it is a local text filter.
@@ -72,12 +85,12 @@ export const SOURCE_FILTERS: { id: SourceFilterId; label: string }[] = [
 ];
 
 /** What a hit may cite. "cv" is for CV facts once they are citable; today a cited attribute comes from a note or an override. */
-export type CitedAttr = { id: string; candidateId: string; observedAt: Date; sourceType: "note" | "override" | "cv" };
+export type CitedAttr = { id: string; candidateId: string; type: AttributeType; observedAt: Date; sourceType: "note" | "override" | "cv" };
 export type HitSource = {
   kind: CitedAttr["sourceType"];
   /** "CV · 8 Sep 2026", "Your note · 12 Aug 2025", "Interpreted from your note · 14 Jul 2026" */
   text: string;
-  /** Set only when the cited evidence is stale, e.g. 14. */
+  /** Set only when the cited fact is perishable (salary, availability, work mode, current work) and stale, e.g. 14. */
   staleMonths?: number;
   attributeId: string;
   candidateId: string;
@@ -92,7 +105,7 @@ export function hitSource(hit: Pick<SearchHit, "kind" | "attributeIds">, attrs: 
   return {
     kind: a.sourceType,
     text: `${label} · ${fmtDate(a.observedAt)}`,
-    staleMonths: staleness(a.observedAt, now) === "stale" ? monthsSince(a.observedAt, now) : undefined,
+    staleMonths: factStaleness(a.type, a.observedAt, now) === "stale" ? monthsSince(a.observedAt, now) : undefined,
     attributeId: a.id,
     candidateId: a.candidateId,
   };

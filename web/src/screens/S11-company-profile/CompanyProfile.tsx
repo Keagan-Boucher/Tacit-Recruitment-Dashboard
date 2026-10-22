@@ -8,7 +8,7 @@ import { useCandidates, useDocument, useOwned } from "../../lib/data";
 import NotFound from "../S16-not-found/NotFound";
 import { fmtDate } from "../S03-candidate-profile/profile";
 import styles from "./CompanyProfile.module.css";
-import { companyFacts, monthYear, placedAmount, staleAge, type FactLine } from "./facts";
+import { companyFacts, monthYear, placedAmount, type FactLine } from "./facts";
 import { roleCounts, roleLine } from "./roleLine";
 import { turnedDown } from "./turnedDown";
 
@@ -190,15 +190,11 @@ function Profile({ onRetry }: { onRetry: () => void }) {
                   {groups.map((g) => (
                     <li key={g.label} className={styles.claim}>
                       <p className="t-body-s-strong">{g.label}</p>
-                      {g.cases.map((k) => {
-                        const age = staleAge(k.at, now);
-                        return (
-                          <p key={k.key} className={`${styles.source} t-caption`}>
-                            {k.source === "client" ? `Client feedback · ${fmtDate(k.at)}` : <>Override log · {who(k.candidateId)}, {fmtDate(k.at)}</>}
-                            {age && <> · <span className={`${styles.age} t-caption-strong`}>{age}</span></>}
-                          </p>
-                        );
-                      })}
+                      {g.cases.map((k) => (
+                        <p key={k.key} className={`${styles.source} t-caption`}>
+                          {k.source === "client" ? `Client feedback · ${fmtDate(k.at)}` : <>Override log · {who(k.candidateId)}, {fmtDate(k.at)}</>}
+                        </p>
+                      ))}
                     </li>
                   ))}
                 </ul>

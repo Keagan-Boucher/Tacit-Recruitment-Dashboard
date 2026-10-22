@@ -20,20 +20,22 @@ describe("company facts", () => {
     expect(companyFacts({ ...base, facts: [{ text: "A.", source: "email", observedAt: now }] }, now)[0]!.source).toBe("Client, by email · 24 Oct 2026");
   });
 
-  it("a stale fact carries its age and an ask line; a money fact asks about salary; placements are dated to the month", () => {
+  it("a stale pay fact carries its age and an ask line; other stale sources show their date only; placements are dated to the month", () => {
     const [pay, other] = companyFacts({ ...base, facts: [
       { text: "Hires at R52k and R55k.", source: "placements", observedAt: new Date(2025, 7, 20) },
       { text: "Prefers contract.", source: "client-feedback", observedAt: new Date(2025, 7, 20) },
     ] }, now);
     expect(pay).toMatchObject({ source: "Placements · Aug 2025", age: "14 months ago", ask: "Ask about salary before you shortlist anyone." });
-    expect(other).toMatchObject({ age: "14 months ago", ask: "Check this still holds before you shortlist." });
+    expect(other).toMatchObject({ source: "Client feedback · 20 Aug 2025", age: null, ask: null });
+    const [generic] = companyFacts({ ...base, facts: [{ text: "Prefers contract.", source: "placements", observedAt: new Date(2025, 7, 20) }] }, now);
+    expect(generic).toMatchObject({ age: "14 months ago", ask: "Check this still holds before you shortlist." });
   });
 
-  it("falls back to the hiring pattern and note under one Your notes source, with age when stale", () => {
+  it("falls back to the hiring pattern and note under one Your notes source, never with an age", () => {
     const fresh = companyFacts({ hiringPattern: "Hybrid. Pays well.", notes: "Pays well.", updatedAt: new Date(2026, 9, 1) }, now);
     expect(fresh.map((f) => f.text)).toEqual(["Hybrid.", "Pays well."]);
     expect(fresh[0]).toMatchObject({ source: "Your notes · 1 Oct 2026", age: null });
-    expect(companyFacts({ hiringPattern: "", notes: "Old.", updatedAt: new Date(2025, 0, 5) }, now)[0]).toMatchObject({ age: "21 months ago", ask: expect.any(String) });
+    expect(companyFacts({ hiringPattern: "", notes: "Old.", updatedAt: new Date(2025, 0, 5) }, now)[0]).toMatchObject({ source: "Your notes · 5 Jan 2025", age: null, ask: null });
   });
 
   it("lists facts newest first", () => {

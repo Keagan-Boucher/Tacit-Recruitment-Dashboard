@@ -283,7 +283,7 @@ export function RolesInPlay({ b }: P) {
   );
 }
 
-const FACT: Partial<Record<AttributeType, string>> = { salary: "Salary: ", availability: "Availability: " };
+const FACT: Partial<Record<AttributeType, string>> = { salary: "Salary: ", availability: "Availability: ", "work-mode": "Work mode: ", trajectory: "Current work: " };
 
 export function WorthACall({ b }: P) {
   const rows = b?.worth ?? [];
@@ -292,7 +292,7 @@ export function WorthACall({ b }: P) {
       {!b ? (
         rowSk(3)
       ) : rows.length === 0 ? (
-        say(b, "People whose salary or availability is over a year old.", "No one’s evidence is over a year old.")
+        say(b, "People whose salary, availability or current work is over a year old.", "No one’s salary or availability is over a year old.")
       ) : (
         <ul className={styles.list}>
           {rows.slice(0, SEE).map((w) => (

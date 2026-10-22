@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
-import { staleness, type SearchHit, type SearchResponse } from "@tacit/shared";
+import type { Attribute, SearchHit, SearchResponse } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
 import { Button, buttonClass, Chip, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, ListRow, Skeleton } from "../../components";
 import { api } from "../../lib/api";
-import { useCandidates } from "../../lib/data";
+import { useCandidates, useOwned } from "../../lib/data";
 import styles from "./CandidatesList.module.css";
 import { useCited } from "./useCited";
 import {
@@ -21,6 +21,7 @@ import {
   matchesQuery,
   matchesSource,
   sourceCounts,
+  staleIds,
   type CitedAttr,
   type FilterId,
   type HitSource,
@@ -32,10 +33,10 @@ const PEEK = 3; // rows a group shows before "See all"
 // Dev only: what ?state=search-results / search-no-results type into the search box.
 const DEV_QUERY: Record<string, string> = { "search-results": "FICO", "search-no-results": "Cobol" };
 // Dev only: canned "Why it matched" and the attribute each one cites (days old), for ?state=search-results, so snap needs no model call.
-const DEV_WHY: [text: string, kind: SearchHit["kind"], source: CitedAttr["sourceType"], days: number][] = [
+const DEV_WHY: [text: string, kind: SearchHit["kind"], source: CitedAttr["sourceType"], days: number, type?: CitedAttr["type"]][] = [
   ["Did FICO configuration on two S/4HANA rollouts.", "stated", "cv", 40],
   ["“Financial Accounting and Controlling” is FICO spelled out.", "interpreted", "note", 95],
-  ["Taught himself FICO, month-end close inside SAP finance modules.", "stated", "note", 430],
+  ["Currently runs the FICO close inside SAP finance modules.", "stated", "note", 430, "trajectory"],
   ["Ran the FICO close for a retailer, keen to move.", "stated", "override", 20],
 ];
 
@@ -48,6 +49,7 @@ export default function CandidatesList() {
 function Candidates({ onRetry }: { onRetry: () => void }) {
   const state = useScreenState();
   const live = useCandidates();
+  const attributes = useOwned<Attribute>("attributes"); // to tell who has a stale perishable fact; the list shows without it
   const navigate = useNavigate();
   const [now] = useState(() => new Date());
   const [params, setParams] = useSearchParams();
@@ -149,7 +151,7 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
   const meaning = hits ?? sample;
   const sources: ReadonlyMap<string, CitedAttr> = hits
     ? cited
-    : new Map((sample ?? []).map((h, i) => [`dev-${i}`, { id: `dev-${i}`, candidateId: h.candidateId, sourceType: DEV_WHY[i]![2], observedAt: new Date(now.getTime() - DEV_WHY[i]![3] * 86_400_000) }]));
+    : new Map((sample ?? []).map((h, i) => [`dev-${i}`, { id: `dev-${i}`, candidateId: h.candidateId, sourceType: DEV_WHY[i]![2], type: DEV_WHY[i]![4] ?? "skill", observedAt: new Date(now.getTime() - DEV_WHY[i]![3] * 86_400_000) }]));
   const byId = new Map(all.map((c) => [c.id, c]));
   const why = new Map((meaning ?? []).map((h) => [h.candidateId, h]));
   // Meaning results keep the model's order; typing falls back to the instant local filter.
@@ -159,9 +161,10 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
     return h ? hitSource(h, sources, now) : null;
   };
   // While meaning results show, the filters say where the evidence came from; otherwise they are about the person.
-  const shown = found.filter((c) => (meaning ? matchesSource(sourceOf(c), sourceFilter) : matchesFilter(c, filter, now)));
+  const stale = staleIds(attributes.data ?? [], now);
+  const shown = found.filter((c) => (meaning ? matchesSource(sourceOf(c), sourceFilter) : matchesFilter(c, filter, now, stale)));
   const narrowed = searching || filter !== "all" || Boolean(meaning);
-  const count = (f: FilterId) => found.filter((c) => matchesFilter(c, f, now)).length;
+  const count = (f: FilterId) => found.filter((c) => matchesFilter(c, f, now, stale)).length;
   const counts = sourceCounts(found.map(sourceOf));
   const groups = narrowed ? [] : groupByAge(shown, now);
 
@@ -228,13 +231,13 @@ function Candidates({ onRetry }: { onRetry: () => void }) {
     const seen = lastSeen(c);
     const h = why.get(c.id);
     if (h) return hitRow(c, h, fade);
-    const stale = staleness(seen, now) === "stale";
+    const isStale = stale.has(c.id);
     return (
       <li key={c.id}>
         <ListRow href={`/candidates/${c.id}`} title={c.fullName} meta={`${c.headline}, ${c.location}`} fade={fade}>
-          <span className={`${styles.heard} ${stale ? `${styles.stale} t-caption-strong` : "t-caption"}`}>
+          <span className={`${styles.heard} ${isStale ? `${styles.stale} t-caption-strong` : "t-caption"}`}>
             {lastSeenLabel(seen, now)}
-            {stale && <span className="sr-only">, stale evidence</span>}
+            {isStale && <span className="sr-only">, stale evidence</span>}
           </span>
           <span className={styles.skills}>
             {c.topSkills.slice(0, 2).map((s) => (

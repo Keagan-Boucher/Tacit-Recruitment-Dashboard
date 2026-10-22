@@ -42,6 +42,27 @@ it("the hero's age sits on the aged cited fact only", () => {
   expect(withAttr(14)?.heardAgainst).toBeUndefined(); // no against reason in the fixture
 });
 
+it("a non-perishable cited fact shows no age even when old; a perishable one does", () => {
+  const at = (type: string, months: number) => ({ ...base, id: "a", candidateId: "old", type, value: "x", observedAt: ago(months) }) as unknown as Attribute & { id: string };
+  const hero = (type: string) => buildBoard({ ...snap, attributes: [at(type, 14)] }, now).forgotten;
+  expect(hero("skill")?.heardFor).toBeUndefined();
+  expect(hero("skill")?.notOpened).toBe(14); // falls back to the "Not opened" sentence
+  for (const type of ["salary", "availability", "work-mode", "trajectory"]) expect(hero(type)?.heardFor).toBe(14);
+});
+
+it("worth a call lists only confirmed perishable facts over a year old", () => {
+  const at = (id: string, candidateId: string, type: string, months: number, confirmed = true) =>
+    ({ ...base, id, candidateId, type, value: "v", confirmedByRecruiter: confirmed, observedAt: ago(months) }) as unknown as Attribute & { id: string };
+  const s: Snapshot = { ...snap, attributes: [at("a1", "old", "salary", 14), at("a2", "new", "skill", 20), at("a3", "new", "availability", 3)] };
+  expect(buildBoard(s, now).worth.map((w) => [w.candidate.id, w.type, w.months])).toEqual([["old", "salary", 14]]);
+  expect(buildBoard({ ...s, attributes: [at("a1", "old", "salary", 14, false)] }, now).worth).toEqual([]);
+});
+
+it("roles in play counts stale matches by the match's own (perishable-based) staleness", () => {
+  const b = buildBoard({ ...snap, matches: [match("m1", "new", 1), { ...match("m2", "old", 2), staleness: "fresh" } as Match & { id: string }] }, now);
+  expect(b.play[0]?.stale).toBe(1);
+});
+
 it("an empty snapshot is a quiet board", () => {
   const b = buildBoard(EMPTY, now);
   expect(b.total).toBe(0);
