@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Attribute, InterviewNote } from "@tacit/shared";
-import { activeAttribute, askFirst, buildObserved, ordinal, pieces, unkeptByNote } from "./profile";
+import { activeAttribute, ageText, askFirst, askTopic, buildObserved, ordinal, pieces, unkeptByNote } from "./profile";
 
 const now = new Date("2026-10-14T00:00:00Z");
 const note = { id: "n1", rawText: "Q?\nWants R60k minimum for a move. Calm.", capturedAt: new Date("2025-08-12T00:00:00Z") } as InterviewNote & { id: string };
@@ -36,11 +36,31 @@ describe("S03 provenance and staleness", () => {
   });
 
   it("asks first only when the newest evidence is stale, naming what aged", () => {
-    const fresh = buildObserved([attr("a", 3, 21)], [note], [], new Date("2026-01-01"));
-    expect(askFirst(fresh)).toBeNull();
-    const stale = buildObserved([attr("a", 3, 21)], [note], [], new Date("2027-01-01"));
-    expect(askFirst(stale)?.check).toBe("salary");
+    const early = new Date("2026-01-01");
+    expect(askFirst(buildObserved([attr("a", 3, 21)], [note], [], early), early)).toBeNull();
+    const late = new Date("2027-01-01");
+    const ask = askFirst(buildObserved([attr("a", 3, 21)], [note], [], late), late)!;
+    expect(ask.check).toBe("salary");
+    expect(ask.sources.map(askTopic)).toEqual(["Salary R60k"]);
     expect(ordinal(1) + ordinal(2) + ordinal(11)).toBe("1st2nd11th");
+  });
+});
+
+describe("S03 only perishable facts age", () => {
+  const late = new Date("2027-01-01"); // Aug 2025 -> Jan 2027 = 16 months
+  const list = buildObserved([attr("s", 3, 21), attr("c", 3, 21, { type: "skill", value: "Calm" }), attr("w", 3, 21, { type: "trajectory", value: "SAP lead" })], [note], [], late);
+  it("a stale salary shows its age; a stale-by-date skill shows none", () => {
+    expect(list.map((o) => [o.type, ageText(o)])).toEqual([["salary", "16 months ago"], ["skill", null], ["trajectory", "16 months ago"]]);
+  });
+  it("the prompt names only perishable topics and keeps the quote source", () => {
+    const ask = askFirst(list, late)!;
+    expect(ask.check).toBe("salary and current work");
+    expect(ask.sources).toHaveLength(2);
+    expect(list[0]!.source).toBe("Your note · 12 Aug 2025");
+  });
+  it("still asks first when only non-perishable facts are known and they are old", () => {
+    const only = buildObserved([attr("c", 3, 21, { type: "skill", value: "Calm" })], [note], [], late);
+    expect(askFirst(only, late)).toMatchObject({ check: "", sources: [] });
   });
 });
 

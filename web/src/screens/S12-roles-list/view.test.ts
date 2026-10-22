@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Match, Override, Role } from "@tacit/shared";
-import { budgetLabel, matchesQuery, roleRows } from "./view";
+import { budgetLabel, matchesQuery, personWord, placedLine, roleRows } from "./view";
 
 const d = new Date("2026-10-01");
 const role = { id: "r1", companyId: "c1", title: "SAP FICO consultant", openedAt: d, interpretedBrief: { mustHave: ["S/4HANA"], niceToHave: [], budget: { min: 55000, max: 55000, currency: "ZAR" } } } as never;
@@ -24,5 +24,14 @@ describe("helpers", () => {
   it("searches title, company and skills", () => {
     const row = { role, company: "Vantage" } as never;
     expect([matchesQuery(row, "fico"), matchesQuery(row, "vantage"), matchesQuery(row, "s/4"), matchesQuery(row, "cobol")]).toEqual([true, true, true, false]);
+  });
+});
+
+describe("S12 words", () => {
+  it("singular and plural for the stale-evidence unit", () => expect([personWord(1), personWord(2)]).toEqual(["person", "people"]));
+  it("reads the placed amount from the reason, and omits it when there is none", () => {
+    expect(placedLine("Nomvula Zulu", "Placed at R52k a month.")).toEqual({ who: "Nomvula Zulu", rest: " placed · R52k a month" });
+    expect(placedLine("Busisiwe Ndlovu", "Client loved her.").rest).toBe(" placed");
+    expect(placedLine("Busisiwe Ndlovu").rest).toBe(" placed");
   });
 });

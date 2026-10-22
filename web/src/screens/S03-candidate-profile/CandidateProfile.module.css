@@ -12,7 +12,8 @@
 .panel, .observed, .notes, .history { display: flex; flex-direction: column; gap: 14px; }
 .notes { gap: 12px; }
 .panelHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.panelHead span { color: var(--text-3); }
+.count { flex: none; color: var(--text-3); white-space: nowrap; }
+.count > :first-child { color: var(--text); }
 
 /* What the CV says */
 .facts { display: flex; flex-direction: column; gap: 14px; margin: 0; }
@@ -64,12 +65,14 @@
   transition: background-color 150ms var(--ease-out);
 }
 .attr:hover { background: var(--surface-3); }
-.attrOn { background: var(--surface-3); border-color: var(--accent-text); }
+.attrOn { border-color: var(--accent-text); }
 .attrNum { flex: none; width: 14px; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .attrBody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.quote { color: var(--text-2); }
+.sourceLine { overflow-wrap: anywhere; }
 .source { color: var(--text-3); }
-.attr > :last-child:not(.attrBody) { flex: none; }
+.quote { color: var(--text-2); }
+.age { color: var(--stale); }
+.noBreak { white-space: nowrap; }
 .unkept {
   display: inline-flex;
   align-items: center;
@@ -108,6 +111,9 @@
   box-decoration-break: clone;
 }
 .fade2 .phrase { opacity: 0.85; }
+/* Once one attribute is selected, only its phrase stays marked (Figma 254:495). */
+.phraseQuiet { color: inherit; text-decoration: none; }
+.phraseQuiet:hover { text-decoration: underline; text-decoration-color: var(--text-3); }
 .phrase:hover { text-decoration-thickness: 2px; }
 .phraseOn { background: var(--accent-wash); text-decoration-thickness: 2px; font-weight: 500; }
 .phraseNum { margin-left: 1px; vertical-align: super; line-height: 0; text-decoration: none; color: var(--text-3); }
@@ -116,8 +122,7 @@
 /* Ask first */
 .ask { display: flex; flex-direction: column; gap: 14px; }
 .ask.ask { border-color: var(--stale); }
-.askChip { display: flex; flex-wrap: wrap; gap: 6px; }
-.ask p { color: var(--text-2); }
+.askSources { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; color: var(--text-3); }
 
 /* Match history */
 .historyList { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none; }
@@ -129,9 +134,11 @@
   border-radius: var(--radius-inner);
   background: var(--surface-2);
 }
-.historyTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.historyTop p { flex: 1; min-width: 0; }
-.historyRow > p:nth-child(2) { color: var(--text-3); }
+.historyRow > p:nth-child(2) { color: var(--text-3); overflow-wrap: anywhere; }
+.tone_accent { color: var(--accent-text); }
+.tone_for { color: var(--for); }
+.tone_against { color: var(--against); }
+.tone_quiet { color: var(--text-2); }
 .historyBody { color: var(--text-2); overflow-wrap: anywhere; }
 
 @media (max-width: 1100px) {

@@ -3,10 +3,10 @@ import type { MouseEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import type { Candidate, Company, Match, Override, Placement, Role } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
-import { Button, buttonClass, Chip, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, ListRow, Skeleton } from "../../components";
+import { Button, buttonClass, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, ListRow, Skeleton } from "../../components";
 import { useOwned } from "../../lib/data";
 import styles from "./RolesList.module.css";
-import { budgetLabel, matchesQuery, roleRows, type RoleRow } from "./view";
+import { budgetLabel, matchesQuery, personWord, placedLine, roleRows, type RoleRow } from "./view";
 
 type Status = Role["status"];
 const STATUSES: { id: Status; label: string }[] = [
@@ -14,7 +14,9 @@ const STATUSES: { id: Status; label: string }[] = [
   { id: "filled", label: "Filled" },
   { id: "expired", label: "Expired" },
 ];
-const people = (n: number) => `${n} ${n === 1 ? "person" : "people"}`;
+
+/** A count as a plain numeral: Title weight, and quiet Body M when it is zero. */
+const Num = ({ n }: { n: number }) => <span className={n ? "t-title tabular" : `${styles.zero} t-body-m tabular`}>{n}</span>;
 
 /** Retry remounts the screen, which opens fresh Firestore listeners (a failed listener does not recover by itself). */
 export default function RolesList() {
@@ -147,19 +149,30 @@ function Roles({ onRetry }: { onRetry: () => void }) {
                 <span className={styles.company}>Company</span>
                 <span className={styles.waiting}>Waiting on you</span>
                 <span className={styles.short}>Shortlisted</span>
-                <span className={styles.evidence}>Evidence</span>
+                <span className={styles.evidence}>Stale evidence</span>
               </div>
               <ul className={styles.rows}>
                 {shown.map((r) => (
                   <li key={r.role.id}>
-                    <ListRow href={`/roles/${r.role.id}`} title={r.role.title} meta={sub(r)} mainWidth={470}>
+                    <ListRow href={`/roles/${r.role.id}`} title={r.role.title} meta={sub(r)} className={styles.row}>
                       <span className={`${styles.company} t-body-s`}>{r.company}</span>
                       <span className={styles.waiting}>
-                        {r.waiting > 0 ? <Chip tone="accent">{r.waiting} waiting</Chip> : <span className={`${styles.zero} t-body-m tabular`}>0</span>}
+                        <Num n={r.waiting} />
+                        <span className={`${styles.lbl} t-caption`}> waiting on you</span>
                       </span>
-                      <span className={`${styles.short} ${r.shortlisted ? "" : styles.zero} t-body-m tabular`}>{r.shortlisted}</span>
-                      <span className={`${styles.evidence} t-body-s`}>
-                        {r.stale > 0 ? <Chip tone="stale">Stale · {people(r.stale)}</Chip> : r.suggested === 0 ? <span className={styles.zero}>No one fits yet</span> : null}
+                      <span className={styles.short}>
+                        <Num n={r.shortlisted} />
+                        <span className={`${styles.lbl} t-caption`}> shortlisted</span>
+                      </span>
+                      <span className={styles.evidence}>
+                        {r.stale > 0 ? (
+                          <>
+                            <span className={`${styles.stale} t-title tabular`}>{r.stale}</span>
+                            <span className={`${styles.unit} t-caption`}> {personWord(r.stale)}<span className={`${styles.lbl} t-caption`}> with stale evidence</span></span>
+                          </>
+                        ) : r.suggested === 0 ? (
+                          <span className={`${styles.zero} t-body-s`}>No one fits yet</span>
+                        ) : null}
                       </span>
                     </ListRow>
                   </li>
@@ -178,13 +191,19 @@ function Roles({ onRetry }: { onRetry: () => void }) {
             <ul className={styles.rows}>
               {filled.map((r) => {
                 const who = placements.data?.find((p) => p.roleId === r.role.id && p.outcome === "placed");
-                const pay = budgetLabel(r.role.interpretedBrief);
+                const person = who && name(who.candidateId);
+                const line = person ? placedLine(person, who.reason) : null;
                 return (
                   <li key={r.role.id}>
-                    <ListRow href={`/roles/${r.role.id}`} title={r.role.title} meta={sub(r)} mainWidth={470}>
+                    <ListRow href={`/roles/${r.role.id}`} title={r.role.title} meta={sub(r)} className={styles.row}>
                       <span className={`${styles.company} t-body-s`}>{r.company}</span>
                       <span className={`${styles.placed} t-body-s`}>
-                        {who && name(who.candidateId) ? `${name(who.candidateId)} placed${pay ? ` at ${pay} a month` : ""}` : null}
+                        {line && (
+                          <>
+                            <strong className="t-body-s-strong">{line.who}</strong>
+                            {line.rest}
+                          </>
+                        )}
                       </span>
                     </ListRow>
                   </li>

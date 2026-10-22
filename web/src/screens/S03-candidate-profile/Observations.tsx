@@ -1,18 +1,29 @@
 import type { KeyboardEvent, ReactNode } from "react";
 import { Link } from "react-router";
 import type { InterviewNote, Role, Company } from "@tacit/shared";
-import { buttonClass, Card, Chip, EmptyState, Icon } from "../../components";
+import { buttonClass, Card, EmptyState, Icon } from "../../components";
 import type { WithId } from "../../lib/data";
-import { fmtDate, fmtDay, pieces, type Observed } from "./profile";
+import { Count } from "./Count";
+import { ageText, fmtDate, fmtDay, pieces, type Observed } from "./profile";
 import styles from "./CandidateProfile.module.css";
 
 type Select = (id: string | null) => void;
 
-/** Aged evidence carries its age on the attribute itself: "Stale · 14 mo", or a quiet "6 mo" while ageing. */
-export function AgeChip({ o }: { o: Pick<Observed, "staleness" | "months"> }) {
-  if (o.staleness === "stale") return <Chip tone="stale">Stale · {o.months} mo</Chip>;
-  if (o.staleness === "ageing") return <Chip tone="quiet">{o.months} mo</Chip>;
-  return null;
+/** "Your note · 12 Aug 2025 · 14 months ago · “quote”": the age only when the fact is perishable and stale. */
+function SourceLine({ o }: { o: Observed }) {
+  const age = ageText(o);
+  return (
+    <span className={`${styles.sourceLine} t-caption-para`}>
+      <span className={styles.source}>{o.source} · </span>
+      {age && (
+        <>
+          <span className={`${styles.age} t-caption-strong`}>{age}</span>
+          <span className={styles.source}> · </span>
+        </>
+      )}
+      <span className={styles.quote}>“{o.quote}”</span>
+    </span>
+  );
 }
 
 type ObservedProps = {
@@ -63,10 +74,8 @@ export function ObservedPanel({ candidateId, observed, unkept, activeId, onSelec
                           {o.label}
                           {o.original && <span className="sr-only"> (edited, originally {o.original})</span>}
                         </span>
-                        <span className={`${styles.quote} t-caption-para`}>“{o.quote}”</span>
-                        {on && <span className={`${styles.source} t-caption`}>{o.source}</span>}
+                        <SourceLine o={o} />
                       </span>
-                      <AgeChip o={o} />
                     </button>
                   </li>
                 );
@@ -83,13 +92,13 @@ export function ObservedPanel({ candidateId, observed, unkept, activeId, onSelec
         </>
       )}
       <p className="sr-only" role="status" aria-live="polite">
-        {active ? `Source shown: “${active.quote}”, ${active.source}` : ""}
+        {active ? `Source shown: “${active.quote}”, ${active.source}${ageText(active) ? `, ${ageText(active)}` : ""}` : ""}
       </p>
     </Card>
   );
 }
 
-function Phrase({ id, n, active, onSelect, children }: { id: string; n: number; active: boolean; onSelect: Select; children: ReactNode }) {
+function Phrase({ id, n, active, quiet, onSelect, children }: { id: string; n: number; active: boolean; quiet: boolean; onSelect: Select; children: ReactNode }) {
   const toggle = () => onSelect(active ? null : id);
   const key = (e: KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -104,7 +113,7 @@ function Phrase({ id, n, active, onSelect, children }: { id: string; n: number; 
       tabIndex={0}
       aria-pressed={active}
       data-phrase={id}
-      className={active ? `${styles.phrase} ${styles.phraseOn}` : styles.phrase}
+      className={active ? `${styles.phrase} ${styles.phraseOn}` : quiet ? `${styles.phrase} ${styles.phraseQuiet}` : styles.phrase}
       onClick={toggle}
       onKeyDown={key}
     >
@@ -134,7 +143,7 @@ export function NotesPanel({ notes, observed, roles, companies, activeId, onSele
     <Card className={styles.notes} role="region" aria-labelledby="notes-title">
       <header className={styles.panelHead}>
         <h2 id="notes-title" className="t-title">Interview notes</h2>
-        <span className="t-caption">{notes.length === 1 ? "1 note" : `${notes.length} notes`}</span>
+        <Count n={notes.length} one="note" many="notes" />
       </header>
       <ol className={styles.noteList}>
         {notes.map((n, i) => {
@@ -147,7 +156,7 @@ export function NotesPanel({ notes, observed, roles, companies, activeId, onSele
               <p className={`${styles.noteText} t-body-s-para`}>
                 {pieces(n.rawText, observed.filter((o) => o.noteId === n.id)).map((p, i) =>
                   p.id ? (
-                    <Phrase key={i} id={p.id} n={p.n!} active={p.id === activeId} onSelect={onSelect}>
+                    <Phrase key={i} id={p.id} n={p.n!} active={p.id === activeId} quiet={activeId !== null} onSelect={onSelect}>
                       {p.text}
                     </Phrase>
                   ) : (

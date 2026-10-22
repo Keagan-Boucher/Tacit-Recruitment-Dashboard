@@ -1,15 +1,17 @@
 import type { Company, Match, Override, Placement, Role } from "@tacit/shared";
-import { Card, Chip, type ChipTone } from "../../components";
+import { Card } from "../../components";
 import type { WithId } from "../../lib/data";
+import { Count } from "./Count";
 import { fmtDate, ordinal } from "./profile";
 import styles from "./CandidateProfile.module.css";
 
-type Row = { key: string; at: Date; role?: Role; companyName?: string; chip: { tone: ChipTone; text: string }; body: string };
+type Tone = "accent" | "for" | "against" | "quiet";
+type Row = { key: string; at: Date; role?: Role; companyName?: string; status: { tone: Tone; text: string }; body: string };
 
-const PLACEMENT_CHIP: Record<Placement["outcome"], Row["chip"]> = {
+const PLACEMENT_STATUS: Record<Placement["outcome"], Row["status"]> = {
   placed: { tone: "for", text: "Placed" },
   "client-rejected": { tone: "against", text: "Client passed" },
-  withdrew: { tone: "neutral", text: "Withdrew" },
+  withdrew: { tone: "quiet", text: "Withdrew" },
 };
 
 type Source = {
@@ -31,18 +33,18 @@ export function historyRows({ matches, overrides, placements, roles, companies }
     return ov
       ? {
           key: m.id, at: ov.decidedAt, role: r, companyName: company(r),
-          chip: ov.decision === "shortlist" ? { tone: "for", text: "Shortlisted" } : { tone: "against", text: "Not this one" },
+          status: ov.decision === "shortlist" ? { tone: "for", text: "Shortlisted" } : { tone: "against", text: "Not this one" },
           body: `You said: “${ov.reasonText}”`,
         }
       : {
           key: m.id, at: m.generatedAt, role: r, companyName: company(r),
-          chip: { tone: "accent", text: `Suggested · ${ordinal(m.rank)}` },
+          status: { tone: "accent", text: `Suggested ${ordinal(m.rank)}` },
           body: "Waiting for your decision.",
         };
   });
   for (const p of placements) {
     const r = role(p.roleId);
-    rows.push({ key: p.id, at: p.date, role: r, companyName: company(r) ?? companies.find((c) => c.id === p.companyId)?.name, chip: PLACEMENT_CHIP[p.outcome], body: p.reason });
+    rows.push({ key: p.id, at: p.date, role: r, companyName: company(r) ?? companies.find((c) => c.id === p.companyId)?.name, status: PLACEMENT_STATUS[p.outcome], body: p.reason });
   }
   return rows.sort((a, b) => b.at.getTime() - a.at.getTime());
 }
@@ -54,17 +56,18 @@ export function MatchHistory({ rows, now }: { rows: Row[]; now: Date }) {
     <Card className={styles.history} role="region" aria-labelledby="history-title">
       <header className={styles.panelHead}>
         <h2 id="history-title" className="t-title">Match history</h2>
-        {rows.length > 0 && <span className="t-caption">{rows.length === 1 ? "1 role" : `${rows.length} roles`}</span>}
+        {rows.length > 0 && <Count n={rows.length} one="role" many="roles" />}
       </header>
       {rows.length ? (
         <ul className={styles.historyList}>
           {rows.map((r) => (
             <li key={r.key} className={styles.historyRow}>
-              <div className={styles.historyTop}>
-                <p className="t-body-m-strong">{r.role?.title ?? "Role no longer available"}</p>
-                <Chip tone={r.chip.tone}>{r.chip.text}</Chip>
-              </div>
-              <p className="t-caption">{[r.companyName, isToday(r.at, now) ? "today" : fmtDate(r.at)].filter(Boolean).join(" · ")}</p>
+              <p className="t-body-m-strong">{r.role?.title ?? "Role no longer available"}</p>
+              <p className="t-caption">
+                <span className={`${styles[`tone_${r.status.tone}`]} t-body-s-strong`}>{r.status.text}</span>
+                {" · "}
+                {[r.companyName, isToday(r.at, now) ? "today" : fmtDate(r.at)].filter(Boolean).join(" · ")}
+              </p>
               <p className={`${styles.historyBody} t-body-s-para`}>{r.body}</p>
             </li>
           ))}

@@ -23,25 +23,39 @@
 /* Figma row: 12 gaps between columns, 12 / 14 / 12 / 16 padding */
 .rows a { gap: 12px; padding: 12px 14px 12px 16px; }
 
+/* Column widths come from variables so the rows (ListRow's own title block, first child) and the header stay aligned. */
+.page { --role-w: 470px; --company-w: 324px; }
+.row > :first-child { flex: 0 0 var(--role-w); }
+
 /* Columns shared by rows and the header */
-.role { flex: 0 0 470px; }
-.company { flex: 0 0 324px; color: var(--text-2); }
-.waiting { flex: 0 0 130px; display: flex; align-items: center; }
-.short { flex: 0 0 100px; padding-right: 32px; text-align: right; color: var(--text); }
-.evidence { flex: 1; min-width: 0; display: flex; align-items: center; }
-.placed { flex: 1; min-width: 0; color: var(--text-2); }
+.role { flex: 0 0 var(--role-w); }
+.company { flex: 0 0 var(--company-w); color: var(--text-2); }
+.waiting { flex: 0 0 130px; display: flex; align-items: baseline; color: var(--text); }
+.short { flex: 0 0 100px; display: flex; align-items: baseline; justify-content: flex-end; padding-right: 32px; color: var(--text); }
+.evidence { flex: 1; min-width: 0; display: flex; align-items: baseline; }
+.placed { flex: 1; min-width: 0; color: var(--text-3); }
+.placed > strong { color: var(--text); }
 .zero { color: var(--text-3); }
+.stale { color: var(--stale); }
+.unit { color: var(--text-3); white-space: pre; }
+
+/* Each count's words: read by screen readers always, shown only where the column headers are not. */
+.lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .cols { display: flex; align-items: center; gap: 12px; padding: 0 14px 4px 16px; color: var(--text-3); }
 .cols::after { content: ""; flex: 0 0 18px; } /* the row chevron */
-.cols .short { color: var(--text-3); }
+.cols .waiting, .cols .short { color: var(--text-3); }
 
 @media (max-width: 1240px) {
-  .role { flex-basis: 300px; }
-  .company { flex-basis: 180px; }
+  .page { --role-w: 280px; --company-w: 160px; }
 }
-@media (max-width: 900px) {
-  .role { flex-basis: 200px; }
-  .company, .evidence { display: none; }
-  .placed { display: none; }
+/* No room for columns (also 720 x 450, where the top bar replaces the rail): the title and chevron keep the first line, the counts wrap under it with their words. */
+@media (max-width: 1100px) {
+  .cols, .company { display: none; }
+  .rows a { flex-wrap: wrap; row-gap: 6px; }
+  .row > :first-child { flex: 1 1 calc(100% - 30px); }
+  .rows a > :last-child { order: 1; }
+  .waiting, .short, .evidence, .placed { order: 2; flex: 0 0 auto; padding: 0; margin-right: 12px; justify-content: flex-start; }
+  .placed { flex: 1 1 100%; }
+  .lbl { position: static; width: auto; height: auto; overflow: visible; clip-path: none; color: var(--text-3); white-space: pre; }
 }

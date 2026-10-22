@@ -1,5 +1,5 @@
 import type { Attribute, AttributeType, InterviewNote, Override, Staleness } from "@tacit/shared";
-import { monthsSince, staleness } from "@tacit/shared";
+import { factStaleness, monthsSince, staleness } from "@tacit/shared";
 import type { WithId } from "../../lib/data";
 
 // Pure helpers for S03: provenance (attribute -> exact phrase), ageing, and the "ask first" prompt.
@@ -33,7 +33,9 @@ export type Observed = {
   noteId?: string;
   /** [start, end) into the note's rawText; undefined for override-sourced attributes (their text is not a note). */
   span?: { start: number; end: number };
-  /** "Note, 12 Aug 2025" / "Your reason, 14 Aug 2025" */
+  /** The value without its label ("R60k"), for the quiet ask-first lines. */
+  shown: string;
+  /** "Your note · 12 Aug 2025" / "Your reason · 14 Aug 2025". The screen adds the age, and only for stale perishable facts. */
   source: string;
   observedAt: Date;
   months: number;
@@ -74,12 +76,14 @@ export function buildObserved(
       type: a.type,
       noteId: isNote ? a.noteId : undefined,
       span: isNote ? { start, end } : undefined,
+      shown,
       source: isNote
-        ? `Note, ${fmtDate((source as WithId<InterviewNote>).capturedAt)}`
-        : `Your reason, ${fmtDate((source as WithId<Override>).decidedAt)}`,
+        ? `Your note · ${fmtDate((source as WithId<InterviewNote>).capturedAt)}`
+        : `Your reason · ${fmtDate((source as WithId<Override>).decidedAt)}`,
       observedAt: a.observedAt,
       months: monthsSince(a.observedAt, now),
-      staleness: staleness(a.observedAt, now),
+      // Only perishable facts (salary, availability, work mode, current work) ever age.
+      staleness: factStaleness(a.type, a.observedAt, now),
     });
   }
   // Same observation time = same note: keep the order the phrases have in it.
@@ -112,23 +116,32 @@ export function pieces(text: string, linked: Pick<Observed, "id" | "n" | "span">
   return out;
 }
 
-const CHECK: Partial<Record<AttributeType, string>> = { salary: "salary", availability: "availability", "work-mode": "work mode", location: "location" };
+/** What to ask about, per perishable type (the only ones that can be stale). */
+const CHECK: Partial<Record<AttributeType, string>> = { salary: "salary", availability: "availability", "work-mode": "work mode", trajectory: "current work" };
 
 const joinList = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
 
-/** "Check his salary..." with the actual stale attribute types, no pronoun. Empty when nothing specific aged. */
+/** "salary and current work" from the stale facts. Empty when nothing specific aged. */
 export function recheckList(stale: Pick<Observed, "type">[]): string {
-  const topics = [...new Set(stale.map((s) => CHECK[s.type]).filter((x): x is string => Boolean(x)))];
-  if (stale.some((s) => s.type === "skill")) topics.push("any project work since");
-  return joinList(topics);
+  return joinList([...new Set(stale.map((s) => CHECK[s.type]).filter((x): x is string => Boolean(x)))]);
 }
 
-/** The prompt is due when the newest thing the recruiter knows is itself stale. */
-export function askFirst(observed: Observed[]) {
+/** "14 months ago", only for a stale fact (and only perishable facts are ever stale). */
+export const ageText = (o: Pick<Observed, "staleness" | "months">) => (o.staleness === "stale" ? `${o.months} months ago` : null);
+
+/** The quiet line under the ask-first prompt starts with this: "Salary R60k". */
+export const askTopic = (o: Pick<Observed, "type" | "shown">) => `${(CHECK[o.type] ?? o.type).replace(/^./, (c) => c.toUpperCase())} ${o.shown}`;
+
+/**
+ * The prompt is due when the newest thing the recruiter knows is itself over a year old. `sources` are the stale perishable
+ * facts it is about; none is fine (the prompt then only says to check what has changed).
+ */
+export function askFirst(observed: Observed[], now: Date) {
   if (!observed.length) return null;
   const newest = observed.reduce((a, b) => (b.observedAt > a.observedAt ? b : a));
-  if (newest.staleness !== "stale") return null;
-  return { months: newest.months, check: recheckList(observed.filter((o) => o.staleness === "stale")) };
+  if (staleness(newest.observedAt, now) !== "stale") return null;
+  const sources = observed.filter((o) => o.staleness === "stale");
+  return { check: recheckList(sources), sources };
 }
 
 /**

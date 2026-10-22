@@ -1,5 +1,6 @@
 import type { Company, Match, Override, Role } from "@tacit/shared";
 import type { WithId } from "../../lib/data";
+import { placedAmount } from "../S11-company-profile/facts";
 
 export type RoleRow = { role: WithId<Role>; company: string; suggested: number; waiting: number; shortlisted: number; stale: number };
 
@@ -38,4 +39,13 @@ export function matchesQuery({ role, company }: RoleRow, q: string): boolean {
   const needle = q.trim().toLowerCase();
   const skills = [...(role.interpretedBrief?.mustHave ?? []), ...(role.interpretedBrief?.niceToHave ?? [])];
   return !needle || [role.title, company, ...skills].some((s) => s.toLowerCase().includes(needle));
+}
+
+/** "person" / "people", the unit beside the stale-evidence numeral. */
+export const personWord = (n: number) => (n === 1 ? "person" : "people");
+
+/** "Nomvula Zulu" + " placed · R52k a month": the amount is read from the placement's reason, and left out when it names none. */
+export function placedLine(who: string, reason?: string) {
+  const amount = reason ? placedAmount(reason) : undefined;
+  return { who, rest: ` placed${amount ? ` · ${amount} a month` : ""}` };
 }

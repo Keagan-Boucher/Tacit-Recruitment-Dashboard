@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { Link, useParams, useSearchParams } from "react-router";
 import type { Company, Match, Override, Placement, Role } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
-import { buttonClass, Card, Chip, ErrorBanner, Icon, Skeleton } from "../../components";
+import { buttonClass, Card, ErrorBanner, Icon, Skeleton } from "../../components";
 import { useAttributes, useCandidate, useNotes, useOwned } from "../../lib/data";
 import { db } from "../../lib/firebase";
 import NotFound from "../S16-not-found/NotFound";
 import { CvPanel } from "./CvPanel";
 import { MatchHistory, historyRows } from "./MatchHistory";
 import { NotesPanel, ObservedPanel } from "./Observations";
-import { activeAttribute, askFirst, buildObserved, unkeptByNote } from "./profile";
+import { activeAttribute, ageText, askFirst, askTopic, buildObserved, unkeptByNote } from "./profile";
 import styles from "./CandidateProfile.module.css";
 
 const MONTH_MS = 30.4375 * 86_400_000;
@@ -73,6 +73,18 @@ function Profile({ onRetry }: { onRetry: () => void }) {
     for (const q of [`[data-attr="${sel}"]`, `[data-phrase="${sel}"]`]) document.querySelector(q)?.scrollIntoView({ block: "center" });
   }, [activeId]);
 
+  // Arriving from a match reason (?attr=): put keyboard focus on that attribute once, so the link lands where it points.
+  // The shell only claims focus for the heading while nothing inside the page holds it, so this wins whenever the row exists;
+  // later picks by the recruiter never move focus.
+  const focusedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!attrParam || picked !== undefined || focusedFor.current === attrParam) return;
+    const el = document.querySelector<HTMLElement>(`[data-attr="${CSS.escape(attrParam)}"]`);
+    if (!el) return;
+    focusedFor.current = attrParam;
+    el.focus({ preventScroll: true });
+  }, [attrParam, picked, observed]);
+
   if (error) {
     return (
       <>
@@ -86,7 +98,7 @@ function Profile({ onRetry }: { onRetry: () => void }) {
 
   const c = candidate.data;
   const first = c.fullName.split(" ")[0];
-  const ask = askFirst(observed);
+  const ask = askFirst(observed, now);
   const unkept = [...unkeptByNote(attrs)].flatMap(([noteId, count]) => {
     const note = notes.find((n) => n.id === noteId);
     return note ? [{ noteId, count, capturedAt: note.capturedAt }] : [];
@@ -129,14 +141,20 @@ function Profile({ onRetry }: { onRetry: () => void }) {
         <div className={styles.col}>
           {ask && (
             <Card className={styles.ask} role="region" aria-labelledby="ask-title">
-              <span className={styles.askChip}>
-                <Chip tone="stale">Stale · {ask.months} mo</Chip>
-              </span>
               <h2 id="ask-title" className="t-title">Ask before you put {first} forward</h2>
-              <p className="t-body-s-para">
-                Everything you know about {first} is over a year old.{" "}
-                {ask.check ? `Check ${ask.check}.` : "Check what has changed since."}
-              </p>
+              <p className="t-body-s-strong">{ask.check ? `Ask about ${ask.check}.` : "Check what has changed since."}</p>
+              {ask.sources.length > 0 && (
+                <ul className={`${styles.askSources} t-caption`}>
+                  {ask.sources.map((o) => (
+                    <li key={o.id}>
+                      {askTopic(o)} · {o.source}{" "}
+                      <span className={styles.noBreak}>
+                        · <span className={`${styles.age} t-caption-strong`}>{ageText(o)}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </Card>
           )}
           <MatchHistory rows={rows} now={now} />
