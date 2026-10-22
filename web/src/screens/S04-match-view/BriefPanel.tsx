@@ -1,7 +1,8 @@
 import type { Role } from "@tacit/shared";
 import { Card, Icon } from "../../components";
 import { CvFileActions } from "../../features/files";
-import { briefRows } from "./match";
+import { BriefRows } from "../../features/brief/BriefRows";
+import { screeningRows } from "../../features/brief/helpers";
 import styles from "./MatchView.module.css";
 
 /** The brief and what Tacit understood from it, in screening order. The original file row exists only for uploaded briefs. */
@@ -30,14 +31,7 @@ export function BriefPanel({ role }: { role: Role }) {
         What Tacit understood
       </h3>
       {role.interpretedBrief ? (
-        <dl className={styles.kv}>
-          {briefRows(role.interpretedBrief).map(([label, value]) => (
-            <div key={label}>
-              <dt className="t-meta">{label}</dt>
-              <dd className="t-body-m">{value || "None mentioned"}</dd>
-            </div>
-          ))}
-        </dl>
+        <BriefRows rows={screeningRows(role.interpretedBrief, role.interpretedBrief.quotes)} />
       ) : (
         <p className="t-body-s-para">Tacit hasn’t read this brief yet.</p>
       )}

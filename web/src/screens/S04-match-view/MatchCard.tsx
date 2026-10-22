@@ -1,10 +1,10 @@
 import { useId, useState } from "react";
 import { Link } from "react-router";
-import type { Attribute, Candidate, Match, Override, Reason } from "@tacit/shared";
+import type { Alignment, Attribute, Candidate, Match, Override, Reason } from "@tacit/shared";
 import { monthsSince } from "@tacit/shared";
-import { Button, Card, Chip, Icon } from "../../components";
+import { Button, Card, Icon } from "../../components";
 import type { WithId } from "../../lib/data";
-import { ALIGN_LABEL, evidencedCount, forgottenNow, provenance } from "./match";
+import { agedFacts, decisionNote, evidencedCount, forgottenNow, provenance } from "./match";
 import styles from "./MatchView.module.css";
 
 type Props = {
@@ -18,6 +18,8 @@ type Props = {
   saving: boolean;
   onShortlist: () => void;
   onReject: () => void;
+  /** "Change" on a decided card. No reversal flow exists yet, so S04 opens the S06 dialog; defaults to onReject. */
+  onChange?: () => void;
 };
 
 /** Reasons shown per column before "and N more". */
@@ -33,6 +35,28 @@ function Source({ ids, attrs, now }: { ids: string[]; attrs: Map<string, WithId<
       {p.age && <> · <span className={`${styles.age} t-caption-strong`}>{p.age}</span></>}
       <span className="sr-only"> — show source</span>
     </Link>
+  );
+}
+
+/** "stated in your note · 12 Aug 2025 · <evidence>" (age only for a stale perishable fact), or "Not in your notes". */
+function AlignEvidence({ a, attrs, now }: { a: Alignment; attrs: Props["attrs"]; now: Date }) {
+  if (a.kind === "not-seen") return <p className={`${styles.notSeen} t-caption`}>Not in your notes</p>;
+  const p = provenance(a.attributeIds, attrs, now);
+  const verb = a.kind === "stated" ? "stated in" : "interpreted from";
+  const from = p?.text.replace(/^Your /, "your ").replace(/^Brief/, "the brief") ?? "your notes";
+  const line = (
+    <>
+      {verb} {from} · <span className={styles.quote}>{a.evidence}</span>{/* the model's explanation, not a verbatim quote: no quote marks */}
+      {p?.age && <> · <span className={`${styles.age} t-caption-strong`}>{p.age}</span></>}
+    </>
+  );
+  return p ? (
+    <Link to={`/candidates/${p.candidateId}?attr=${encodeURIComponent(p.attributeId)}`} className={`${styles.sourceLink} t-caption`}>
+      {line}
+      <span className="sr-only"> — show source</span>
+    </Link>
+  ) : (
+    <p className={`${styles.sourceLink} t-caption`}>{line}</p>
   );
 }
 
@@ -70,20 +94,19 @@ function Reasons({ tone, reasons, empty, attrs, now }: { tone: "for" | "against"
   );
 }
 
-export function MatchCard({ match: m, candidate: c, attrs, decision, focal, now, saving, onShortlist, onReject }: Props) {
+export function MatchCard({ match: m, candidate: c, attrs, decision, focal, now, saving, onShortlist, onReject, onChange }: Props) {
   const first = c?.fullName.split(" ")[0] ?? "this person";
-  const evidenceMonths = monthsSince(new Date(now.getTime() - m.evidenceAgeDays * 86_400_000), now); // calendar months, same as the ages on the reasons
+  const aged = agedFacts([...m.reasonsFor, ...m.reasonsAgainst, ...m.skillAlignment].flatMap((x) => x.attributeIds), attrs, now);
   const hasFooter = m.staleness !== "fresh" || m.questionsToAsk.length > 0;
-  const actions = decision ? (
-    <Chip tone={decision.decision === "shortlist" ? "for" : "against"} icon={decision.decision === "shortlist" ? "bx-check" : "bx-x"}>
-      {decision.decision === "shortlist" ? "Shortlisted" : "Not this one"}
-    </Chip>
-  ) : (
+  const align = evidencedCount(m.skillAlignment);
+  const actions = (
     <div className={styles.actions}>
       <Button size="lg" icon="bx-check" onClick={onShortlist} disabled={saving} aria-label={`Shortlist ${c?.fullName ?? ""}`.trim()}>Shortlist</Button>
       <Button size="lg" icon="bx-x" onClick={onReject} disabled={saving} aria-label={`Not this one: ${c?.fullName ?? ""}`.trim()}>Not this one</Button>
     </div>
   );
+  const note = decision && decisionNote(decision);
+  const shortlisted = decision?.decision === "shortlist";
 
   return (
     <Card className={`${styles.card} ${focal ? styles.focal : ""}`} role="article" aria-label={c?.fullName ?? "Suggestion"}>
@@ -103,7 +126,23 @@ export function MatchCard({ match: m, candidate: c, attrs, decision, focal, now,
               {c?.lastOpenedAt ? <>Not opened in <span className={`${styles.age} t-caption-strong`}>{monthsSince(c.lastOpenedAt, now)} months</span></> : "Not opened yet"}
             </p>
           )}
-          {!hasFooter && <div className={styles.decide}>{actions}</div>}
+          {decision && note ? (
+            <div className={styles.decision}>
+              <p className={`${shortlisted ? styles.for : styles.against} ${styles.verdict} t-body-m-strong`}>
+                <Icon name={shortlisted ? "bx-check" : "bx-x"} size={18} />
+                {shortlisted ? "Shortlisted" : "Not this one"}
+              </p>
+              <p className={`${styles.note} t-caption`}>
+                {note.text}
+                {note.quote && <> · <span className={styles.quote}>“{note.quote}”</span></>}
+              </p>
+              <button type="button" className={`${styles.change} t-body-s-strong`} onClick={onChange ?? onReject} aria-label={`Change decision on ${c?.fullName ?? "this person"}`}>
+                Change
+              </button>
+            </div>
+          ) : (
+            !hasFooter && <div className={styles.decide}>{actions}</div>
+          )}
         </header>
 
         <div className={styles.reasonPair}>
@@ -114,19 +153,16 @@ export function MatchCard({ match: m, candidate: c, attrs, decision, focal, now,
 
       {m.skillAlignment.length > 0 && (
         <section className={styles.align} aria-label={`Skill alignment for ${first}`}>
-          <header className={styles.alignHead}>
-            <h3 className="t-body-s-strong">Skill alignment</h3>
-            <span className="t-caption tabular">{evidencedCount(m.skillAlignment)}</span>
-          </header>
+          <h3 className={`${styles.alignHead} t-body-s-strong`}>
+            Skill alignment{" "}
+            <span className="t-body-s-bold tabular">{align.n}</span>{" "}
+            <span className="t-caption">of {align.total} in your notes</span>
+          </h3>
           <ul className={styles.alignList}>
             {m.skillAlignment.map((a, i) => (
               <li key={i} className={styles.alignRow}>
                 <p className="t-body-s-strong">{a.requirement}</p>
-                <Chip tone={a.kind === "not-seen" ? "quiet" : "neutral"}>{ALIGN_LABEL[a.kind]}</Chip>
-                <div className={styles.alignEvidence}>
-                  <p className="t-body-s-para">{a.evidence}</p>
-                  <Source ids={a.attributeIds} attrs={attrs} now={now} />
-                </div>
+                <AlignEvidence a={a} attrs={attrs} now={now} />
               </li>
             ))}
           </ul>
@@ -137,20 +173,25 @@ export function MatchCard({ match: m, candidate: c, attrs, decision, focal, now,
         <footer className={styles.ask}>
           <div className={styles.askText}>
             <span className={styles.askIcon}><Icon name="bx-time-five" size={18} /></span>
-            <div>
-              <p className="t-body-s-para">
-                {m.staleness === "fresh"
-                  ? "Worth asking before you shortlist:"
-                  : `This evidence is ${evidenceMonths} months old. ${m.questionsToAsk.length ? "Before you shortlist, ask:" : "Check what has changed before you shortlist."}`}
+            <div className={styles.askBody}>
+              <p className="t-body-s-strong">
+                {m.questionsToAsk.length ? "Before you shortlist, ask:" : "Check what has changed before you shortlist."}
               </p>
               {m.questionsToAsk.length > 0 && (
                 <ul className={styles.questions}>
                   {m.questionsToAsk.map((q, i) => <li key={i} className="t-body-s-para">{q}</li>)}
                 </ul>
               )}
+              {aged.map((f) => (
+                <Link key={f.id} to={`/candidates/${f.candidateId}?attr=${encodeURIComponent(f.id)}`} className={`${styles.sourceLink} t-caption`}>
+                  {f.label} · {f.text}
+                  {f.age && <> · <span className={`${styles.age} t-caption-strong`}>{f.age}</span></>}
+                  <span className="sr-only"> — show source</span>
+                </Link>
+              ))}
             </div>
           </div>
-          {actions}
+          {!decision && actions}
         </footer>
       )}
     </Card>

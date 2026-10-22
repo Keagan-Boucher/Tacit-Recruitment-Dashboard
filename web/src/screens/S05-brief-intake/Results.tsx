@@ -12,7 +12,7 @@ import type { WithId } from "../../lib/data";
 import { db } from "../../lib/firebase";
 import NotFound from "../S16-not-found/NotFound";
 import { MatchCard } from "../S04-match-view/MatchCard";
-import { forgottenNow } from "../S04-match-view/match";
+import { forgottenNow, standingDecision } from "../S04-match-view/match";
 import { OverrideDialog } from "../S06-override-dialog/OverrideDialog";
 import styles from "./BriefIntake.module.css";
 
@@ -125,7 +125,7 @@ function Loaded({ roleId, people, unclear = [], onEdit, onRetry }: Props & { onR
                   match={m}
                   candidate={people.find((c) => c.id === m.candidateId)}
                   attrs={attrMap}
-                  decision={overrides.data!.find((o) => o.matchId === m.id && !o.reversedAt)}
+                  decision={standingDecision(overrides.data!, m.id)}
                   focal={m.id === focalId}
                   now={clock}
                   saving={saving === m.id}

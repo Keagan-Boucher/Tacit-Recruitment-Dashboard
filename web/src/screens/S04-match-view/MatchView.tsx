@@ -12,7 +12,7 @@ import NotFound from "../S16-not-found/NotFound";
 import { OverrideDialog } from "../S06-override-dialog/OverrideDialog";
 import { BriefPanel } from "./BriefPanel";
 import { MatchCard } from "./MatchCard";
-import { forgottenNow } from "./match";
+import { forgottenNow, standingDecision } from "./match";
 import styles from "./MatchView.module.css";
 
 const byRank = (a: Match, b: Match) => a.rank - b.rank;
@@ -123,14 +123,20 @@ function View({ onRetry }: { onRetry: () => void }) {
         <BriefPanel role={r} />
         <div className={styles.col} aria-busy={working}>
           {/* The one live region on the column: what Tacit is doing, then what it found. The error banner announces itself. */}
-          <p role="status" className={`${styles.status} ${working ? styles.working : ""} t-body-m-strong`}>
+          <h2 className="sr-only">Suggestions</h2>
+          <p role="status" className={`${styles.status} ${working ? `${styles.working} t-body-m-strong` : ""}`}>
             {working ? (
               <>
                 <Sparkle />
                 Checking {people.length} {people.length === 1 ? "person" : "people"} against the brief…
               </>
             ) : (
-              !empty && `${rows.length} ${rows.length === 1 ? "suggestion" : "suggestions"} from the ${people.length} people you have met`
+              !empty && (
+                <>
+                  <span className="t-title tabular">{rows.length}</span>
+                  <span className="t-body-s">{rows.length === 1 ? "suggestion" : "suggestions"} from the {people.length} people you have met</span>
+                </>
+              )
             )}
           </p>
           {working ? (
@@ -162,12 +168,13 @@ function View({ onRetry }: { onRetry: () => void }) {
                       match={m}
                       candidate={people.find((c) => c.id === m.candidateId)}
                       attrs={attrMap}
-                      decision={overrides.data!.find((o) => o.matchId === m.id && !o.reversedAt)}
+                      decision={standingDecision(overrides.data!, m.id)}
                       focal={m.id === focalId}
                       now={clock}
                       saving={saving === m.id}
                       onShortlist={() => shortlist(m)}
                       onReject={() => reject(m.id)}
+                      onChange={() => reject(m.id)}
                     />
                   ))}
                   {rest.length > 0 && !all && (
