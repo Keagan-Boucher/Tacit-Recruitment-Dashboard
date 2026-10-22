@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Firestore } from "firebase-admin/firestore";
-import { Match, MatchRequest, MatchResult, staleness, isForgotten, type ApiErrorBody, type MatchResponse } from "@tacit/shared";
+import { Match, MatchRequest, MatchResult, staleness, isForgotten, isPerishable, type ApiErrorBody, type AttributeType, type MatchResponse } from "@tacit/shared";
 import { mentionsDemographic } from "../ai/demographics.ts";
 import { aiErrorResponse, loadPrompt, runStructured, type Ai } from "../ai/index.ts";
 
@@ -94,7 +94,7 @@ export function matchRouter({ ai, db }: { ai: Ai; db: Firestore }) {
       const short = preFilter(role, cands, facts, rejected);
 
       const now = new Date();
-      let kept: { s: MatchResult["suggestions"][number]; newest: Date }[] = [];
+      let kept: { s: MatchResult["suggestions"][number]; aged: Date }[] = [];
       if (short.length) {
         const input = [
           `Today: ${dateStr(now)}`,
@@ -133,7 +133,9 @@ export function matchRouter({ ai, db }: { ai: Ai; db: Firestore }) {
                 // No grounded reason against keeps the person with an empty against list; the card says so, citing nothing.
                 const cited = [...out.reasonsFor, ...out.reasonsAgainst, ...out.skillAlignment].flatMap((x) => x.attributeIds);
                 seen.add(s.candidateId);
-                kept.push({ s: out, newest: new Date(Math.max(...cited.map((i) => own.get(i)!.observedAt.getTime()))) });
+                // Only perishable facts age (Keagan, 22 Oct): the match is as old as its oldest cited salary / availability / work mode / current work.
+                const perishable = cited.map((i) => own.get(i)!).filter((f) => isPerishable(f.type as AttributeType));
+                kept.push({ s: out, aged: perishable.length ? new Date(Math.min(...perishable.map((f) => f.observedAt.getTime()))) : now });
               }
               if (demo) console.log(JSON.stringify({ task: "match", demographicDropped: demo })); // counts only
               if (d.suggestions.length && !kept.length) throw new Error("Every suggestion was discarded. Cite attributeIds copied exactly from that candidate's own facts, and give at least one reason for and one against.");
@@ -146,14 +148,14 @@ export function matchRouter({ ai, db }: { ai: Ai; db: Firestore }) {
 
       // Parse everything before opening the batch: nothing unvalidated is persisted.
       const col = db.collection("matches");
-      const docs = kept.map(({ s, newest }, i) => {
+      const docs = kept.map(({ s, aged }, i) => {
         const opened = cands.find((c) => c.id === s.candidateId)?.data.lastOpenedAt;
         return {
           ref: col.doc(),
           parsed: Match.parse({
             ownerUid: uid, roleId, candidateId: s.candidateId, rank: i + 1,
             reasonsFor: s.reasonsFor, reasonsAgainst: s.reasonsAgainst, skillAlignment: s.skillAlignment, questionsToAsk: s.questionsToAsk,
-            evidenceAgeDays: Math.max(0, Math.floor((now.getTime() - newest.getTime()) / DAY)), staleness: staleness(newest, now),
+            evidenceAgeDays: Math.max(0, Math.floor((now.getTime() - aged.getTime()) / DAY)), staleness: staleness(aged, now),
             forgotten: isForgotten(opened ? toDate(opened) : undefined, now),
             generatedAt: now, modelVersion, createdAt: now, updatedAt: now,
           }),

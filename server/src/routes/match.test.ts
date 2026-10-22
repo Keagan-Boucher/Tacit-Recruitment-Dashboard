@@ -116,7 +116,7 @@ describe("POST /api/match", () => {
     expect(docs).toHaveLength(2);
     const c2 = docs.find((d) => d.candidateId === "c2");
     expect(c2).toMatchObject({ rank: 1, forgotten: true, staleness: "stale", modelVersion: MV, ownerUid: "u1", roleId: "r1" });
-    expect(c2.evidenceAgeDays).toBe(450); // newest cited fact, not the oldest
+    expect(c2.evidenceAgeDays).toBe(450); // the cited salary; the older cited skill does not age (perishable facts only)
     expect(docs.find((d) => d.candidateId === "c1")).toMatchObject({ rank: 2, forgotten: false, staleness: "fresh" });
     expect(JSON.stringify(docs)).not.toMatch(/"score"/);
     expect(p.inputs[0]).not.toContain("unconfirmed"); // unconfirmed facts never reach the model

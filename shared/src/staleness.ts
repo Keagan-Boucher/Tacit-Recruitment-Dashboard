@@ -1,4 +1,4 @@
-import type { Staleness } from "./schemas.ts";
+import type { AttributeType, Staleness } from "./schemas.ts";
 
 // Thresholds from data-model.md (tunable; record any change in Decisions).
 export const AGEING_MONTHS = 6;
@@ -14,6 +14,14 @@ export function staleness(observedAt: Date, now = new Date()): Staleness {
   const m = monthsSince(observedAt, now);
   return m > STALE_MONTHS ? "stale" : m >= AGEING_MONTHS ? "ageing" : "fresh";
 }
+
+/** Facts that go out of date (Keagan, 22 Oct 2026): only these ever show an age. "Current work" is the trajectory type. */
+export const PERISHABLE: readonly AttributeType[] = ["salary", "availability", "work-mode", "trajectory"];
+export const isPerishable = (type: AttributeType) => PERISHABLE.includes(type);
+
+/** A fact's staleness: perishable facts age; everything else stays fresh and shows only its date. */
+export const factStaleness = (type: AttributeType, observedAt: Date, now = new Date()): Staleness =>
+  isPerishable(type) ? staleness(observedAt, now) : "fresh";
 
 /** Not opened by the recruiter in over 6 months (or never). */
 export const isForgotten = (lastOpenedAt: Date | undefined, now = new Date()) =>

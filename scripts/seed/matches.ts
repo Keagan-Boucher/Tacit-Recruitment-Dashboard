@@ -1,4 +1,5 @@
 import type { AlignmentKind, Candidate, Match, Override } from "@tacit/shared";
+import { isPerishable } from "@tacit/shared";
 import { addAttribute, DAY, daysAgo, MODEL, type AttrSpec, type Ctx, type Doc } from "./build.ts";
 
 /** Id of the candidate's newest attribute carrying keyword `kw`. Throws if none, so reasons can never cite thin air. */
@@ -163,9 +164,9 @@ export function buildMatches(ctx: Ctx, candidates: Doc<Candidate>[]): Doc<Match>
     const alignment = s.align.map(([requirement, evidence, kind, kws]) => ({ requirement, evidence, kind, attributeIds: kws.map((k) => ref(ctx, s.cand, k)) }));
     const reasonsFor = s.f.map((c) => cite(s.cand, c)), reasonsAgainst = s.a.map((c) => cite(s.cand, c));
     const ids = new Set([...reasonsFor, ...reasonsAgainst, ...alignment].flatMap((r) => r.attributeIds));
-    // Staleness is the age of the oldest evidence cited (data-model.md), not of the match.
-    const oldest = Math.min(...ctx.attributes.filter((a) => ids.has(a.id)).map((a) => a.data.observedAt.getTime()));
-    const evidenceAgeDays = Math.floor((ctx.now.getTime() - oldest) / DAY);
+    // Staleness is the age of the oldest perishable fact cited (data-model.md): salary, availability, work mode, current work.
+    const perishable = ctx.attributes.filter((a) => ids.has(a.id) && isPerishable(a.data.type)).map((a) => a.data.observedAt.getTime());
+    const evidenceAgeDays = perishable.length ? Math.floor((ctx.now.getTime() - Math.min(...perishable)) / DAY) : 0;
     const opened = candidates.find((c) => c.id === `cand_${s.cand}`)?.data.lastOpenedAt;
     const generatedAt = daysAgo(ctx.now, 7);
     return {
