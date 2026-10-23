@@ -6,6 +6,7 @@ import { mentionsDemographic } from "../server/src/ai/demographics.ts";
 import { loadPrompt } from "../server/src/ai/index.ts";
 import { interpretNote } from "../server/src/routes/interpret-note.ts";
 import { fakeAi } from "./fake.ts";
+import { runCourseEval } from "./courses.ts";
 import { runMatchEval } from "./match.ts";
 import { runSearchEval } from "./search.ts";
 
@@ -16,7 +17,7 @@ const names = readdirSync(new URL("notes/", here)).filter((f) => f.endsWith(".tx
 
 const ai = process.env.EVAL_FAKE ? fakeAi() : createAi(loadConfig({ ALLOWED_ORIGIN: "http://eval", ...process.env }));
 // Versions the routes load today (interpret-note.ts, match.ts, search.ts); each response also reports its own modelVersion.
-const prompts = [["interpret-note", 1], ["match", 2], ["search", 1]] as const;
+const prompts = [["interpret-note", 1], ["match", 2], ["search", 1], ["course-suggest", 1]] as const;
 console.log(`model ${ai.model || "(not configured)"}  prompts ${prompts.map(([t, v]) => (loadPrompt(t, v), `${t}.v${v}`)).join(" ")}${process.env.EVAL_FAKE ? "  [EVAL_FAKE: deterministic fake, not a quality score]" : ""}`);
 
 const tp: Record<string, number> = {}, fp: Record<string, number> = {}, fn: Record<string, number> = {};
@@ -60,7 +61,7 @@ row("OVERALL", sum(tp), sum(fp), sum(fn));
 out(`\nnotes ${names.length}  errors ${errors}  span failures ${spanFails}  demographic leaks ${leaks}  cost $${cost.toFixed(4)}`);
 // errors and scores are reported, not gated; spans, leaks and bad citations gate
 const costBefore = cost;
-const gateFails = (await runMatchEval(ai, out)) + (await runSearchEval(ai, out));
+const gateFails = (await runMatchEval(ai, out)) + (await runSearchEval(ai, out)) + (await runCourseEval(ai, out));
 out(`
-match + search cost ${(cost - costBefore).toFixed(4)}`);
+match + search + courses cost ${(cost - costBefore).toFixed(4)}`);
 process.exit(spanFails || leaks || gateFails ? 1 : 0);

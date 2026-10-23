@@ -6,6 +6,7 @@ import { requireAuth, requireRole, type TokenVerifier } from "./auth.ts";
 import type { Config } from "./config.ts";
 import type { BucketLike } from "./files.ts";
 import { interpretNoteRouter } from "./routes/interpret-note.ts";
+import { courseRouter } from "./routes/courses.ts";
 import { matchRouter } from "./routes/match.ts";
 import { searchRouter } from "./routes/search.ts";
 import { parseRouter } from "./routes/parse.ts";
@@ -33,7 +34,7 @@ export function createApp(config: Config, verifyToken: TokenVerifier, services: 
   app.use("/api", requireAuth(verifyToken, config.allowedUids));
   app.get("/api/me", (req, res) => void res.json({ uid: req.uid, role: req.role ?? null }));
   // Gate per path, not per mount: every app.use("/api", ...) sees every /api request.
-  app.use(["/interpret-note", "/match", "/search"].map((p) => "/api" + p), requireRole("recruiter"));
+  app.use(["/interpret-note", "/match", "/search", "/courses"].map((p) => "/api" + p), requireRole("recruiter"));
   const limit = rateLimit();
   app.use(["/api/review", "/api/shortlists"], requireRole("recruiter"));
   app.use("/api/portal/shortlist-status", requireRole("company"));
@@ -41,6 +42,7 @@ export function createApp(config: Config, verifyToken: TokenVerifier, services: 
   app.use("/api/parse-brief", requireRole("recruiter", "company"), limit);
   if (services.db) app.use("/api", interpretNoteRouter({ ai, db: services.db }));
   if (services.db) app.use("/api", matchRouter({ ai, db: services.db }));
+  if (services.db) app.use("/api", courseRouter({ ai, db: services.db }));
   if (services.db) app.use("/api", searchRouter({ ai, db: services.db }));
   if (services.bucket) app.use("/api", parseRouter({ ai, bucket: services.bucket }));
 

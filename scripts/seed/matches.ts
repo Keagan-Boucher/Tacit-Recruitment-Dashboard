@@ -137,6 +137,17 @@ const SPECS: Spec[] = [
     q: ["Would you take a junior-level salary?", "Where are you based, and would you relocate?"],
   },
   {
+    // The nine-month pool candidate needs a role he came close to, or course-suggest has nothing to count (SD-13).
+    role: "role_protea_abap", cand: "ruan_botha", rank: 3,
+    f: [["ABAP reports and enhancements day to day", ["ECC only"]], ["Wants to learn Fiori, which this team builds", ["Fiori"]]],
+    a: [["Around R48k, above the R35k junior budget", ["R48k"]], ["No Fiori yet, only wants to learn it", ["Fiori"]]],
+    align: [
+      ["ABAP", "ABAP developer, ECC only, reports and enhancements", "stated", ["ECC only"]],
+      ["Fiori", "Wants to learn Fiori; none yet", "not-seen", []],
+    ],
+    q: ["Would you take a junior-level salary to learn Fiori?", "Have you built any Fiori app, even a small one?"],
+  },
+  {
     role: "role_vantage_sap_pm", cand: "pieter_van_wyk", rank: 1,
     f: [["Two S/4HANA rollouts for retail clients", ["rollouts"]], ["Runs a tight steering committee, calm with sponsors", ["steering"]]],
     a: [["Said he is open to contract work, and this role is permanent", ["contract"]], ["Free only after the January go-live", ["go-live"]]],

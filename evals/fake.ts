@@ -35,6 +35,11 @@ function answer(task: string, input: string): unknown {
     const scored = blocks(input).map((c) => ({ c, f: c.facts.filter((f) => query.some((w) => f.value.toLowerCase().includes(w))) })).filter((x) => x.f.length).sort((a, b) => b.f.length - a.f.length);
     return { hits: scored.map(({ c, f }) => ({ candidateId: c.id, whyMatched: "Confirmed notes mention the topic.", kind: "stated", attributeIds: f.map((x) => x.id) })) };
   }
+  if (task === "course-suggest") {
+    // Top two requirements by count, as "text | N of M" lines.
+    const reqs = (input.split("\n").filter((l) => /^.+ \| \d+ of \d+$/.test(l)).map((l) => l.split(" | ")) as [string, string][]).slice(0, 2);
+    return { items: reqs.map(([t, n]) => ({ title: `Short course: ${t}`, why: `Asked for in ${n.replace(" of ", " of the ")} roles you came close to`, duration: "self-paced" })) };
+  }
   throw new Error(`fake ai: unknown task ${task}`);
 }
 

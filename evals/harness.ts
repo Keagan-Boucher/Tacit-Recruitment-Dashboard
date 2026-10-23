@@ -14,7 +14,7 @@ export const SEED = (["roles", "candidates", "attributes", "overrides"] as const
 export function memDb() {
   const store = new Map<string, any>(SEED.flatMap(([c, docs]) => docs.map((d) => [`${c}/${d.id}`, structuredClone(d.data)] as [string, any])));
   let n = 0;
-  const ref = (c: string, id: string) => ({ id, path: `${c}/${id}`, get: async () => ({ id, exists: store.has(`${c}/${id}`), data: () => store.get(`${c}/${id}`) }) });
+  const ref = (c: string, id: string) => ({ id, path: `${c}/${id}`, get: async () => ({ id, exists: store.has(`${c}/${id}`), data: () => store.get(`${c}/${id}`) }), set: async (d: any) => void store.set(`${c}/${id}`, d), update: async (d: any) => void store.set(`${c}/${id}`, { ...store.get(`${c}/${id}`), ...d }) });
   const db = {
     collection: (c: string) => ({
       doc: (id = `auto${++n}`) => ref(c, id),
