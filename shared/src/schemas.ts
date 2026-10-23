@@ -392,6 +392,8 @@ export const ShortlistCard = z.object({
 export const ShortlistEntry = ShortlistCard.extend({
   ...doc,
   roleId: z.string().min(1),
+  /** Copied from Role.title when shared: companies cannot read roles. */
+  roleTitle: z.string().min(1),
   companyId: z.string().min(1),
   candidateId: z.string().min(1),
   status: ShortlistStatus,

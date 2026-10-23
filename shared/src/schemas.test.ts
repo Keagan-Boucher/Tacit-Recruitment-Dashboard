@@ -72,7 +72,7 @@ const cvFields = { fullName: "Lerato M", headline: "h", location: "CT", currentR
 const briefFields = { title: "FICO", workMode: "hybrid", travel: "", budget: { min: 1, max: 2, currency: "ZAR" }, location: "CT", mustHave: [], niceToHave: [], seniority: "Senior" };
 const sub = { ...base, submittedBy: "p1", correctedFields: [], readStatus: "clear", status: "pending", submittedAt: d };
 const card = { label: "Candidate B", headline: "h", years: 6, facts: { location: "CT", workMode: "Hybrid", notice: "1 month", salary: "R55k" }, case: { for: [{ text: "t", at: d }], against: [{ text: "t", at: d }] } };
-const entry = { ...base, ...card, roleId: "r", companyId: "co", candidateId: "c", status: "shortlisted", statusHistory: [], sharedAt: d };
+const entry = { ...base, ...card, roleId: "r", roleTitle: "FICO", companyId: "co", candidateId: "c", status: "shortlisted", statusHistory: [], sharedAt: d };
 const course = { title: "S/4HANA Finance", why: "Asked for in 7 of the 10 roles you came close to", duration: "6 weeks" };
 
 const portal: [string, { safeParse(v: unknown): { success: boolean } }, unknown, unknown][] = [
