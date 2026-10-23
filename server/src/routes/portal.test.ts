@@ -143,6 +143,21 @@ describe("register", () => {
   });
 });
 
+describe("invite preview (signed out)", () => {
+  const seed = (o: any = {}) => ({ "companies/co1": { name: "Vantage Logistics" }, "invites/i1": { ownerUid: R, companyId: "co1", email: "megan@v.co", expiresAt: new Date(Date.now() + 86_400_000), createdBy: R, ...o } });
+  it("shows the company, locked email and status without a token", async () => {
+    const r = await request(setup(seed()).app).get("/api/invites/i1");
+    expect(r.status).toBe(200);
+    expect(r.body).toMatchObject({ companyName: "Vantage Logistics", email: "megan@v.co", status: "open" });
+    expect(Object.keys(r.body).sort()).toEqual(["companyName", "email", "expiresAt", "status"]);
+  });
+  it("used, expired and missing", async () => {
+    expect((await request(setup(seed({ acceptedAt: new Date() })).app).get("/api/invites/i1")).body.status).toBe("used");
+    expect((await request(setup(seed({ expiresAt: new Date(Date.now() - 1000) })).app).get("/api/invites/i1")).body.status).toBe("expired");
+    expect((await request(setup(seed()).app).get("/api/invites/nope")).status).toBe(404);
+  });
+});
+
 describe("invite accept", () => {
   const inv = (o: any = {}) => ({ "invites/i1": { ownerUid: R, companyId: "co1", email: "Megan@V.co", expiresAt: new Date(Date.now() + 86_400_000), createdBy: R, ...o } });
   const accept = async (seed: any) => {

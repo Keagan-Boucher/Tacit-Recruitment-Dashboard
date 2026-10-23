@@ -9,7 +9,7 @@ import { interpretNoteRouter } from "./routes/interpret-note.ts";
 import { matchRouter } from "./routes/match.ts";
 import { searchRouter } from "./routes/search.ts";
 import { parseRouter } from "./routes/parse.ts";
-import { portalRouter, type ClaimsAuth } from "./routes/portal.ts";
+import { invitePreview, portalRouter, type ClaimsAuth } from "./routes/portal.ts";
 import { reviewRouter } from "./routes/review.ts";
 import { shortlistsRouter } from "./routes/shortlists.ts";
 import { rateLimit } from "./rateLimit.ts";
@@ -29,6 +29,7 @@ export function createApp(config: Config, verifyToken: TokenVerifier, services: 
     res.json({ ok: true, modelConfigured: ai.provider !== null, model: ai.provider ? ai.model : null }); // model id is not a secret
   });
 
+  if (services.db) app.get("/api/invites/:id", invitePreview(services.db)); // signed out: B01 join page
   app.use("/api", requireAuth(verifyToken, config.allowedUids));
   app.get("/api/me", (req, res) => void res.json({ uid: req.uid, role: req.role ?? null }));
   // Gate per path, not per mount: every app.use("/api", ...) sees every /api request.

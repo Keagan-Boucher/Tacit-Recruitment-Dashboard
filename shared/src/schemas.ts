@@ -448,6 +448,8 @@ export interface RegisterResponse { role: "candidate" }
 /** POST /api/invites/:id/accept (signed in, no role yet; the account email must match the invite). */
 export const AcceptInviteRequest = z.object({ displayName: z.string().trim().min(1).max(200) });
 export interface AcceptInviteResponse { companyId: string }
+/** GET /api/invites/:id — no sign-in (B01 opens signed out); the random invite id is the secret. Only what B01 shows. */
+export interface InvitePreview { companyName: string; email: string; expiresAt: string; status: "open" | "used" | "expired" }
 
 /** POST /api/portal/submit (candidate: cv, details-change; company: brief). readStatus and possibleDuplicateOf are the proxy's. */
 export const SubmitRequest = z.discriminatedUnion("kind", [

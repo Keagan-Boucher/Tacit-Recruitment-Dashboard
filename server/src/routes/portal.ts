@@ -1,8 +1,8 @@
-import { Router, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 import type { Auth } from "firebase-admin/auth";
 import type { Firestore } from "firebase-admin/firestore";
 import { AcceptInviteRequest, LOW_CONFIDENCE, PortalUser, RegisterRequest, Submission, SubmitRequest } from "@tacit/shared";
-import type { AcceptInviteResponse, RegisterResponse, SubmitResponse } from "@tacit/shared";
+import type { AcceptInviteResponse, InvitePreview, RegisterResponse, SubmitResponse } from "@tacit/shared";
 import { requireNoRole, requireRole } from "../auth.ts";
 
 const fail = (res: Response, status: number, code: string, error: string) => void res.status(status).json({ error, code });
@@ -21,6 +21,22 @@ const ownFile = (uid: string, ref: string, folder: "cvs" | "briefs") => {
 export const normaliseName = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim().replace(/\s+/g, " ");
 
 const toDate = (v: unknown): Date | undefined => (v instanceof Date ? v : (v as { toDate?: () => Date } | null)?.toDate?.());
+
+/** GET /api/invites/:id, mounted before requireAuth: B01 shows the company and locked email before an account exists. */
+export const invitePreview = (db: Firestore) => async (req: Request, res: Response) => {
+  try {
+    const snap = await db.collection("invites").doc(String(req.params.id)).get();
+    const inv = snap.exists ? snap.data() : undefined;
+    if (!inv) return void fail(res, 404, "not_found", "That invite doesn't exist");
+    const company = await db.collection("companies").doc(String(inv.companyId)).get();
+    const expires = toDate(inv.expiresAt);
+    const status = inv.acceptedAt ? "used" : !expires || expires.getTime() <= Date.now() ? "expired" : "open";
+    res.json({ companyName: String(company.data()?.name ?? ""), email: String(inv.email), expiresAt: expires?.toISOString() ?? "", status } satisfies InvitePreview);
+  } catch (e) {
+    console.error("invite preview failed:", (e as Error)?.name);
+    fail(res, 500, "internal", "Something went wrong.");
+  }
+};
 
 /** The Admin Auth calls the portal routes make; getUser reads the live claims, not the (up to 1 h old) token's. */
 export type ClaimsAuth = Pick<Auth, "setCustomUserClaims"> & { getUser(uid: string): Promise<{ customClaims?: Record<string, unknown> }> };
