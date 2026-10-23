@@ -1,5 +1,9 @@
+import { useState } from "react";
+import { Link } from "react-router";
 import type { AttributeType } from "@tacit/shared";
 import { buttonClass, Icon, Skeleton, WidgetCard } from "../../components";
+import { mix, oldestLine } from "../S18-review-queue/review";
+import { usePending } from "../S18-review-queue/useQueue";
 import type { Board, PlayRow } from "./board";
 import styles from "./Dashboard.module.css";
 
@@ -391,7 +395,44 @@ const SHELF: Record<string, [title: string, href: string]> = {
   "override-log": ["Override log", "/roles"],
 };
 
+/** S01 Waiting for review: how many CVs and briefs wait for a pass or a reason, and the way in to S18. */
+export function WaitingForReview() {
+  const { subs, error } = usePending();
+  const [now] = useState(() => new Date());
+  return (
+    <WidgetCard title="Waiting for review">
+      {error && !subs ? (
+        <p className={`${styles.say} t-body-s-para`}>Couldn’t load the review queue.</p>
+      ) : !subs ? (
+        <>
+          <Skeleton width={40} height={56} />
+          <Skeleton height={14} radius="pill" />
+          <Skeleton height={14} radius="pill" />
+          <Skeleton width={150} height={44} radius="pill" className={styles.bottom} />
+        </>
+      ) : subs.length === 0 ? (
+        <p className={`${styles.say} t-body-s-para`}>Nothing waiting. New CVs and briefs land here.</p>
+      ) : (
+        <>
+          <p className={styles.figure}>
+            <span className={`${styles.big} t-display-l`}>{subs.length}</span>
+            <span className="t-body-m-strong">to pass or fail</span>
+          </p>
+          <p className={`${styles.say} t-body-s-para`}>
+            {mix(subs)}. {oldestLine(subs, now)}
+          </p>
+          <Link to="/review" className={`${buttonClass("ghost")} ${styles.bottom}`}>
+            Review now
+            <Icon name="bx-chevron-right" />
+          </Link>
+        </>
+      )}
+    </WidgetCard>
+  );
+}
+
 export function Shelf({ id }: { id: string }) {
+  if (id === "waiting-for-review") return <WaitingForReview />;
   const [title, href] = SHELF[id] ?? [id, "/"];
   return (
     <WidgetCard title={title}>

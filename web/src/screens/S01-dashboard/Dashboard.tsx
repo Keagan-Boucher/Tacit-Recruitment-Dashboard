@@ -31,6 +31,16 @@ export default function Dashboard() {
   return <Board key={attempt} onRetry={() => setAttempt((n) => n + 1)} />;
 }
 
+/** Dev frame 274:2128 (`?state=review-waiting`): Waiting for review takes Things to confirm's cell. */
+function reviewWaiting(d: DashboardWidget[]): DashboardWidget[] {
+  const cell = d.find((w) => w.widgetId === "to-confirm");
+  if (!cell) return d;
+  return d.map((w) =>
+    w.widgetId === "to-confirm" ? { ...w, visible: false }
+    : w.widgetId === "waiting-for-review" ? { ...w, visible: true, order: cell.order, size: cell.size }
+    : w);
+}
+
 function Board({ onRetry }: { onRetry: () => void }) {
   const state = useScreenState();
   const navigate = useNavigate();
@@ -72,7 +82,8 @@ function Board({ onRetry }: { onRetry: () => void }) {
   const [failed, setFailed] = useState(false);
   const base = useRef<DashboardWidget[]>(undefined);
 
-  const board = [...prefs.dashboard].filter((w) => w.visible).sort((a, b) => a.order - b.order);
+  const layout = state === "review-waiting" ? reviewWaiting(prefs.dashboard) : prefs.dashboard;
+  const board = [...layout].filter((w) => w.visible).sort((a, b) => a.order - b.order);
   const small = (id: WidgetId) => { const i = prefs.smallScreenOrder.indexOf(id); return i < 0 ? prefs.smallScreenOrder.length : i; };
 
   function change(next: DashboardWidget[], msg: string) {
