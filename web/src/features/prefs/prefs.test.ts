@@ -15,7 +15,8 @@ describe("resolveTheme", () => {
 
 describe("initials", () => {
   it("uses displayName, else email local part", () => {
-    expect(initials({ displayName: "Nomvula Mokoena" })).toBe("NO");
+    expect(initials({ displayName: "Nomvula Mokoena" })).toBe("NM");
+    expect(initials({ displayName: "Snapper" })).toBe("SN");
     expect(initials({ displayName: null, email: "snap.recruiter@x.com" })).toBe("SN");
     expect(initials(null)).toBe("?");
   });
