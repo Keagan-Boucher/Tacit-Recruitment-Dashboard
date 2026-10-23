@@ -1,22 +1,20 @@
 import { useState } from "react";
-import type { MouseEvent } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import type { Candidate, Company, Match, Override, Placement, Role } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
-import { Button, buttonClass, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, ListRow, Skeleton } from "../../components";
+import { Button, buttonClass, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, Skeleton } from "../../components";
 import { useOwned } from "../../lib/data";
+import { lastSeenLabel } from "../S08-candidates-list/view";
 import styles from "./RolesList.module.css";
 import { budgetLabel, matchesQuery, personWord, placedLine, roleRows, type RoleRow } from "./view";
 
 type Status = Role["status"];
+type Placed = ReturnType<typeof placedLine> | null;
 const STATUSES: { id: Status; label: string }[] = [
   { id: "open", label: "Open" },
   { id: "filled", label: "Filled" },
   { id: "expired", label: "Expired" },
 ];
-
-/** A count as a plain numeral: Title weight, and quiet Body M when it is zero. */
-const Num = ({ n }: { n: number }) => <span className={n ? "t-title tabular" : `${styles.zero} t-body-m tabular`}>{n}</span>;
 
 /** Retry remounts the screen, which opens fresh Firestore listeners (a failed listener does not recover by itself). */
 export default function RolesList() {
@@ -26,13 +24,13 @@ export default function RolesList() {
 
 function Roles({ onRetry }: { onRetry: () => void }) {
   const state = useScreenState();
-  const navigate = useNavigate();
   const roles = useOwned<Role>("roles");
   const companies = useOwned<Company>("companies");
   const matches = useOwned<Match>("matches");
   const overrides = useOwned<Override>("overrides");
   const candidates = useOwned<Candidate>("candidates");
   const placements = useOwned<Placement>("placements");
+  const [now] = useState(() => new Date());
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<Status>("open");
 
@@ -57,14 +55,14 @@ function Roles({ onRetry }: { onRetry: () => void }) {
         ) : loading ? (
           <div role="status" aria-live="polite">
             <p className={`${styles.loading} t-body-s`}>Loading your roles.</p>
-            <div className={styles.card} aria-hidden="true">
-              {Array.from({ length: 6 }, (_, i) => (
-                <Skeleton key={i} height={56} />
+            <div className={styles.skeletons} aria-hidden="true">
+              {Array.from({ length: 8 }, (_, i) => (
+                <Skeleton key={i} height={260} radius="widget" />
               ))}
             </div>
           </div>
         ) : (
-          <div className={styles.card}>
+          <div className={styles.panel}>
             <EmptyState message="Roles you open from a client brief will show up here." action={newRole} />
           </div>
         )}
@@ -77,7 +75,11 @@ function Roles({ onRetry }: { onRetry: () => void }) {
   const shown = found.filter((r) => r.role.status === status);
   const searching = query.trim() !== "";
   const label = STATUSES.find((s) => s.id === status)!.label.toLowerCase();
-  const name = (id: string) => candidates.data?.find((c) => c.id === id)?.fullName;
+  const placed = (r: RoleRow): Placed => {
+    const p = placements.data?.find((x) => x.roleId === r.role.id && x.outcome === "placed");
+    const person = p && candidates.data?.find((c) => c.id === p.candidateId)?.fullName;
+    return person ? placedLine(person, p.reason) : null;
+  };
   // The two newest roles that were filled, with who got the job.
   const filled = status === "open" && !searching
     ? all
@@ -85,16 +87,6 @@ function Roles({ onRetry }: { onRetry: () => void }) {
         .sort((a, b) => (b.role.closedAt ?? b.role.openedAt).getTime() - (a.role.closedAt ?? a.role.openedAt).getTime())
         .slice(0, 2)
     : [];
-
-  // One click handler for every row, so navigation stays client-side (ListRow renders plain anchors).
-  function goInApp(e: MouseEvent) {
-    const href = (e.target as HTMLElement).closest("a")?.getAttribute("href");
-    if (!href?.startsWith("/") || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    e.preventDefault();
-    void navigate(href);
-  }
-
-  const sub = (r: RoleRow) => [r.role.interpretedBrief?.location, budgetLabel(r.role.interpretedBrief)].filter(Boolean).join(" · ");
 
   return (
     <div className={styles.page}>
@@ -134,85 +126,112 @@ function Roles({ onRetry }: { onRetry: () => void }) {
         {searching ? `${shown.length} ${label} ${shown.length === 1 ? "role" : "roles"} match.` : ""}
       </p>
 
-      {/* The cards are click delegates only; every real control inside is an anchor or button. */}
-      <div className={styles.stack} onClick={goInApp}>
-        <div className={styles.card}>
-          {shown.length === 0 ? (
-            <EmptyState
-              message={searching ? `No ${label} role matches “${query.trim()}”.` : `No ${label} roles.`}
-              action={searching ? <Button onClick={() => setQuery("")}>Clear search</Button> : undefined}
-            />
-          ) : (
-            <>
-              <div className={`${styles.cols} t-meta`} aria-hidden="true">
-                <span className={styles.role}>Role</span>
-                <span className={styles.company}>Company</span>
-                <span className={styles.waiting}>Waiting on you</span>
-                <span className={styles.short}>Shortlisted</span>
-                <span className={styles.evidence}>Stale evidence</span>
-              </div>
-              <ul className={styles.rows}>
-                {shown.map((r) => (
-                  <li key={r.role.id}>
-                    <ListRow href={`/roles/${r.role.id}`} title={r.role.title} meta={sub(r)} className={styles.row}>
-                      <span className={`${styles.company} t-body-s`}>{r.company}</span>
-                      <span className={styles.waiting}>
-                        <Num n={r.waiting} />
-                        <span className={`${styles.lbl} t-caption`}> waiting on you</span>
-                      </span>
-                      <span className={styles.short}>
-                        <Num n={r.shortlisted} />
-                        <span className={`${styles.lbl} t-caption`}> shortlisted</span>
-                      </span>
-                      <span className={styles.evidence}>
-                        {r.stale > 0 ? (
-                          <>
-                            <span className={`${styles.stale} t-title tabular`}>{r.stale}</span>
-                            <span className={`${styles.unit} t-caption`}> {personWord(r.stale)}<span className={`${styles.lbl} t-caption`}> with stale evidence</span></span>
-                          </>
-                        ) : r.suggested === 0 ? (
-                          <span className={`${styles.zero} t-body-s`}>No one fits yet</span>
-                        ) : null}
-                      </span>
-                    </ListRow>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+      {shown.length === 0 ? (
+        <div className={styles.panel}>
+          <EmptyState
+            message={searching ? `No ${label} role matches “${query.trim()}”.` : `No ${label} roles.`}
+            action={searching ? <Button onClick={() => setQuery("")}>Clear search</Button> : undefined}
+          />
         </div>
-
-        {filled.length > 0 && (
-          <section className={styles.card} aria-labelledby="filled-title">
-            <div className={styles.head}>
-              <h2 id="filled-title" className="t-body-m-strong">Recently filled</h2>
-              <span className={`${styles.n} t-caption tabular`}>{count("filled")}</span>
-            </div>
-            <ul className={styles.rows}>
-              {filled.map((r) => {
-                const who = placements.data?.find((p) => p.roleId === r.role.id && p.outcome === "placed");
-                const person = who && name(who.candidateId);
-                const line = person ? placedLine(person, who.reason) : null;
-                return (
-                  <li key={r.role.id}>
-                    <ListRow href={`/roles/${r.role.id}`} title={r.role.title} meta={sub(r)} className={styles.row}>
-                      <span className={`${styles.company} t-body-s`}>{r.company}</span>
-                      <span className={`${styles.placed} t-body-s`}>
-                        {line && (
-                          <>
-                            <strong className="t-body-s-strong">{line.who}</strong>
-                            {line.rest}
-                          </>
-                        )}
-                      </span>
-                    </ListRow>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-      </div>
+      ) : (
+        <ul className={styles.grid}>
+          {shown.map((r) => (
+            <li key={r.role.id}>
+              <RoleCard row={r} now={now} placed={placed(r)} />
+            </li>
+          ))}
+          {filled.length > 0 && (
+            <li className={styles.filledCell}>
+              <section className={styles.filled} aria-labelledby="filled-title">
+                <div className={styles.head}>
+                  <h2 id="filled-title" className="t-body-m-strong">Recently filled</h2>
+                  <span className={`${styles.n} t-caption tabular`}>{count("filled")}</span>
+                </div>
+                <ul className={styles.filledRows}>
+                  {filled.map((r) => {
+                    const line = placed(r);
+                    return (
+                      <li key={r.role.id}>
+                        <Link to={`/roles/${r.role.id}`} className={styles.filledRow}>
+                          <span className={styles.name}>
+                            <span className="t-body-m-strong">{r.role.title}</span>
+                            <span className={`${styles.sub} t-caption`}>{r.company} · filled {lastSeenLabel(r.role.closedAt ?? r.role.openedAt, now)}</span>
+                          </span>
+                          {line && (
+                            <span className={`${styles.placed} t-body-s`}>
+                              <strong className="t-body-s-strong">{line.who}</strong>
+                              {line.rest}
+                            </span>
+                          )}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button type="button" className={`${styles.seeAll} t-body-s-strong`} onClick={() => setStatus("filled")}>
+                  See all {count("filled")} filled roles
+                </button>
+              </section>
+            </li>
+          )}
+        </ul>
+      )}
     </div>
+  );
+}
+
+function RoleCard({ row: r, now, placed }: { row: RoleRow; now: Date; placed: Placed }) {
+  const { role } = r;
+  const isFilled = role.status === "filled";
+  const brief = role.interpretedBrief;
+  const fact = [brief?.location, budgetLabel(brief), brief?.mustHave[0]].filter(Boolean).join(" · ") || "No brief yet.";
+  const when: [string, Date] = isFilled && role.closedAt ? ["Filled", role.closedAt] : ["Opened", role.openedAt];
+  const stat = (n: number, words: string, tone?: string) => (
+    <span className={`${styles.stat} ${n === 0 ? styles.zero : tone}`}>
+      <b className="t-figure-medium tabular">{n}</b>
+      <span className={`${styles.sub} t-caption`}>{words}</span>
+    </span>
+  );
+  return (
+    <Link to={`/roles/${role.id}`} className={styles.card}>
+      <span className={styles.title}>
+        <span className={styles.name}>
+          <span className="t-title">{role.title}</span>
+          <span className={`${styles.sub} t-caption`}>{r.company}</span>
+        </span>
+        <Icon name="bx-chevron-right" size={18} />
+      </span>
+      {isFilled ? (
+        <span className={`${styles.placed} t-body-s`}>
+          {placed ? (
+            <>
+              <strong className="t-body-s-strong">{placed.who}</strong>
+              {placed.rest}
+            </>
+          ) : (
+            "Filled"
+          )}
+        </span>
+      ) : (
+        <span className={styles.stats}>
+          {stat(r.waiting, "waiting on you", styles.lime)}
+          {stat(r.shortlisted, "shortlisted")}
+        </span>
+      )}
+      <span className={`${styles.sub} ${styles.clock} t-caption`}>
+        <Icon name="bx-time" size={14} />
+        {when[0]} {lastSeenLabel(when[1], now)}
+      </span>
+      <span className={styles.fact}>
+        <span className="t-body-s-para">{fact}</span>
+        {!isFilled && r.stale > 0 ? (
+          <span className={`${styles.sub} t-caption`}>
+            <span className={`${styles.age} t-caption-strong`}>{r.stale} {personWord(r.stale)}</span> with stale evidence
+          </span>
+        ) : !isFilled && r.suggested === 0 ? (
+          <span className={`${styles.sub} t-caption`}>No one fits yet</span>
+        ) : null}
+      </span>
+    </Link>
   );
 }

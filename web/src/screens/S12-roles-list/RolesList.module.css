@@ -1,61 +1,94 @@
-/* Figma S12: filters at y 128, table card 12 below, then the Recently filled card. */
+/* Figma S12 cards: filters at y 128, cards 12 below; four across at 1440 (as S10), Recently filled spans two. */
 .page { display: flex; flex-direction: column; }
 .num { color: var(--accent-text); }
 .search { flex: none; width: clamp(150px, 22vw, 300px); }
 
-.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
-.stack { display: flex; flex-direction: column; gap: 12px; }
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+.loading { margin-bottom: 12px; color: var(--text-3); }
+.panel {
   padding: 18px 20px 20px;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-widget);
   background: var(--surface);
 }
-.loading { margin-bottom: 12px; color: var(--text-3); }
+
+.grid, .skeletons { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--gap); margin: 0; padding: 0; list-style: none; }
+.grid > li { display: flex; }
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 150ms var(--ease-out);
+}
+.card:hover { background: var(--surface-2); }
+.title { display: flex; align-items: flex-start; gap: 8px; }
+.name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; overflow-wrap: anywhere; }
+.sub { color: var(--text-3); }
+.stats { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.stat { display: flex; align-items: baseline; gap: 6px; }
+.stat b { color: var(--text); font-weight: inherit; }
+.stat.lime b { color: var(--accent-text); }
+.stat.zero b { color: var(--text-3); }
+.clock { display: flex; align-items: center; gap: 6px; }
+.fact { display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 1px solid var(--hairline); color: var(--text-2); }
+.age { color: var(--stale); }
+.placed { color: var(--text-3); }
+.placed > strong { color: var(--text); }
+
+/* Recently filled: a two-column panel that follows the open-role cards. */
+.filledCell { grid-column: span 2; }
+.filled {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+}
 .head { display: flex; align-items: center; gap: 8px; padding-bottom: 6px; color: var(--text-2); }
 .n { color: var(--text-3); }
-
-.rows { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
-/* Figma row: 12 gaps between columns, 12 / 14 / 12 / 16 padding */
-.rows a { gap: 12px; padding: 12px 14px 12px 16px; }
-
-/* Column widths come from variables so the rows (ListRow's own title block, first child) and the header stay aligned. */
-.page { --role-w: 470px; --company-w: 324px; }
-.row > :first-child { flex: 0 0 var(--role-w); }
-
-/* Columns shared by rows and the header */
-.role { flex: 0 0 var(--role-w); }
-.company { flex: 0 0 var(--company-w); color: var(--text-2); }
-.waiting { flex: 0 0 130px; display: flex; align-items: baseline; color: var(--text); }
-.short { flex: 0 0 100px; display: flex; align-items: baseline; justify-content: flex-end; padding-right: 32px; color: var(--text); }
-.evidence { flex: 1; min-width: 0; display: flex; align-items: baseline; }
-.placed { flex: 1; min-width: 0; color: var(--text-3); }
-.placed > strong { color: var(--text); }
-.zero { color: var(--text-3); }
-.stale { color: var(--stale); }
-.unit { color: var(--text-3); white-space: pre; }
-
-/* Each count's words: read by screen readers always, shown only where the column headers are not. */
-.lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-
-.cols { display: flex; align-items: center; gap: 12px; padding: 0 14px 4px 16px; color: var(--text-3); }
-.cols::after { content: ""; flex: 0 0 18px; } /* the row chevron */
-.cols .waiting, .cols .short { color: var(--text-3); }
-
-@media (max-width: 1240px) {
-  .page { --role-w: 280px; --company-w: 160px; }
+.filledRows { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.filledRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px 12px 16px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
 }
-/* No room for columns (also 720 x 450, where the top bar replaces the rail): the title and chevron keep the first line, the counts wrap under it with their words. */
-@media (max-width: 1100px) {
-  .cols, .company { display: none; }
-  .rows a { flex-wrap: wrap; row-gap: 6px; }
-  .row > :first-child { flex: 1 1 calc(100% - 30px); }
-  .rows a > :last-child { order: 1; }
-  .waiting, .short, .evidence, .placed { order: 2; flex: 0 0 auto; padding: 0; margin-right: 12px; justify-content: flex-start; }
-  .placed { flex: 1 1 100%; }
-  .lbl { position: static; width: auto; height: auto; overflow: visible; clip-path: none; color: var(--text-3); white-space: pre; }
+.filledRow:hover { background: var(--surface-3); }
+.filledRow .placed { text-align: right; }
+.seeAll {
+  position: relative;
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.seeAll::before { content: ""; position: absolute; inset: -14px -8px; }
+.seeAll:hover { color: var(--text-2); }
+
+/* Two columns at tablet (the panel is then a full row); one under ~680 px, where the panel stops spanning two. */
+@media (max-width: 680px) {
+  .filledCell { grid-column: 1 / -1; }
+  .filledRow { flex-wrap: wrap; }
+  .filledRow .placed { text-align: left; }
 }
