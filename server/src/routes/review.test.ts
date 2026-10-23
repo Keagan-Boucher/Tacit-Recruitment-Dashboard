@@ -104,6 +104,22 @@ describe("pass cv", () => {
     expect(store.get("candidates/cand7").inPoolSince).toBeInstanceOf(Date);
     expect([...store.keys()].filter((k) => k.startsWith("candidates/"))).toEqual(["candidates/cand7"]);
   });
+  it("linking keeps the duplicate's existing topSkills", async () => {
+    const { app, store } = setup({
+      "submissions/s1": sub({ possibleDuplicateOf: "cand7" }),
+      "candidates/cand7": { ownerUid: R, fullName: "T", topSkills: ["Excel"] },
+    });
+    await review(app, "s1", { action: "pass" });
+    expect(store.get("candidates/cand7").topSkills).toEqual(["Excel"]);
+  });
+  it("won't relink a candidate that has a different portal account (409)", async () => {
+    const { app, store } = setup({
+      "submissions/s1": sub({ possibleDuplicateOf: "cand7" }),
+      "candidates/cand7": { ownerUid: R, fullName: "T", portalUid: "someone-else" },
+    });
+    expect((await review(app, "s1", { action: "pass" })).status).toBe(409);
+    expect(store.get("submissions/s1").status).toBe("pending");
+  });
   it("is idempotent and 409 for the opposite action", async () => {
     const { app, store } = setup({ "submissions/s1": sub({}) });
     const a = await review(app, "s1", { action: "pass" });
@@ -126,6 +142,21 @@ describe("pass brief", () => {
     expect(role).toMatchObject({ companyId: "co1", status: "open", briefSource: "portal", briefText: "Voltmark needs FICO", sourceSubmissionId: "s2" });
     expect(role.anon).toEqual({ title: "SAP FICO", sector: "Energy", region: "Durban", seniority: "Senior", salaryBand: "ZAR 52000–55000" });
     expect(JSON.stringify(role.anon)).not.toMatch(/voltmark/i);
+  });
+  it("scrubs the name's distinctive words, not suffixes or partial words", () => {
+    const a = draftAnon({ title: "Voltmark FICO Lead", interpretedBrief: { location: "Voltmark campus", seniority: "Table lead" } }, { name: "Voltmark Energy (Pty) Ltd", sector: "Energy" });
+    expect(JSON.stringify(a)).not.toMatch(/voltmark/i);
+    expect(a).toMatchObject({ title: "FICO Lead", sector: "Energy", seniority: "Table lead" });
+    expect(draftAnon({ title: "Table lead" }, { name: "AB Ltd" }).title).toBe("Table lead");
+  });
+  it("refuses a brief with no company doc (409) or no companyId (400)", async () => {
+    const { app, store } = setup({
+      "submissions/s2": sub({ kind: "brief", submittedBy: "k1", companyId: "gone", fields: BRIEF_FIELDS, text: "x", fileRef: undefined }),
+      "submissions/s4": sub({ kind: "brief", submittedBy: "k1", fields: BRIEF_FIELDS, text: "x", fileRef: undefined }),
+    });
+    expect((await review(app, "s2", { action: "pass" })).status).toBe(409);
+    expect((await review(app, "s4", { action: "pass" })).status).toBe(400);
+    expect([...store.keys()].some((k) => k.startsWith("roles/"))).toBe(false);
   });
   it("draftAnon strips the name everywhere", () => {
     const a = draftAnon({ title: "ACME Ltd Lead", interpretedBrief: { location: "acme ltd campus, Pretoria" } }, { name: "Acme Ltd", sector: "Acme Ltd logistics" });

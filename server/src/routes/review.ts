@@ -12,10 +12,17 @@ export class Reject extends Error {
   constructor(readonly status: number, readonly code: string, message: string) { super(message); }
 }
 
-const scrub = (s: string, name: string) => {
-  const n = name.trim();
-  const out = n ? s.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), "") : s;
-  return out.replace(/\s+/g, " ").trim();
+const SUFFIXES = new Set(["pty", "ltd", "limited", "inc", "llc", "plc", "cc", "co", "corp", "group", "holdings", "the", "and"]);
+const words = (s: string) => s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
+/** Removes the company name and its distinctive words (not legal suffixes or the sector own words), whole words only. */
+const scrub = (s: string, name: string, sector = "") => {
+  const generic = new Set(words(sector));
+  const hide = words(name).filter((w, i) => !SUFFIXES.has(w) && (i === 0 || !generic.has(w)));
+  const tidy = (x: string) => x.replace(/\s+/g, " ").trim();
+  if (!hide.length) return tidy(s);
+  const alts = hide.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  return tidy(s.replace(new RegExp(`(?<![\\p{L}\\p{N}])(?:${alts})(?![\\p{L}\\p{N}])`, "giu"), ""));
 };
 
 /** What candidates see of a role. Everything copied has the company's name stripped out. */
@@ -24,13 +31,14 @@ export function draftAnon(
   company: { name?: string; sector?: string },
 ) {
   const name = company.name ?? "";
+  const sec = company.sector ?? "";
   const b = role.interpretedBrief;
   const band = b?.budget && (b.budget.min || b.budget.max) ? `${b.budget.currency} ${b.budget.min}–${b.budget.max}` : "";
   return RoleAnon.parse({
-    title: scrub(role.title, name) || "Role",
-    sector: scrub(company.sector ?? "", name),
-    region: scrub(b?.location ?? "", name),
-    seniority: scrub(b?.seniority ?? "", name),
+    title: scrub(role.title, name, sec) || "Role",
+    sector: scrub(sec, name, sec),
+    region: scrub(b?.location ?? "", name, sec),
+    seniority: scrub(b?.seniority ?? "", name, sec),
     salaryBand: band,
   });
 }
@@ -76,8 +84,9 @@ export function reviewRouter({ db, auth, recruiterUid }: { db: Firestore; auth: 
           const puSnap = await t.get(pu);
           if (dupRef && dup?.exists) {
             const c = dup.data()!;
+            if (c.portalUid && c.portalUid !== sub.submittedBy) throw new Reject(409, "bad_transition", "That candidate is already linked to a different portal account");
             resultId = dupRef.id;
-            put(dupRef, Candidate.partial().parse({
+            put(dupRef, Candidate.omit({ topSkills: true }).partial().parse({
               portalUid: sub.submittedBy, sourceSubmissionId: snap.id, updatedAt: now,
               ...(!c.inPoolSince && { inPoolSince: now }),
               ...(!c.cvFileRef && sub.fileRef && { cvFileRef: sub.fileRef }),
@@ -100,7 +109,9 @@ export function reviewRouter({ db, auth, recruiterUid }: { db: Firestore; auth: 
           claimFor = sub.submittedBy;
         } else if (sub.kind === "brief") {
           const f = BriefSubmissionFields.parse(sub.fields);
+          if (!sub.companyId) throw new Reject(400, "bad_request", "That brief has no company");
           const co = await t.get(db.collection("companies").doc(String(sub.companyId)));
+          if (!co.exists) throw new Reject(409, "bad_transition", "That brief's company no longer exists");
           const { title, ...interpretedBrief } = { ...f, unclear: undefined };
           delete interpretedBrief.unclear;
           const rref = db.collection("roles").doc();
@@ -111,7 +122,7 @@ export function reviewRouter({ db, auth, recruiterUid }: { db: Firestore; auth: 
             ...(sub.fileRef && { briefFileRef: sub.fileRef }),
             interpretedBrief, status: "open", openedAt: now, sourceSubmissionId: snap.id,
           };
-          put(rref, Role.parse({ ...role, anon: draftAnon(role, (co.exists ? co.data() : {}) as { name?: string; sector?: string }) }));
+          put(rref, Role.parse({ ...role, anon: draftAnon(role, co.data() as { name?: string; sector?: string }) }));
         } else {
           const f = DetailsChangeFields.parse(sub.fields);
           if (!sub.candidateId) throw new Reject(409, "not_in_pool", "That submitter isn't in the pool");

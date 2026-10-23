@@ -105,6 +105,19 @@ describe("share", () => {
     expect(all(store, "shortlistEntries")).toHaveLength(1);
     expect(all(store, "candidateUpdates")).toHaveLength(1);
   });
+  it("duplicate candidates in one request are 400", async () => {
+    const { app } = setup();
+    expect((await share(app, ["cand1", "cand1"])).status).toBe(400);
+  });
+  it("re-share refreshes roleTitle and creates the missing candidateUpdate", async () => {
+    const { app, store } = setup();
+    const a = await share(app, ["cand3"]);
+    store.set("candidates/cand3", { ...store.get("candidates/cand3"), portalUid: "c3" });
+    store.set("roles/r1", { ...store.get("roles/r1"), title: "SAP FICO Lead" });
+    await share(app, ["cand3"]);
+    expect(store.get(`shortlistEntries/${a.body.entryIds[0]}`).roleTitle).toBe("SAP FICO Lead");
+    expect(store.get(`candidateUpdates/${a.body.entryIds[0]}`)).toMatchObject({ portalUid: "c3", status: "shortlisted" });
+  });
   it("someone else's role or a bad body fails", async () => {
     const { app } = setup({ ...SEED, "roles/r1": { ...SEED["roles/r1"], ownerUid: "other" } });
     expect((await share(app)).status).toBe(404);
@@ -161,6 +174,13 @@ describe("shortlist-status", () => {
     expect(store.get(`candidateUpdates/${ids[0]}`).status).toBe("placed");
     expect(store.get(`candidateUpdates/${ids[1]}`).status).toBe("not-taken-forward");
     for (const [, d] of all(store, "candidateUpdates")) expect(strings(d).join(" ")).not.toMatch(/co1|voltmark/i);
+  });
+  it("a hire is refused when another entry on the role is already hired", async () => {
+    const { app, ids, store } = await shared();
+    await status(app, { entryId: ids[0], status: "interviewing" });
+    store.set(`shortlistEntries/${ids[1]}`, { ...store.get(`shortlistEntries/${ids[1]}`), status: "hired" });
+    expect((await status(app, { entryId: ids[0], status: "hired" })).status).toBe(409);
+    expect(all(store, "placements")).toHaveLength(0);
   });
   it("not-progressing writes a client-rejected placement with the reason", async () => {
     const { app, ids, store } = await shared();

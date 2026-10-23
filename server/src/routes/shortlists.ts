@@ -4,12 +4,6 @@ import { CandidateUpdate, Placement, ShareShortlistRequest, ShortlistCard, Short
 import type { ShareShortlistResponse, ShortlistStatusResponse } from "@tacit/shared";
 import { draftAnon, fail, Reject } from "./review.ts";
 
-/** Request bodies are JSON, so the schema's `at` dates arrive as ISO strings. */
-const reviveAt = (v: unknown): unknown =>
-  Array.isArray(v) ? v.map(reviveAt)
-  : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, k === "at" && typeof x === "string" ? new Date(x) : reviveAt(x)]))
-  : v;
-
 const MIRROR = { interviewing: "interviewing", hired: "placed", "not-progressing": "not-taken-forward" } as const;
 const ctx = (db: Firestore, c: string, id: string) => db.collection(c).doc(id);
 
@@ -17,8 +11,9 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
   const router = Router();
 
   router.post("/shortlists/share", async (req, res) => {
-    const body = ShareShortlistRequest.safeParse(reviveAt(req.body));
+    const body = ShareShortlistRequest.safeParse(req.body);
     if (!body.success) return void fail(res, 400, "bad_request", "That shortlist isn't complete");
+    if (new Set(body.data.entries.map((e) => e.candidateId)).size !== body.data.entries.length) return void fail(res, 400, "bad_request", "A candidate is on that shortlist twice");
     const uid = req.uid!;
     try {
       const roleSnap = await ctx(db, "roles", body.data.roleId).get();
@@ -29,7 +24,9 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
         db.collection("shortlistEntries").where("ownerUid", "==", uid).where("roleId", "==", roleSnap.id).get(),
       ]);
       const roleAnon = role.anon ?? draftAnon(role as { title: string }, coSnap.exists ? coSnap.data()! : {});
-      const known = new Map(existing.docs.map((d) => [d.data().candidateId as string, d.id]));
+      const known = new Map(existing.docs.map((d) => [d.data().candidateId as string, d]));
+      const hadUpdate = new Set<string>();
+      await Promise.all(existing.docs.map(async (d) => void ((await ctx(db, "candidateUpdates", d.id).get()).exists && hadUpdate.add(d.id))));
       const cands = await Promise.all(body.data.entries.map((e) => ctx(db, "candidates", e.candidateId).get()));
       if (cands.some((c) => !c.exists || c.data()!.ownerUid !== uid)) throw new Reject(404, "not_found", "A candidate on that shortlist doesn't exist");
 
@@ -39,11 +36,18 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
         body.data.entries.forEach((e, i) => {
           const { candidateId, ...card } = e;
           const prior = known.get(candidateId);
-          const ref = prior ? ctx(db, "shortlistEntries", prior) : db.collection("shortlistEntries").doc();
+          const ref = prior ? ctx(db, "shortlistEntries", prior.id) : db.collection("shortlistEntries").doc();
           entryIds.push(ref.id);
+          const portalUid = cands[i]!.data()!.portalUid as string | undefined;
           if (prior) {
-            // Re-share: refresh the approved card; status, history and identity stay as they are.
-            t.set(ref, { ...ShortlistCard.parse(card), sharedAt: now, updatedAt: now }, { merge: true });
+            // Re-share: refresh the approved card and title; status, history and identity stay as they are.
+            t.set(ref, { ...ShortlistCard.parse(card), roleTitle: role.title, sharedAt: now, updatedAt: now }, { merge: true });
+            if (portalUid && !hadUpdate.has(prior.id)) {
+              const st = prior.data().status as keyof typeof MIRROR | "shortlisted";
+              t.set(ctx(db, "candidateUpdates", ref.id), CandidateUpdate.parse({
+                ownerUid: recruiterUid, createdAt: now, updatedAt: now, candidateId, portalUid, roleAnon, status: st === "shortlisted" ? st : MIRROR[st], at: now,
+              }));
+            }
             return;
           }
           t.set(ref, ShortlistEntry.parse({
@@ -51,7 +55,6 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
             roleId: roleSnap.id, roleTitle: role.title, companyId: role.companyId, candidateId,
             status: "shortlisted", statusHistory: [{ status: "shortlisted", by: uid, at: now }],
           }));
-          const portalUid = cands[i]!.data()!.portalUid as string | undefined;
           if (portalUid) {
             t.set(ctx(db, "candidateUpdates", ref.id), CandidateUpdate.parse({
               ownerUid: recruiterUid, createdAt: now, updatedAt: now, candidateId, portalUid, roleAnon, status: "shortlisted", at: now,
@@ -89,16 +92,17 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
         ]);
         identity = { fullName: cand.fullName ?? "", email: pu?.data()?.email ?? "", phone: sub?.data()?.fields?.phone ?? "" };
       }
-      const others = r.status === "hired"
-        ? (await db.collection("shortlistEntries").where("ownerUid", "==", e0.ownerUid).where("roleId", "==", e0.roleId).get()).docs.filter((d) => d.id !== pre.id)
-        : [];
-      // Only people with a portal account have a candidateUpdates doc; don't conjure one for the rest.
-      const hasUpdate = new Set<string>();
-      await Promise.all([pre.id, ...others.map((o) => o.id)].map(async (id) => void ((await ctx(db, "candidateUpdates", id).get()).exists && hasUpdate.add(id))));
-
       const status = await db.runTransaction(async (t) => {
+        // All reads first, so two concurrent hires on one role cannot both win.
         const cur = (await t.get(eref)).data()!;
         if (cur.status === r.status) return cur.status as ShortlistStatusResponse["status"]; // repeat
+        const others = r.status === "hired"
+          ? (await t.get(db.collection("shortlistEntries").where("ownerUid", "==", e0.ownerUid).where("roleId", "==", e0.roleId))).docs.filter((d) => d.id !== pre.id)
+          : [];
+        // Only people with a portal account have a candidateUpdates doc; don't conjure one for the rest.
+        const hasUpdate = new Set<string>();
+        for (const id of [pre.id, ...others.map((o) => o.id)]) if ((await t.get(ctx(db, "candidateUpdates", id))).exists) hasUpdate.add(id);
+        if (others.some((o) => o.data().status === "hired")) throw new Reject(409, "bad_transition", "That role has already been filled");
         const ok = r.status === "interviewing" ? cur.status === "shortlisted"
           : r.status === "hired" ? cur.status === "interviewing"
           : cur.status === "shortlisted" || cur.status === "interviewing";
