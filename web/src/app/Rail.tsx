@@ -11,7 +11,7 @@ type Item = { to: string; label: string; icon: string; end?: boolean; count?: nu
 const TOP: Record<AccountRole, Item[]> = {
   recruiter: [
     { to: "/", label: "Dashboard", icon: "bx-home", end: true },
-    { to: "/review", label: "Review", icon: "bx-archive-in" },
+    { to: "/review", label: "Review", icon: "bx-check-circle" },
     { to: "/candidates", label: "Candidates", icon: "bx-group" },
     { to: "/companies", label: "Companies", icon: "bx-buildings" },
     { to: "/roles", label: "Roles", icon: "bx-briefcase" },

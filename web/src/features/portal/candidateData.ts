@@ -70,10 +70,8 @@ export function useCandidatePortal(enabled = true): Live<CandidatePortal> & { re
 export function useCandidateScreen(): Live<CandidatePortal> & { retry: () => void; dev: string | null } {
   const dev = devParam(useLocation().search, "state");
   const live = useCandidatePortal(dev === null);
-  // Dev only: until the new Firestore rules are deployed the live reads are refused, so show the default fixture instead of an error frame.
-  const refused = import.meta.env.DEV && dev === null && (live.error as { code?: string } | undefined)?.code === "permission-denied";
-  const fixture = useMemo(() => (dev && dev !== "loading" && dev !== "error" ? candidateFixture(dev) : refused ? candidateFixture("default") : undefined), [dev, refused]);
-  if (refused) return { data: fixture, error: undefined, retry: live.retry, dev: "default" };
+  // A refused read is an error, never fixture data: a rules bug must show, not be papered over.
+  const fixture = useMemo(() => (dev && dev !== "loading" && dev !== "error" ? candidateFixture(dev) : undefined), [dev]);
   if (dev === null) return { ...live, dev };
   if (dev === "loading") return { data: undefined, error: undefined, retry: live.retry, dev };
   if (dev === "error") return { data: undefined, error: new Error("dev"), retry: () => {}, dev };
