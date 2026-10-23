@@ -131,7 +131,7 @@ function Screen({ data, error, retry, dev }: { data: CandidatePortal | undefined
             </ul>
           </Panel>
           <Panel title="Your data" className={styles.data}>
-            <p className={`t-body-s-para ${styles.body}`}>You can ask for a copy of everything Tacit holds about you, or for it to be deleted.</p>
+            <p className={`t-body-s-para ${styles.body}`}>You can ask for a copy of everything Tacit holds about you, or for it to be deleted. These buttons open an email to {RECRUITER_FIRST}, who handles each request; there is no in-app form yet.</p>
             <span className={styles.spacer} />
             <a className={`${buttonClass("ghost")} ${styles.start}`} href={mailto("Request a copy of my data", `Hi ${RECRUITER_FIRST}, please send me a copy of everything Tacit holds about me.`)}>Request a copy</a>
             <a className={`${buttonClass("ghost")} ${styles.start} ${styles.danger}`} href={mailto("Delete my account", `Hi ${RECRUITER_FIRST}, please delete my Tacit account and everything you hold about me.`)}>Delete my account</a>
