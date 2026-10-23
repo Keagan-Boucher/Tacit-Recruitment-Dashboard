@@ -239,6 +239,10 @@ export const UserPrefs = z.object({
   reduceMotion: z.boolean(),
   dashboard: z.array(DashboardWidget),
   smallScreenOrder: z.array(WidgetId),
+  // S14 Review and Data & privacy (24 Oct). Missing on older docs: parsePrefs fills the defaults.
+  railReviewCount: z.boolean(),
+  autoReviewWidget: z.boolean(),
+  retentionMonths: z.union([z.literal(12), z.literal(24), z.literal(36)]),
   updatedAt: z.date().optional(),
 });
 
@@ -257,6 +261,9 @@ export const DEFAULT_USER_PREFS: UserPrefs = {
     ...shelf.map((widgetId, i) => ({ widgetId, size: "1x1" as const, order: board.length + i, visible: false })),
   ],
   smallScreenOrder: [...board.map(([id]) => id), ...shelf],
+  railReviewCount: true,
+  autoReviewWidget: true,
+  retentionMonths: 24,
 };
 
 // ---- Portals (23 Oct 2026; data-model.md *Portal entities*, architecture.md *Auth and roles*) ----------------
