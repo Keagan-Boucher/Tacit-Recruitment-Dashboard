@@ -1,11 +1,11 @@
-import { NavLink } from "react-router";
+import { Link, NavLink, useLocation } from "react-router";
 import type { AccountRole, Submission } from "@tacit/shared";
 import { initials, useAuth } from "../features/auth";
 import { useOwned } from "../lib/data";
 import { Logo } from "./Logo";
 import styles from "./Rail.module.css";
 
-type Item = { to: string; label: string; icon: string; end?: boolean; count?: number; compactHide?: boolean };
+type Item = { to: string; label: string; icon: string; end?: boolean; count?: number; compactHide?: boolean; also?: string };
 
 // Review sits under Dashboard on every recruiter screen (Keagan, 23 Oct; only the new frames show it).
 const TOP: Record<AccountRole, Item[]> = {
@@ -25,15 +25,19 @@ const TOP: Record<AccountRole, Item[]> = {
   ],
   company: [
     { to: "/company", label: "Home", icon: "bx-home", end: true },
-    { to: "/company/roles", label: "Roles", icon: "bx-briefcase" },
+    { to: "/company/roles", label: "Roles", icon: "bx-briefcase", also: "/company/briefs/" }, // Figma: Roles is lit on B03
   ],
 };
 const settings: Item = { to: "/settings", label: "Settings", icon: "bx-cog" };
 
-function RailItem({ to, label, icon, end, count, compactHide }: Item) {
+function RailItem({ to, label, icon, end, count, compactHide, also }: Item) {
   const tip = count ? `${label}, ${count} waiting` : label;
+  const here = useLocation().pathname;
+  const lit = !!also && here.startsWith(also);
+  // NavLink owns aria-current, so a lit-by-prefix item renders as a plain Link marked current.
+  const Nav = (lit ? Link : NavLink) as typeof NavLink;
   return (
-    <NavLink to={to} end={end} aria-label={tip} data-tip={tip} data-compact-hide={compactHide || undefined} className={styles.item}>
+    <Nav to={to} {...(lit ? { "aria-current": "page" as const } : { end })} aria-label={tip} data-tip={tip} data-compact-hide={compactHide || undefined} className={styles.item}>
       {count ? <span className={`t-meta ${styles.count}`} aria-hidden="true">{count > 99 ? "99+" : count}</span> : null}
       {icon ? (
         <i className={`bx ${icon}`} aria-hidden="true" />
@@ -46,7 +50,7 @@ function RailItem({ to, label, icon, end, count, compactHide }: Item) {
           <rect x="11" y="11" width="8" height="8" rx="2.5" />
         </svg>
       )}
-    </NavLink>
+    </Nav>
   );
 }
 
