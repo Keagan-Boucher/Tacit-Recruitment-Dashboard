@@ -21,7 +21,7 @@ const TOP: Record<AccountRole, Item[]> = {
   ],
   candidate: [
     { to: "/candidate", label: "Home", icon: "bx-home", end: true },
-    { to: "/candidate/details", label: "My details", icon: "bx-user" },
+    { to: "/candidate/details", label: "My details", icon: "bx-file" },
   ],
   company: [
     { to: "/company", label: "Home", icon: "bx-home", end: true },
