@@ -102,7 +102,7 @@ export const QuotedBriefInterpretation = BriefInterpretation.extend({ quotes: Br
 
 /** Exactly one of text (paste / call notes) or fileRef (upload, under users/{uid}/briefs/). */
 export const ParseBriefRequest = z
-  .object({ source: BriefSource, text: z.string().nullable(), fileRef: z.string().max(512).nullable() })
+  .object({ source: BriefSource.exclude(["portal"]), text: z.string().nullable(), fileRef: z.string().max(512).nullable() })
   .refine((r) => (r.text ? 1 : 0) + (r.fileRef ? 1 : 0) === 1, { message: "Send exactly one of text or fileRef" });
 /** `text` = the brief text that was interpreted (extracted from the file for uploads), stored as Role.briefText. */
 export interface ParseBriefResponse { result: QuotedBriefInterpretation; modelVersion: string; text: string }

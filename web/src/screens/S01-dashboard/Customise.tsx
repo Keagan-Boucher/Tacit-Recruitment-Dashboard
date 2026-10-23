@@ -19,6 +19,7 @@ const ICONS: Record<WidgetId, string> = {
   forgotten: "bx-user-voice", "roles-to-shortlist": "bx-list-check", "to-confirm": "bx-check-circle", "people-met": "bx-group",
   "roles-in-play": "bx-briefcase", "worth-a-call": "bx-phone-call", waiting: "bx-time-five", "ask-next": "bx-help-circle", "recent-notes": "bx-pencil",
   "brief-inbox": "bx-file", "company-coverage": "bx-building", "match-history": "bx-history", "override-log": "bx-show",
+  "waiting-for-review": "bx-inbox",
 };
 const SIZE_LABEL = { "1x1": "1×1", "2x1": "2×1", "2x2": "2×2" } as const;
 // Cells are different sizes, so letting the others slide aside (rectSortingStrategy) breaks the grid; the target is outlined instead.

@@ -11,7 +11,7 @@ type Kind = "hero" | "lines" | "number" | "bars" | "grid" | "list";
 const KIND: Record<WidgetId, Kind> = {
   forgotten: "hero", "roles-to-shortlist": "lines", "to-confirm": "number", "people-met": "bars", "roles-in-play": "grid",
   "worth-a-call": "lines", waiting: "list", "ask-next": "list", "recent-notes": "list", "brief-inbox": "lines", "company-coverage": "list",
-  "match-history": "lines", "override-log": "list",
+  "match-history": "lines", "override-log": "list", "waiting-for-review": "list",
 };
 const BARS = [1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6];
 const HEAT = ["f", "o", "o", "o", "o", "f", "o", "n", "o", "s", "o", "o", "n", "n", "o"];

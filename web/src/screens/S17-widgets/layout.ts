@@ -15,6 +15,7 @@ export const TITLES: Record<WidgetId, string> = {
   "company-coverage": "Company coverage",
   "match-history": "Match history",
   "override-log": "Override log",
+  "waiting-for-review": "Waiting for review",
 };
 
 export const SIZES: { value: WidgetSize; label: string }[] = [

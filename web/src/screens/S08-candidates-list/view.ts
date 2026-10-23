@@ -85,7 +85,7 @@ export const SOURCE_FILTERS: { id: SourceFilterId; label: string }[] = [
 ];
 
 /** What a hit may cite. "cv" is for CV facts once they are citable; today a cited attribute comes from a note or an override. */
-export type CitedAttr = { id: string; candidateId: string; type: AttributeType; observedAt: Date; sourceType: "note" | "override" | "cv" };
+export type CitedAttr = { id: string; candidateId: string; type: AttributeType; observedAt: Date; sourceType: "note" | "override" | "cv" | "candidate" };
 export type HitSource = {
   kind: CitedAttr["sourceType"];
   /** "CV · 8 Sep 2026", "Your note · 12 Aug 2025", "Interpreted from your note · 14 Jul 2026" */
@@ -101,7 +101,7 @@ export function hitSource(hit: Pick<SearchHit, "kind" | "attributeIds">, attrs: 
   const found = hit.attributeIds.map((id) => attrs.get(id)).filter((a): a is CitedAttr => !!a);
   if (!found.length) return null;
   const a = found.reduce((x, y) => (y.observedAt > x.observedAt ? y : x));
-  const label = a.sourceType === "cv" ? "CV" : a.sourceType === "override" ? "Your reason" : hit.kind === "interpreted" ? "Interpreted from your note" : "Your note";
+  const label = a.sourceType === "cv" ? "CV" : a.sourceType === "override" ? "Your reason" : a.sourceType === "candidate" ? "Their update" : hit.kind === "interpreted" ? "Interpreted from your note" : "Your note";
   return {
     kind: a.sourceType,
     text: `${label} · ${fmtDate(a.observedAt)}`,

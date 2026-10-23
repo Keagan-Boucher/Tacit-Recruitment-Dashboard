@@ -7,8 +7,8 @@ import { REASONS } from "../S06-override-dialog/override";
 /** Rows that are not "Not seen", with the total: "2" of "4 in your notes". Never a percentage. */
 export const evidencedCount = (rows: Alignment[]) => ({ n: rows.filter((r) => r.kind !== "not-seen").length, total: rows.length });
 
-export type SourceKind = "note" | "override" | "cv" | "brief";
-const SOURCE_NAME: Record<SourceKind, string> = { note: "Your note", override: "Your reason", cv: "CV", brief: "Brief" };
+export type SourceKind = "note" | "override" | "cv" | "brief" | "candidate";
+const SOURCE_NAME: Record<SourceKind, string> = { note: "Your note", override: "Your reason", cv: "CV", brief: "Brief", candidate: "Their update" };
 
 /** The quiet line under a reason: "Your note · 12 Aug 2025", "Brief · 24 Oct 2026", "CV" (undated). `age` ("14 months ago") only when the cited fact is stale. */
 export function sourceLine(kind: SourceKind, observedAt: Date | undefined, st: Staleness = "fresh", months = 0) {
