@@ -6,7 +6,7 @@ import { loadConfig } from "./config.ts";
 const config = loadConfig({ ALLOWED_ORIGIN: "http://allowed.test" });
 const app = createApp(config, async (t) => {
   if (t !== "good") throw new Error("bad");
-  return "uid_1";
+  return { uid: "uid_1", email: "u@x.co", claims: { role: "recruiter" } };
 });
 
 describe("proxy", () => {
@@ -25,7 +25,7 @@ describe("proxy", () => {
     expect((await request(app).get("/api/me")).status).toBe(401);
     expect((await request(app).get("/api/me").set("Authorization", "Bearer nope")).status).toBe(401);
     const r = await request(app).get("/api/me").set("Authorization", "Bearer good");
-    expect(r.body).toEqual({ uid: "uid_1" });
+    expect(r.body).toEqual({ uid: "uid_1", role: "recruiter" });
   });
   it("unknown /api route is JSON 404 (after auth)", async () => {
     const r = await request(app).get("/api/zzz").set("Authorization", "Bearer good");

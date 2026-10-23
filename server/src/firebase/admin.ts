@@ -1,5 +1,6 @@
 import { applicationDefault, cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
+import { Claims } from "@tacit/shared";
 import type { Config } from "../config.ts";
 import type { TokenVerifier } from "../auth.ts";
 
@@ -12,5 +13,9 @@ export function initFirebase(config: Config): TokenVerifier {
     });
   }
   const auth = getAuth();
-  return async (token) => (await auth.verifyIdToken(token)).uid;
+  return async (token) => {
+    const d = await auth.verifyIdToken(token);
+    const c = Claims.safeParse(d);
+    return { uid: d.uid, email: d.email, claims: c.success ? c.data : {} };
+  };
 }

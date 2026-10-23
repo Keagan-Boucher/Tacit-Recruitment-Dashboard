@@ -4,8 +4,10 @@ export interface Config {
   serviceAccountPath?: string;
   /** Firebase Storage bucket for uploaded CVs and briefs, e.g. tacit-3cdd4.firebasestorage.app */
   storageBucket?: string;
-  /** Uids allowed to call the proxy (ALLOWED_UIDS, comma-separated). Empty = any signed-in user. */
+  /** Uids allowed to call the proxy (ALLOWED_UIDS, comma-separated). Optional extra filter for the recruiter role only. */
   allowedUids: string[];
+  /** Portal records are owned by this recruiter (RECRUITER_UID). Required wherever Firestore is used. */
+  recruiterUid?: string;
   aiBaseUrl?: string;
   aiApiKey?: string;
   aiModel?: string;
@@ -26,6 +28,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     serviceAccountPath: opt(env, "FIREBASE_SERVICE_ACCOUNT_PATH"),
     storageBucket: opt(env, "FIREBASE_STORAGE_BUCKET"),
     allowedUids: (opt(env, "ALLOWED_UIDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+    recruiterUid: opt(env, "RECRUITER_UID"),
     // OpenAI-compatible endpoint: Groq today (https://api.groq.com/openai/v1, openai/gpt-oss-120b).
     aiBaseUrl: opt(env, "AI_BASE_URL"),
     aiApiKey: opt(env, "AI_API_KEY"),

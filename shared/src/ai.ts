@@ -152,7 +152,8 @@ export interface SearchResponse { hits: SearchHit[]; modelVersion: string }
 /** Every non-2xx from the proxy. `ai_failed` = the model failed after one repair retry; nothing was stored. */
 export interface ApiErrorBody {
   error: string;
-  code: "bad_request" | "unauthorized" | "not_found" | "bad_file" | "ai_failed" | "ai_unconfigured" | "internal";
+  code: "bad_request" | "unauthorized" | "not_found" | "bad_file" | "ai_failed" | "ai_unconfigured" | "internal"
+    | "forbidden" | "already_registered" | "invite_used" | "invite_expired" | "email_mismatch" | "not_in_pool" | "rate_limited";
 }
 
 export type InterpretedAttribute = z.infer<typeof InterpretedAttribute>;

@@ -1,23 +1,41 @@
 import type { NextFunction, Request, Response } from "express";
+import { Claims, type AccountRole } from "@tacit/shared";
 
-/** Resolves a Firebase ID token to a uid, or throws. */
-export type TokenVerifier = (token: string) => Promise<string>;
+export interface VerifiedToken { uid: string; email?: string; claims: Claims }
+/** Resolves a Firebase ID token to its uid, email and custom claims, or throws. */
+export type TokenVerifier = (token: string) => Promise<VerifiedToken>;
 
 declare module "express-serve-static-core" {
   interface Request {
     uid?: string;
+    email?: string;
+    role?: AccountRole;
+    claims?: Claims;
   }
 }
 
-/** `allowedUids` empty = any signed-in user of the Firebase project; set ALLOWED_UIDS in production. */
+const deny = (res: Response, status: number, error: string, code: string) => void res.status(status).json({ error, code });
+
+/** `allowedUids` is an optional extra filter for the recruiter role only; portal users and no-role tokens never hit it. */
 export const requireAuth = (verify: TokenVerifier, allowedUids: string[] = []) => async (req: Request, res: Response, next: NextFunction) => {
   const m = /^Bearer (.+)$/.exec(req.header("authorization") ?? "");
-  if (!m) return void res.status(401).json({ error: "Missing bearer token", code: "unauthorized" });
+  if (!m) return deny(res, 401, "Missing bearer token", "unauthorized");
   try {
-    req.uid = await verify(m[1]!);
+    const t = await verify(m[1]!);
+    req.uid = t.uid;
+    req.email = t.email;
+    req.claims = t.claims;
+    req.role = t.claims.role;
   } catch {
-    return void res.status(401).json({ error: "Invalid or expired token", code: "unauthorized" });
+    return deny(res, 401, "Invalid or expired token", "unauthorized");
   }
-  if (allowedUids.length && !allowedUids.includes(req.uid)) return void res.status(403).json({ error: "Not allowed", code: "unauthorized" });
+  if (req.role === "recruiter" && allowedUids.length && !allowedUids.includes(req.uid)) return deny(res, 403, "Not allowed", "forbidden");
   next();
 };
+
+export const requireRole = (...roles: AccountRole[]) => (req: Request, res: Response, next: NextFunction) =>
+  req.role && roles.includes(req.role) ? next() : deny(res, 403, "Your account can't do that", "forbidden");
+
+/** For register / accept: a token that already has a role is done. */
+export const requireNoRole = (req: Request, res: Response, next: NextFunction) =>
+  req.role ? deny(res, 409, "This account is already set up", "already_registered") : next();

@@ -1,17 +1,20 @@
 import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
+import type { Auth } from "firebase-admin/auth";
 import type { Firestore } from "firebase-admin/firestore";
 import { createAi } from "./ai/index.ts";
-import { requireAuth, type TokenVerifier } from "./auth.ts";
+import { requireAuth, requireRole, type TokenVerifier } from "./auth.ts";
 import type { Config } from "./config.ts";
 import type { BucketLike } from "./files.ts";
 import { interpretNoteRouter } from "./routes/interpret-note.ts";
 import { matchRouter } from "./routes/match.ts";
 import { searchRouter } from "./routes/search.ts";
 import { parseRouter } from "./routes/parse.ts";
+import { portalRouter } from "./routes/portal.ts";
+import { rateLimit } from "./rateLimit.ts";
 
 /** Firebase-backed services; omitted in tests that don't need them, and their routes aren't mounted. */
-export interface Services { db?: Firestore; bucket?: BucketLike }
+export interface Services { db?: Firestore; auth?: Pick<Auth, "setCustomUserClaims">; bucket?: BucketLike }
 
 // Kept separate from listen() so a Cloud Function can wrap `app` later (D-04).
 export function createApp(config: Config, verifyToken: TokenVerifier, services: Services = {}) {
@@ -26,11 +29,18 @@ export function createApp(config: Config, verifyToken: TokenVerifier, services: 
   });
 
   app.use("/api", requireAuth(verifyToken, config.allowedUids));
-  app.get("/api/me", (req, res) => void res.json({ uid: req.uid }));
+  app.get("/api/me", (req, res) => void res.json({ uid: req.uid, role: req.role ?? null }));
+  // Gate per path, not per mount: every app.use("/api", ...) sees every /api request.
+  app.use(["/interpret-note", "/match", "/search"].map((p) => "/api" + p), requireRole("recruiter"));
+  const limit = rateLimit();
+  app.use("/api/parse-cv", requireRole("recruiter", "candidate"), limit);
+  app.use("/api/parse-brief", requireRole("recruiter", "company"), limit);
   if (services.db) app.use("/api", interpretNoteRouter({ ai, db: services.db }));
   if (services.db) app.use("/api", matchRouter({ ai, db: services.db }));
   if (services.db) app.use("/api", searchRouter({ ai, db: services.db }));
   if (services.bucket) app.use("/api", parseRouter({ ai, bucket: services.bucket }));
+
+  if (services.db && services.auth && config.recruiterUid) app.use("/api", portalRouter({ db: services.db, auth: services.auth, recruiterUid: config.recruiterUid }));
 
   app.use("/api", (_req, res) => void res.status(404).json({ error: "Not found", code: "not_found" }));
 
