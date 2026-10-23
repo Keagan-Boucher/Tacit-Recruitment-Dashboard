@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { Navigate, type RouteObject } from "react-router";
+import type { RouteObject } from "react-router";
 import type { AccountRole } from "@tacit/shared";
 import { RedirectIfRole, RedirectIfSignedIn, RequireRole } from "../features/auth";
 import ReviewQueue from "../screens/S18-review-queue/ReviewQueue";
@@ -11,6 +11,7 @@ import CompanySignIn from "../screens/B01-company-sign-in/CompanySignIn";
 import CompanyHome from "../screens/B02-company-home/CompanyHome";
 import CompanyBrief from "../screens/B03-company-brief/CompanyBrief";
 import CompanyShortlist from "../screens/B04-company-shortlist/CompanyShortlist";
+import CompanyRoles from "../screens/B05-company-roles/CompanyRoles";
 import SignIn from "../screens/S07-sign-in/SignIn";
 import CandidatesList from "../screens/S08-candidates-list/CandidatesList";
 import CandidateProfile from "../screens/S03-candidate-profile/CandidateProfile";
@@ -68,7 +69,7 @@ export const routes: RouteObject[] = [
   shell("company", [
     { path: "/company", handle: { title: "Company home" }, element: <CompanyHome /> },
     { path: "/company/briefs/new", handle: { title: "Send a brief" }, element: <CompanyBrief /> },
-    { path: "/company/roles", handle: { title: "Your roles" }, element: <Navigate to="/company" replace /> }, // B02 lists them
+    { path: "/company/roles", handle: { title: "Your roles" }, element: <CompanyRoles /> },
     { path: "/company/roles/:roleId", handle: { title: "Shortlist" }, element: <CompanyShortlist /> },
   ]),
   shell(["recruiter", "candidate", "company"], [

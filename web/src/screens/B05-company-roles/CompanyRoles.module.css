@@ -1,0 +1,46 @@
+/* Figma B05: four cards of 321 across a 1320 row, 12 gaps, starting 4 px under the header; same card as S10. */
+.page { display: flex; flex-direction: column; }
+.num { color: var(--accent-text); }
+.for { color: var(--for); }
+.against { color: var(--against); }
+.neutral { color: var(--text-2); }
+.panel { min-height: calc(100dvh - 200px); border: 1px solid var(--hairline); border-radius: var(--radius-widget); background: var(--surface); padding: 18px 20px 16px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: var(--gap); margin: 4px 0 0; padding: 0; list-style: none; }
+.grid > li { display: flex; min-width: 0; }
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition: background-color 150ms var(--ease-out);
+}
+.linked:hover { background: var(--surface-2); }
+.filled .name > span:first-child { color: var(--text-2); }
+.head { display: flex; align-items: flex-start; gap: 8px; }
+.name { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.name > span:first-child { overflow-wrap: anywhere; }
+.status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.context { color: var(--text-3); }
+.stats { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
+.stat { display: flex; align-items: baseline; gap: 6px; color: var(--text-3); }
+.stat b { color: var(--accent-text); font-weight: inherit; }
+.rest { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px solid var(--hairline); }
+.text { color: var(--text-2); }
+.facts { color: var(--text-3); }
+.action { display: inline-flex; align-items: center; gap: 0; align-self: flex-start; color: var(--accent-text); text-decoration: none; }
+.actionLink { min-height: 44px; margin-block: -10px -14px; }
+.actionLink:hover { color: var(--text); }
+.linked:hover .action { color: var(--text); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .grid > li { animation: rise 300ms var(--ease-out) backwards; }
+}
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
