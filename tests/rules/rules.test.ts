@@ -30,8 +30,8 @@ beforeEach(async () => {
   });
 });
 
-const alice = () => env.authenticatedContext(A).firestore();
-const bob = () => env.authenticatedContext(B).firestore();
+const alice = () => env.authenticatedContext(A, { role: "recruiter" }).firestore();
+const bob = () => env.authenticatedContext(B, { role: "recruiter" }).firestore();
 
 describe("owner CRUD collections", () => {
   it("owner can create, read, update, delete own candidate", async () => {
@@ -123,8 +123,119 @@ describe("userPrefs", () => {
   });
 });
 
+const ctx = (uid: string, claims: Record<string, string>) => env.authenticatedContext(uid, claims).firestore();
+const cand = () => ctx("cand1", { role: "candidate", candidateId: "c1" });
+const cand2 = () => ctx("cand2", { role: "candidate", candidateId: "c2" });
+const compX = () => ctx("compx", { role: "company", companyId: "X" });
+const noRole = () => ctx("nobody", {});
+
+describe("portal roles", () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (c) => {
+      const db = c.firestore();
+      await setDoc(doc(db, "submissions/s1"), { ownerUid: A, submittedBy: "cand1", kind: "cv", status: "pending" });
+      await setDoc(doc(db, "submissions/s2"), { ownerUid: A, submittedBy: "compx", kind: "brief", status: "pending" });
+      await setDoc(doc(db, "shortlistEntries/e1"), { ownerUid: A, companyId: "X", roleId: "r1" });
+      await setDoc(doc(db, "shortlistEntries/e2"), { ownerUid: A, companyId: "Y", roleId: "r2" });
+      await setDoc(doc(db, "candidateUpdates/u1"), { ownerUid: A, portalUid: "cand1", status: "shortlisted" });
+      await setDoc(doc(db, "courseSuggestions/c1"), { ownerUid: A, status: "approved", items: [{ title: "t" }] });
+      await setDoc(doc(db, "courseSuggestions/c2"), { ownerUid: A, status: "draft", items: [] });
+      await setDoc(doc(db, "portalUsers/cand1"), { ownerUid: A, role: "candidate" });
+      await setDoc(doc(db, "invites/i1"), { ownerUid: A, companyId: "X", email: "m@x.test" });
+    });
+  });
+
+  it("recruiter reads portal collections and manages invites", async () => {
+    for (const p of ["submissions/s1", "shortlistEntries/e1", "candidateUpdates/u1", "courseSuggestions/c2", "portalUsers/cand1", "invites/i1"])
+      await assertSucceeds(getDoc(doc(alice(), p)));
+    await assertSucceeds(setDoc(doc(alice(), "invites/i2"), { ownerUid: A, companyId: "X" }));
+    await assertSucceeds(deleteDoc(doc(alice(), "invites/i1")));
+    await assertFails(getDoc(doc(bob(), "submissions/s1")));
+  });
+
+  it("candidate cannot read recruiter collections, even with a matching ownerUid", async () => {
+    const mine = ctx(A, { role: "candidate", candidateId: "c1" });
+    for (const p of ["candidates/c1", "attributes/a1", "matches/m1", "overrides/o1", "invites/i1", "shortlistEntries/e1"])
+      await assertFails(getDoc(doc(mine, p)));
+  });
+
+  it("candidate reads own side only", async () => {
+    await assertSucceeds(getDoc(doc(cand(), "submissions/s1")));
+    await assertSucceeds(getDoc(doc(cand(), "candidateUpdates/u1")));
+    await assertSucceeds(getDoc(doc(cand(), "courseSuggestions/c1")));
+    await assertSucceeds(getDoc(doc(cand(), "portalUsers/cand1")));
+    await assertFails(getDoc(doc(cand2(), "submissions/s1")));
+    await assertFails(getDoc(doc(cand2(), "candidateUpdates/u1")));
+    await assertFails(getDoc(doc(cand2(), "courseSuggestions/c1")));
+    await assertFails(getDoc(doc(cand2(), "courseSuggestions/c2"))); // own id, but a draft
+  });
+
+  it("candidate may only snooze or dismiss an approved suggestion", async () => {
+    const d = () => doc(cand(), "courseSuggestions/c1");
+    await assertSucceeds(updateDoc(d(), { status: "snoozed", snoozedUntil: new Date(), updatedAt: new Date() }));
+    await assertFails(updateDoc(d(), { status: "approved" }));
+    await assertFails(updateDoc(d(), { status: "snoozed", items: [] }));
+    await assertFails(updateDoc(d(), { status: "snoozed", snoozedUntil: "soon" }));
+    await assertFails(updateDoc(doc(cand2(), "courseSuggestions/c1"), { status: "dismissed" }));
+    await assertFails(deleteDoc(d()));
+    await assertSucceeds(updateDoc(d(), { status: "dismissed" }));
+    await assertFails(updateDoc(d(), { status: "snoozed" })); // dismissed is final
+  });
+
+  it("candidate cannot approve or touch a draft", async () => {
+    await assertFails(updateDoc(doc(cand2(), "courseSuggestions/c2"), { status: "approved" }));
+    await assertFails(updateDoc(doc(cand2(), "courseSuggestions/c2"), { status: "snoozed" }));
+  });
+
+  it("company reads own entries and submissions only", async () => {
+    await assertSucceeds(getDoc(doc(compX(), "shortlistEntries/e1")));
+    await assertSucceeds(getDoc(doc(compX(), "submissions/s2")));
+    await assertFails(getDoc(doc(compX(), "shortlistEntries/e2")));
+    await assertFails(getDoc(doc(compX(), "submissions/s1")));
+    await assertFails(getDoc(doc(compX(), "invites/i1")));
+    await assertFails(getDoc(doc(compX(), "candidates/c1")));
+    await assertFails(getDoc(doc(compX(), "roles/r1")));
+    await assertFails(updateDoc(doc(compX(), "shortlistEntries/e1"), { status: "hired" }));
+    await assertFails(setDoc(doc(compX(), "shortlistEntries/e3"), { companyId: "X" }));
+  });
+
+  it("token with no role reads nothing but its own userPrefs", async () => {
+    for (const p of ["candidates/c1", "attributes/a1", "submissions/s1", "shortlistEntries/e1", "candidateUpdates/u1", "courseSuggestions/c1", "portalUsers/cand1", "invites/i1"])
+      await assertFails(getDoc(doc(noRole(), p)));
+    const own = ctx(A, {}); // matching ownerUid, no role
+    await assertFails(getDoc(doc(own, "candidates/c1")));
+    await assertFails(setDoc(doc(own, "candidates/c9"), { ownerUid: A }));
+    await assertSucceeds(setDoc(doc(noRole(), "userPrefs/nobody"), { theme: "dark" }));
+    await assertSucceeds(setDoc(doc(cand(), "userPrefs/cand1"), { theme: "light" }));
+  });
+
+  it("no client creates, updates or deletes proxy-written portal docs", async () => {
+    const targets = [
+      [alice(), "submissions/s1"], [alice(), "shortlistEntries/e1"], [alice(), "candidateUpdates/u1"], [alice(), "portalUsers/cand1"],
+      [cand(), "submissions/s1"], [compX(), "submissions/s2"],
+    ] as const;
+    for (const [c, p] of targets) {
+      await assertFails(updateDoc(doc(c, p), { status: "accepted" }));
+      await assertFails(deleteDoc(doc(c, p)));
+    }
+    for (const col of ["submissions", "shortlistEntries", "candidateUpdates", "portalUsers"]) {
+      await assertFails(setDoc(doc(alice(), `${col}/new`), { ownerUid: A, submittedBy: A, portalUid: A }));
+      await assertFails(setDoc(doc(cand(), `${col}/new`), { ownerUid: "cand1", submittedBy: "cand1", portalUid: "cand1" }));
+    }
+  });
+});
+
 describe("storage", () => {
-  const st = (uid: string) => env.authenticatedContext(uid).storage();
+  const st = (uid: string, claims: Record<string, string> = {}) => env.authenticatedContext(uid, claims).storage();
+  it("recruiter reads another uid's cvs and briefs, nothing else", async () => {
+    await assertSucceeds(uploadString(ref(st("cand1"), "users/cand1/cvs/a.pdf"), "pdf"));
+    await assertSucceeds(uploadString(ref(st("cand1"), "users/cand1/other/a.txt"), "x"));
+    const r = st(B, { role: "recruiter" });
+    await assertSucceeds(getBytes(ref(r, "users/cand1/cvs/a.pdf")));
+    await assertFails(getBytes(ref(r, "users/cand1/other/a.txt")));
+    await assertFails(uploadString(ref(r, "users/cand1/cvs/b.pdf"), "pdf"));
+    await assertFails(getBytes(ref(st("cand2", { role: "candidate", candidateId: "c2" }), "users/cand1/cvs/a.pdf")));
+  });
   it("owner-only under users/{uid}", async () => {
     await assertSucceeds(uploadString(ref(st(A), `users/${A}/cvs/a.pdf`), "pdf"));
     await assertSucceeds(getBytes(ref(st(A), `users/${A}/cvs/a.pdf`)));

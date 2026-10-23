@@ -1,6 +1,10 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Recruiters read portal uploads (candidate CVs, company briefs).
+    match /users/{uid}/{folder}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.token.get('role', '') == 'recruiter' && folder in ['cvs', 'briefs'];
+    }
     match /users/{uid}/{allPaths=**} {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
       // CVs and briefs only: the proxy refuses anything over 10 MB, so Storage does too.

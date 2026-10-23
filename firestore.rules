@@ -2,7 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function owns(data) { return signedIn() && data.ownerUid == request.auth.uid; }
+    function role() { return signedIn() ? request.auth.token.get('role', '') : ''; }
+    function recruiter() { return role() == 'recruiter'; }
+    // owns() is recruiter-only: portal users never match a recruiter's ownerUid, even if it equals their uid.
+    function owns(data) { return recruiter() && data.ownerUid == request.auth.uid; }
     function onlyChanges(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
 
     // Normal owner CRUD. Create must carry the caller's uid; update can't hand the doc to someone else.
@@ -43,8 +46,40 @@ service cloud.firestore {
         && request.resource.data.reversedAt is timestamp;
     }
 
+    // Any role (portal users have a theme too).
     match /userPrefs/{uid} {
       allow read, write: if signedIn() && uid == request.auth.uid;
+    }
+
+    // Portal collections: the proxy (Admin SDK) writes; clients only read their own side.
+    match /portalUsers/{uid} {
+      allow read: if signedIn() && (uid == request.auth.uid || owns(resource.data));
+    }
+    match /submissions/{id} {
+      allow read: if signedIn() && (resource.data.submittedBy == request.auth.uid || owns(resource.data));
+    }
+    match /shortlistEntries/{id} {
+      allow read: if owns(resource.data)
+        || (role() == 'company' && resource.data.companyId == request.auth.token.get('companyId', null));
+    }
+    match /candidateUpdates/{id} {
+      allow read: if signedIn() && (resource.data.portalUid == request.auth.uid || owns(resource.data));
+    }
+    match /courseSuggestions/{cid} {
+      allow read: if owns(resource.data)
+        || (role() == 'candidate' && cid == request.auth.token.get('candidateId', null)
+            && resource.data.status in ['approved', 'snoozed']);
+      // Candidate may only snooze or dismiss; drafting and approval go through the proxy.
+      allow update: if role() == 'candidate' && cid == request.auth.token.get('candidateId', null)
+        && resource.data.status in ['approved', 'snoozed']
+        && onlyChanges(['status', 'snoozedUntil', 'updatedAt'])
+        && request.resource.data.status in ['snoozed', 'dismissed']
+        && request.resource.data.get('snoozedUntil', request.time) is timestamp;
+    }
+    match /invites/{id} {
+      allow read, delete: if owns(resource.data);
+      allow create: if owns(request.resource.data);
+      allow update: if owns(resource.data) && owns(request.resource.data);
     }
   }
 }

@@ -4,7 +4,12 @@
     { "collectionGroup": "matches", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "roleId", "order": "ASCENDING" }, { "fieldPath": "rank", "order": "ASCENDING" }] },
     { "collectionGroup": "interviewNotes", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "candidateId", "order": "ASCENDING" }, { "fieldPath": "capturedAt", "order": "DESCENDING" }] },
     { "collectionGroup": "overrides", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "candidateId", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" }] },
-    { "collectionGroup": "overrides", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "companyId", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" }] }
+    { "collectionGroup": "overrides", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "companyId", "order": "ASCENDING" }, { "fieldPath": "decidedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "submissions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "kind", "order": "ASCENDING" }, { "fieldPath": "submittedAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "submissions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "ownerUid", "order": "ASCENDING" }, { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "submittedAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "submissions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "submittedBy", "order": "ASCENDING" }, { "fieldPath": "submittedAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "shortlistEntries", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "companyId", "order": "ASCENDING" }, { "fieldPath": "roleId", "order": "ASCENDING" }, { "fieldPath": "sharedAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "candidateUpdates", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "portalUid", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" }] }
   ],
   "fieldOverrides": []
 }
