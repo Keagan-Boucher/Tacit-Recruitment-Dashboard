@@ -27,7 +27,13 @@ async function main() {
   const email = process.env.SNAP_EMAIL;
   if (!email) throw new Error("SNAP_EMAIL is not set (see .env.snap)");
   const { uid } = await getAuth().getUserByEmail(email);
-  const data = buildDataset(new Date(), uid); // validates everything before any write
+  // The two portal accounts already exist (claims set elsewhere); only their uids and emails are read.
+  const portalAcct = async (k: string) => {
+    const e = process.env[`SNAP_${k}_EMAIL`];
+    if (!e) throw new Error(`SNAP_${k}_EMAIL is not set (see .env.snap)`);
+    return { uid: (await getAuth().getUserByEmail(e)).uid, email: e };
+  };
+  const data = buildDataset(new Date(), uid, { candidate: await portalAcct("CANDIDATE"), company: await portalAcct("COMPANY") }); // validates everything before any write
   const db = getFirestore();
   db.settings({ ignoreUndefinedProperties: true });
 

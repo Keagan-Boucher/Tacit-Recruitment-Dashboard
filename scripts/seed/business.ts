@@ -100,6 +100,22 @@ const ROLES: RoleRow[] = [
   ["role_karoo_support_mgr", "co_karoo_health", "SAP support manager", "Support manager for the SAP helpdesk team.", "expired", [15, 13]],
 ];
 
+// What candidates see of each role (Role.anon): [sector, region, seniority, salaryBand]. Never the company name.
+const ANON: Record<string, [string, string, string, string]> = {
+  role_demo_fico: ["Logistics software", "Durban or Cape Town", "Consultant, 5+ years", "R52k-R55k a month"],
+  role_karoo_oracle_fin: ["Health technology", "Cape Town", "Analyst, 3+ years", "R75k-R85k a month"],
+  role_bluewater_netsuite: ["Financial services", "Remote, South Africa", "Administrator, 3+ years", "R44k-R48k a month"],
+  role_protea_abap: ["Retail", "Cape Town", "Junior, 1-3 years", "R30k-R35k a month"],
+  role_vantage_sap_pm: ["Logistics software", "Durban", "Senior, 8+ years", "R85k-R90k a month"],
+  role_umoya_sf: ["Mobile applications", "Johannesburg", "Consultant, 3+ years", "R65k-R70k a month"],
+  role_vantage_netsuite: ["Logistics software", "Remote", "Administrator", "R50k-R55k a month"],
+  role_karoo_finance_lead: ["Health technology", "Cape Town", "Lead", "R75k-R80k a month"],
+  role_vantage_sap_fi_analyst: ["Logistics software", "Durban", "Analyst", "R50k-R55k a month"],
+  role_vantage_sap_mm: ["Logistics software", "Durban", "Consultant", "R52k-R58k a month"],
+  role_bluewater_sap_fi: ["Financial services", "Johannesburg", "Analyst", "R55k-R60k a month"],
+  role_karoo_support_mgr: ["Health technology", "Cape Town", "Manager", "R70k-R78k a month"],
+};
+
 export const buildRoles = (own: Own, now: Date): Doc<Role>[] =>
   ROLES.map(([id, companyId, title, briefText, status, when, interpretedBrief]) => {
     const [opened, closed] = typeof when === "number" ? [daysAgo(now, when), undefined] : [monthsAgo(now, when[0]), monthsAgo(now, when[1])];
@@ -108,6 +124,7 @@ export const buildRoles = (own: Own, now: Date): Doc<Role>[] =>
       data: {
         ...own(opened), companyId, title, briefText, briefSource: "paste", status, openedAt: opened,
         ...(closed ? { closedAt: closed, updatedAt: closed } : {}), ...(interpretedBrief ? { interpretedBrief } : {}),
+        anon: { title, sector: ANON[id]![0], region: ANON[id]![1], seniority: ANON[id]![2], salaryBand: ANON[id]![3] },
       },
     };
   });

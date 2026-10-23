@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { test } from "node:test";
-import { CompanyFact, type Attribute, type Candidate, type Company, type InterviewNote, type Match, type Override, type Placement, type Role } from "@tacit/shared";
+import { CompanyFact, type CandidateUpdate, type ShortlistEntry, type Submission, type Attribute, type Candidate, type Company, type InterviewNote, type Match, type Override, type Placement, type Role } from "@tacit/shared";
 import { DAY } from "./build.ts";
 import { buildDataset } from "./dataset.ts";
+import { PLACEHOLDER_ACCOUNTS } from "./portal.ts";
 
 const now = new Date("2026-10-26T09:00:00Z");
 const d = buildDataset(now, "owner-test");
@@ -20,7 +21,7 @@ const months = (date: Date) => (now.getTime() - date.getTime()) / DAY / 30.4375;
 const cand = (id: string) => cands.find((c) => c.id === id)!.data;
 
 test("counts are in the planned range", () => {
-  assert.equal(cands.length, 40);
+  assert.equal(cands.length, 41); // 40 + Lerato
   assert.equal(companies.length, 8);
   assert.equal(roles.length, 12);
   assert.ok(notes.length >= 85 && notes.length <= 95, `notes ${notes.length}`);
@@ -149,4 +150,34 @@ test("every cvFileRef has a matching synthetic PDF in scripts/seed/cvs", () => {
     assert.equal(c.data.cv?.fileName, file);
     assert.ok(existsSync(new URL(`./cvs/${file}`, import.meta.url)), file);
   }
+});
+
+test("portal seed: deterministic, role-safe and shaped for S18 / C02 / B04", () => {
+  assert.deepEqual(buildDataset(now, "owner-test"), d);
+  const lerato = cand("cand_demo_lerato");
+  assert.equal(lerato.portalUid, PLACEHOLDER_ACCOUNTS.candidate.uid);
+  assert.ok(lerato.inPoolSince && lerato.sourceSubmissionId);
+  assert.ok(months(cand("cand_ruan_botha").inPoolSince!) >= 9, "nine-month candidate");
+
+  const updates = d.candidateUpdates as { data: CandidateUpdate }[];
+  assert.equal(updates.length, 3);
+  const blob = JSON.stringify(updates.map((u) => u.data));
+  for (const c of companies) { assert.ok(!blob.includes(c.id), c.id); assert.ok(!blob.includes(c.data.name), c.data.name); }
+  for (const r of roles) assert.ok(r.data.anon && !companies.some((c) => JSON.stringify(r.data.anon).includes(c.data.name)), r.id);
+
+  const entries = d.shortlistEntries as { data: ShortlistEntry }[];
+  assert.equal(entries.length, 4);
+  for (const { data: e } of entries) {
+    assert.equal(!!e.identity, e.statusHistory.some((h) => h.status === "interviewing" || h.status === "hired"), e.label);
+    assert.equal(e.roleTitle, roles.find((r) => r.id === e.roleId)!.data.title);
+  }
+  assert.ok(entries.some((e) => e.data.status === "not-progressing" && e.data.statusHistory.some((h) => h.reasonText)));
+
+  const subs = d.submissions as { data: Submission }[];
+  const pending = subs.filter((s) => s.data.status === "pending");
+  assert.deepEqual(["cv", "brief"].map((k) => pending.filter((s) => s.data.kind === k).length), [3, 2]);
+  assert.equal(pending.length, 5);
+  assert.deepEqual(pending.filter((s) => s.data.kind === "cv").map((s) => s.data.readStatus).sort(), ["check", "clear", "unreadable"]);
+  assert.equal(pending.filter((s) => s.data.possibleDuplicateOf).length, 1);
+  assert.ok(ids(cands).has(pending.find((s) => s.data.possibleDuplicateOf)!.data.possibleDuplicateOf!));
 });
