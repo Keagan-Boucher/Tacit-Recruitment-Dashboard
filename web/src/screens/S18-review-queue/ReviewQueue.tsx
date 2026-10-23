@@ -175,7 +175,7 @@ function Queue({ onRetry }: { onRetry: () => void }) {
                       <span className={`${styles.rowTitle} t-body-m-strong`}>{title(s)}</span>
                       <span className={styles.rowLine}>
                         <span className={`${styles[w.tone]} t-body-s-strong`}>{w.text}</span>
-                        <span className={`${styles.quiet} t-caption`}> · {meta(s)} · sent {day(s.submittedAt)}</span>
+                        <span className={`${styles.quiet} t-caption`}> · {meta(s) ? `${meta(s)} · ` : ""}sent {day(s.submittedAt)}</span>
                       </span>
                       <span className="sr-only">{kindLabel(s)}</span>
                     </button>
