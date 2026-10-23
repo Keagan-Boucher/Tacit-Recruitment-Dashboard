@@ -4,6 +4,17 @@ import { api, ApiError } from "../../lib/api";
 import { auth } from "../../lib/firebase";
 
 export const PASSWORD_MIN = 10;
+export const CV_PATH = "/candidate/cv";
+
+/** The query string with next=<path> set and everything else kept. RedirectIfRole follows ?next= once the role claim lands. */
+export function withNext(search: string, next: string): string {
+  const q = new URLSearchParams(search);
+  q.set("next", next);
+  return "?" + q.toString();
+}
+
+/** A signed-in account with no role yet: the finishing page, which sends them on to the CV step. */
+export const FINISH_THEN_CV = "/candidate/login" + withNext("?finishing=1", CV_PATH);
 
 export type SignUpForm = { name: string; email: string; password: string; consent: boolean };
 export type SignUpErrors = Partial<Record<keyof SignUpForm, string>>;

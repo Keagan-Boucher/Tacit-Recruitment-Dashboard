@@ -26,11 +26,11 @@ type Phase =
   | { kind: "check"; file: FileInfo }
   | { kind: "sent" };
 
-const UNCLEAR = "Couldn’t read this clearly. Check it.";
+const UNCLEAR = "Couldn't read this clearly. Check it.";
 const FAILED: Record<Why, string> = {
-  unreadable: "We couldn’t read this file. Try a PDF with selectable text.",
+  unreadable: "We couldn't read this file. Try a PDF with selectable text.",
   busy: "Tacit is busy reading other CVs. Try again in a minute.",
-  upload: "We couldn’t upload this file. Check your connection and try again.",
+  upload: "We couldn't upload this file. Check your connection and try again.",
 };
 const WORK_MODES = [
   { value: "office", label: "On-site" },
@@ -168,7 +168,7 @@ function Screen({ dev }: { dev: string | null }) {
       await api<SubmitResponse>("/api/portal/submit", buildSubmit(fileRef.current, read, details));
       setPhase({ kind: "sent" });
     } catch (e) {
-      setSendError(e instanceof ApiError && e.code === "rate_limited" ? "Too many tries. Wait a few minutes and send again." : "Couldn’t send your CV.");
+      setSendError(e instanceof ApiError && e.code === "rate_limited" ? "Too many tries. Wait a few minutes and send again." : "Couldn't send your CV.");
     } finally {
       setSending(false);
     }
@@ -213,10 +213,12 @@ function Screen({ dev }: { dev: string | null }) {
       <PageHeader
         context={
           <>
-            <Link to="/candidate" className={styles.crumb}>
-              Home
-            </Link>{" "}
-            / Update my CV
+            <span className={styles.context}>
+              <Link to="/candidate" className={styles.crumb}>
+                Home
+              </Link>{" "}
+              / Update my CV
+            </span>
           </>
         }
         headline="Send your CV."
@@ -287,6 +289,7 @@ function Screen({ dev }: { dev: string | null }) {
                     Work mode
                   </p>
                   <SegmentedControl
+                    className={styles.mode}
                     label="Work mode"
                     options={WORK_MODES}
                     value={details.workMode || "none"}
@@ -395,7 +398,7 @@ function FileRow({ file, state }: { file: FileInfo; state: "reading" | "failed" 
         <p className="t-caption">
           {state === "check" && <span className={`t-body-s-strong ${styles.ok}`}>Read</span>}
           {state === "reading" && <span className="t-body-s-strong">Reading…</span>}
-          {state === "failed" && <span className={`t-body-s-strong ${styles.bad}`}>Couldn’t read</span>}
+          {state === "failed" && <span className={`t-body-s-strong ${styles.bad}`}>Couldn't read</span>}
           <span className={styles.quiet}> · {sizeLabel(file.size)}</span>
         </p>
       </div>

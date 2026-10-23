@@ -8,7 +8,7 @@ import { Button, FieldError, Icon, Input } from "../../components";
 import { FINISHING, signOut, useAuth, useSignIn } from "../../features/auth";
 import { auth } from "../../lib/firebase";
 import styles from "./CandidateSignIn.module.css";
-import { PASSWORD_MIN, registerCandidate, signUpCandidate, signUpError, validateSignUp, type SignUpErrors } from "./signUp";
+import { CV_PATH, FINISH_THEN_CV, PASSWORD_MIN, registerCandidate, signUpCandidate, signUpError, validateSignUp, withNext, type SignUpErrors } from "./signUp";
 
 type Mode = "sign-in" | "sign-up" | "finishing";
 type Note = { tone: "ok" | "error"; text: string };
@@ -80,9 +80,9 @@ function PasswordField({ id, label, hint, hintId, ...rest }: PasswordFieldProps)
         aria-describedby={[rest.error ? `${id}-error` : null, hint ? hintId : null].filter(Boolean).join(" ") || undefined}
         trailing={
           // Not IconButton: its aria-label would also match getByLabel(/password/i) in the snap script.
-          <button type="button" className={styles.eye} aria-pressed={shown} onClick={() => setShown((s) => !s)}>
+          <button type="button" className={styles.eye} onClick={() => setShown((s) => !s)}>
             <Icon name={shown ? "bx-hide" : "bx-show"} />
-            <span className="sr-only">Show password</span>
+            <span className="sr-only">{shown ? "Hide password" : "Show password"}</span>
           </button>
         }
       />
@@ -103,6 +103,13 @@ function SignInForm({ seeded, failed }: { seeded: boolean; failed: boolean }) {
   const { signIn, pending, error: signInError } = useSignIn();
   const error = signInError ?? (failed ? "That email and password don’t match." : null);
   const next = new URLSearchParams(useLocation().search).get("next");
+  const navigate = useNavigate();
+  const { user, role, loading } = useAuth();
+
+  // Signed in but no role yet (sign-up stopped half way): this form can't help them, finishing can.
+  useEffect(() => {
+    if (user && !role && !loading) void navigate(FINISH_THEN_CV, { replace: true });
+  }, [user, role, loading, navigate]);
 
   // Both fields get the red outline; only the password carries the message.
   useEffect(() => {
@@ -189,6 +196,7 @@ function Consent({ checked, onChange, error }: { checked: boolean; onChange: (v:
 
 function SignUpForm({ seeded }: { seeded: boolean }) {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { refreshClaims } = useAuth();
   const [name, setName] = useState(seeded ? "Lerato Dlamini" : "");
   const [email, setEmail] = useState(seeded ? "lerato.dlamini@mail.test" : "");
@@ -213,8 +221,9 @@ function SignUpForm({ seeded }: { seeded: boolean }) {
         void navigate(FINISHING, { replace: true });
         return;
       }
+      // RedirectIfRole follows ?next= as soon as the role claim lands, so set it first instead of racing it with our own navigate.
+      void navigate({ search: withNext(search, CV_PATH) }, { replace: true });
       await refreshClaims();
-      void navigate("/candidate/cv", { replace: true });
     } catch (err) {
       const { field, text } = signUpError((err as { code?: string }).code);
       setErrors({ [field]: text });
@@ -255,6 +264,7 @@ function SignUpForm({ seeded }: { seeded: boolean }) {
 /** Signed in, no role yet (sign-up stopped half way): the account and its name are kept, only the role call is retried. */
 function FinishingForm({ seeded }: { seeded: boolean }) {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const { user, refreshClaims } = useAuth();
   const [name, setName] = useState(user?.displayName ?? (seeded ? "Lerato Dlamini" : ""));
   const [consent, setConsent] = useState(false);
@@ -269,8 +279,8 @@ function FinishingForm({ seeded }: { seeded: boolean }) {
     setPending(true);
     try {
       await registerCandidate(name);
+      void navigate({ search: withNext(search, CV_PATH) }, { replace: true }); // see SignUpForm: the guard does the redirect
       await refreshClaims();
-      void navigate("/candidate/cv", { replace: true });
     } catch {
       setErrors({ form: "Couldn't finish setting up your account. Nothing was lost. Try again." });
     } finally {

@@ -15,9 +15,18 @@ vi.mock("../../lib/api", () => ({
 }));
 
 import { ApiError } from "../../lib/api";
-import { PASSWORD_MIN, registerBody, signUpCandidate, signUpError, validateSignUp } from "./signUp";
+import { CV_PATH, FINISH_THEN_CV, PASSWORD_MIN, registerBody, withNext, signUpCandidate, signUpError, validateSignUp } from "./signUp";
 
 const good = { name: "Lerato Dlamini", email: "lerato@mail.test", password: "x".repeat(PASSWORD_MIN), consent: true };
+
+describe("withNext", () => {
+  it("adds next and keeps the other params (finishing=1 stays)", () => {
+    expect(withNext("", CV_PATH)).toBe("?next=%2Fcandidate%2Fcv");
+    expect(withNext("?finishing=1", CV_PATH)).toBe("?finishing=1&next=%2Fcandidate%2Fcv");
+    expect(withNext("?finishing=1&next=%2Fcandidate", CV_PATH)).toBe("?finishing=1&next=%2Fcandidate%2Fcv");
+  });
+  it("is where a role-less sign-in is sent", () => expect(FINISH_THEN_CV).toBe("/candidate/login?finishing=1&next=%2Fcandidate%2Fcv"));
+});
 
 describe("validateSignUp", () => {
   it("accepts a complete form", () => expect(validateSignUp(good)).toEqual({}));

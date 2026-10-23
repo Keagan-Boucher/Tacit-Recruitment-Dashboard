@@ -1,5 +1,5 @@
 /* Figma C04: header 128, then your-CV card 440 wide + check card (868 at 1440), both to the bottom, gap 12. */
-.page { display: flex; flex-direction: column; gap: 12px; min-height: 100dvh; padding-bottom: 0; }
+.page { display: flex; flex-direction: column; gap: 12px; min-height: calc(100dvh - 16px); } /* the shell adds 16 px below */
 .page > header { margin-bottom: -12px; } /* the header's own 128 includes the gap */
 .cols { display: grid; grid-template-columns: 440px minmax(0, 1fr); gap: 12px; flex: 1; align-items: stretch; }
 
@@ -61,6 +61,11 @@
 .group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .label { color: var(--text-2); }
 .group [role="radiogroup"] { align-self: flex-start; max-width: 100%; flex-wrap: wrap; }
+/* Figma: 4 px frame with a hairline, 8 / 16 options at 13 px (the shared control is smaller). Its hit area stays 44 px. */
+.mode { gap: 4px; padding: 4px; border: 1px solid var(--hairline); }
+.mode button { padding: 8px 16px; font: 500 13px/normal var(--font); }
+.mode button::before { inset: -4px -2px; }
+.context { position: relative; top: 4px; }
 .readonly input { color: var(--text-2); }
 
 /* Unclear fields: a stale outline and message in place of Input's red error (the component sets the link and aria-invalid). */
@@ -97,10 +102,13 @@
 .skeletons[data-still] span { animation: none; }
 
 /* ---- sent ---- */
-.sent { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; min-height: 100dvh; padding-bottom: 16px; text-align: center; }
+.sent { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; min-height: calc(100dvh - 16px); text-align: center; }
 .tick { display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: var(--radius-pill); background: var(--accent); color: var(--on-accent); }
 .sentText { max-width: 440px; color: var(--text-2); }
 
+@media (max-width: 719px), (max-height: 599px) { /* compact top bar: the shell pads 80 + 16 */
+  .page, .sent { min-height: calc(100dvh - 96px); }
+}
 @media (max-width: 1100px) {
   .cols { grid-template-columns: minmax(0, 1fr); }
 }
