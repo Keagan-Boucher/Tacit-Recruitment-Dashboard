@@ -380,7 +380,8 @@ export const StatusChange = z.object({
   at: z.date(),
   reasonText: z.string().optional(),
 });
-const datedText = z.object({ text: z.string().min(1), at: z.date() });
+// coerce: the share request carries `at` as an ISO string over JSON.
+const datedText = z.object({ text: z.string().min(1), at: z.coerce.date() });
 /** The client-facing card the recruiter approved. Never note text, spans or attribute ids; both sides always present. */
 export const ShortlistCard = z.object({
   label: z.string().min(1).max(40),

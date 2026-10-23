@@ -5,7 +5,6 @@ import { AcceptInviteRequest, LOW_CONFIDENCE, PortalUser, RegisterRequest, Submi
 import type { AcceptInviteResponse, RegisterResponse, SubmitResponse } from "@tacit/shared";
 import { requireNoRole, requireRole } from "../auth.ts";
 
-// The shared ApiErrorBody code union has no portal codes yet, so the codes here are plain strings.
 const fail = (res: Response, status: number, code: string, error: string) => void res.status(status).json({ error, code });
 
 class Reject extends Error {
@@ -23,7 +22,10 @@ export const normaliseName = (s: string) => s.normalize("NFD").replace(/\p{M}/gu
 
 const toDate = (v: unknown): Date | undefined => (v instanceof Date ? v : (v as { toDate?: () => Date } | null)?.toDate?.());
 
-export function portalRouter({ db, auth, recruiterUid }: { db: Firestore; auth: Pick<Auth, "setCustomUserClaims">; recruiterUid: string }) {
+/** The Admin Auth calls the portal routes make; getUser reads the live claims, not the (up to 1 h old) token's. */
+export type ClaimsAuth = Pick<Auth, "setCustomUserClaims"> & { getUser(uid: string): Promise<{ customClaims?: Record<string, unknown> }> };
+
+export function portalRouter({ db, auth, recruiterUid }: { db: Firestore; auth: ClaimsAuth; recruiterUid: string }) {
   const router = Router();
 
   router.post("/portal/register", requireNoRole, async (req, res) => {
@@ -31,6 +33,8 @@ export function portalRouter({ db, auth, recruiterUid }: { db: Firestore; auth: 
     if (!body.success) return void fail(res, 400, "bad_request", "Add your name and accept the consent line");
     if (!req.email) return void fail(res, 400, "bad_request", "Your account has no email address");
     try {
+      // A token minted before a role was set still says "no role": never let it overwrite a real role or portalUsers doc.
+      if ((await auth.getUser(req.uid!)).customClaims?.role) return void fail(res, 409, "already_registered", "This account is already set up");
       const now = new Date();
       const user = PortalUser.parse({
         ownerUid: recruiterUid, role: "candidate", email: req.email, displayName: body.data.displayName, consentAt: now, createdAt: now, updatedAt: now,

@@ -1,6 +1,5 @@
 import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
-import type { Auth } from "firebase-admin/auth";
 import type { Firestore } from "firebase-admin/firestore";
 import { createAi } from "./ai/index.ts";
 import { requireAuth, requireRole, type TokenVerifier } from "./auth.ts";
@@ -10,11 +9,13 @@ import { interpretNoteRouter } from "./routes/interpret-note.ts";
 import { matchRouter } from "./routes/match.ts";
 import { searchRouter } from "./routes/search.ts";
 import { parseRouter } from "./routes/parse.ts";
-import { portalRouter } from "./routes/portal.ts";
+import { portalRouter, type ClaimsAuth } from "./routes/portal.ts";
+import { reviewRouter } from "./routes/review.ts";
+import { shortlistsRouter } from "./routes/shortlists.ts";
 import { rateLimit } from "./rateLimit.ts";
 
 /** Firebase-backed services; omitted in tests that don't need them, and their routes aren't mounted. */
-export interface Services { db?: Firestore; auth?: Pick<Auth, "setCustomUserClaims">; bucket?: BucketLike }
+export interface Services { db?: Firestore; auth?: ClaimsAuth; bucket?: BucketLike }
 
 // Kept separate from listen() so a Cloud Function can wrap `app` later (D-04).
 export function createApp(config: Config, verifyToken: TokenVerifier, services: Services = {}) {
@@ -33,6 +34,8 @@ export function createApp(config: Config, verifyToken: TokenVerifier, services: 
   // Gate per path, not per mount: every app.use("/api", ...) sees every /api request.
   app.use(["/interpret-note", "/match", "/search"].map((p) => "/api" + p), requireRole("recruiter"));
   const limit = rateLimit();
+  app.use(["/api/review", "/api/shortlists"], requireRole("recruiter"));
+  app.use("/api/portal/shortlist-status", requireRole("company"));
   app.use("/api/parse-cv", requireRole("recruiter", "candidate"), limit);
   app.use("/api/parse-brief", requireRole("recruiter", "company"), limit);
   if (services.db) app.use("/api", interpretNoteRouter({ ai, db: services.db }));
@@ -40,7 +43,11 @@ export function createApp(config: Config, verifyToken: TokenVerifier, services: 
   if (services.db) app.use("/api", searchRouter({ ai, db: services.db }));
   if (services.bucket) app.use("/api", parseRouter({ ai, bucket: services.bucket }));
 
-  if (services.db && services.auth && config.recruiterUid) app.use("/api", portalRouter({ db: services.db, auth: services.auth, recruiterUid: config.recruiterUid }));
+  if (services.db && services.auth && config.recruiterUid) {
+    app.use("/api", portalRouter({ db: services.db, auth: services.auth, recruiterUid: config.recruiterUid }));
+    app.use("/api", reviewRouter({ db: services.db, auth: services.auth, recruiterUid: config.recruiterUid }));
+  }
+  if (services.db && config.recruiterUid) app.use("/api", shortlistsRouter({ db: services.db, recruiterUid: config.recruiterUid }));
 
   app.use("/api", (_req, res) => void res.status(404).json({ error: "Not found", code: "not_found" }));
 

@@ -43,10 +43,10 @@ const TOKENS: Record<string, Tok> = {
   noemail: { uid: "f2", claims: {} },
 };
 
-function setup(seed: Record<string, any> = {}, allowedUids = "") {
+function setup(seed: Record<string, any> = {}, allowedUids = "", live: Record<string, any> = {}) {
   const { db, store } = fakeDb(seed);
   const claimsSet: [string, object][] = [];
-  const auth = { setCustomUserClaims: async (u: string, c: object) => void claimsSet.push([u, c]) };
+  const auth = { setCustomUserClaims: async (u: string, c: object) => void claimsSet.push([u, c]), getUser: async (u: string) => ({ customClaims: live[u] }) };
   const config = loadConfig({ ALLOWED_ORIGIN: "http://a.test", RECRUITER_UID: R, ALLOWED_UIDS: allowedUids });
   const app = createApp(config, async (t) => {
     const v = TOKENS[t];
@@ -133,6 +133,13 @@ describe("register", () => {
     const u = store.get("portalUsers/f1");
     expect(u).toMatchObject({ ownerUid: R, role: "candidate", email: "megan@v.co", displayName: "Megan" });
     expect(u.consentAt).toBeInstanceOf(Date);
+  });
+  it("a stale token (no role) for an account that now has one is refused, nothing overwritten", async () => {
+    const { app, store, claimsSet } = setup({ "portalUsers/f1": { candidateId: "cand9" } }, "", { f1: { role: "candidate", candidateId: "cand9" } });
+    const r = await request(app).post("/api/portal/register").set(as("fresh")).send({ displayName: "Megan", consent: true });
+    expect([r.status, r.body.code]).toEqual([409, "already_registered"]);
+    expect(claimsSet).toEqual([]);
+    expect(store.get("portalUsers/f1")).toEqual({ candidateId: "cand9" });
   });
 });
 

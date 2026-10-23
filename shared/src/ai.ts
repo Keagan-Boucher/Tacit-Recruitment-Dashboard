@@ -153,7 +153,8 @@ export interface SearchResponse { hits: SearchHit[]; modelVersion: string }
 export interface ApiErrorBody {
   error: string;
   code: "bad_request" | "unauthorized" | "not_found" | "bad_file" | "ai_failed" | "ai_unconfigured" | "internal"
-    | "forbidden" | "already_registered" | "invite_used" | "invite_expired" | "email_mismatch" | "not_in_pool" | "rate_limited";
+    | "forbidden" | "already_registered" | "invite_used" | "invite_expired" | "email_mismatch" | "not_in_pool" | "rate_limited"
+    | "already_decided" | "bad_transition";
 }
 
 export type InterpretedAttribute = z.infer<typeof InterpretedAttribute>;
