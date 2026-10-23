@@ -1,0 +1,9 @@
+.form { display: flex; flex-direction: column; gap: 14px; }
+.name { display: flex; flex-direction: column; }
+.link { align-self: flex-start; display: inline-flex; align-items: center; min-height: 44px; color: var(--accent-text); }
+.link:hover { text-decoration: underline; }
+.link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-inner); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pair > * { min-width: 0; }
+/* Sector and Location stack on a phone */
+@media (max-width: 480px) { .pair { grid-template-columns: 1fr; } }

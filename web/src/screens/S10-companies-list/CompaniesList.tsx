@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Link } from "react-router";
 import type { Company, Override, Placement, Role } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
-import { buttonClass, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, Skeleton } from "../../components";
+import { Button, buttonClass, EmptyState, ErrorBanner, FilterChip, Icon, IconButton, Input, Skeleton } from "../../components";
 import { useOwned } from "../../lib/data";
 import { lastSeenLabel } from "../S08-candidates-list/view";
 import { monthYear, staleAge } from "../S11-company-profile/facts";
 import styles from "./CompaniesList.module.css";
+import { NewCompanyDialog } from "./NewCompanyDialog";
 import { buildRows, FILTERS, matchesFilter, matchesQuery, type FilterId, type Row } from "./view";
 
 /** Retry remounts the screen, which opens fresh Firestore listeners. */
@@ -26,6 +27,7 @@ function Companies({ onRetry }: { onRetry: () => void }) {
   const [now] = useState(() => new Date());
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<FilterId>("all");
+  const [adding, setAdding] = useState(state === "new-company");
 
   const error = state === "error" ? new Error("dev") : [companies, roles, placements, overrides].find((l) => l.error)?.error;
   const ready = state !== "loading" && !error && [companies, roles, placements, overrides].every((l) => l.data);
@@ -51,6 +53,13 @@ function Companies({ onRetry }: { onRetry: () => void }) {
     );
   }
 
+  const newCompany = (
+    <Button variant="primary" icon="bx-plus" onClick={() => setAdding(true)}>
+      New company
+    </Button>
+  );
+  const dialog = adding && <NewCompanyDialog companies={companies.data!} onClose={() => setAdding(false)} />;
+
   if (all.length === 0) {
     return (
       <div className={styles.page}>
@@ -59,13 +68,16 @@ function Companies({ onRetry }: { onRetry: () => void }) {
           <EmptyState
             message="Companies you place people with will show up here, with what you have learned about each."
             action={
-              <Link to="/roles/new" className={buttonClass("primary")}>
-                <Icon name="bx-plus" />
-                Open a role
-              </Link>
+              <div className={styles.actions}>
+                {newCompany}
+                <Link to="/roles/new" className={buttonClass()}>
+                  Open a role
+                </Link>
+              </div>
             }
           />
         </div>
+        {dialog}
       </div>
     );
   }
@@ -84,13 +96,7 @@ function Companies({ onRetry }: { onRetry: () => void }) {
             <span className={styles.num}>{all.length}</span> {all.length === 1 ? "company" : "companies"}, {plural(openRoles, "open role")}.
           </>
         }
-        actions={
-          // Same destination as the dashboard's button: pick whose interview this is.
-          <Link to="/candidates" className={buttonClass("primary")}>
-            <Icon name="bx-plus" />
-            New interview note
-          </Link>
-        }
+        actions={newCompany}
       />
       <div className={styles.toolbar} role="search">
         <Input
@@ -133,6 +139,7 @@ function Companies({ onRetry }: { onRetry: () => void }) {
           ))}
         </ul>
       )}
+      {dialog}
     </div>
   );
 }

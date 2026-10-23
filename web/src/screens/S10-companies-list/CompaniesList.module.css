@@ -3,6 +3,7 @@
 .num { color: var(--accent-text); }
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
 .search { flex: none; width: 380px; max-width: 100%; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .loading { margin-bottom: 12px; color: var(--text-3); }
 .panel {
   min-height: calc(100dvh - 200px);
