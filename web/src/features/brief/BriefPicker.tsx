@@ -1,5 +1,5 @@
 import type { DragEvent, KeyboardEvent } from "react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ref as storageRef, uploadBytes } from "firebase/storage";
 import type { ParseBriefResponse, QuotedBriefInterpretation } from "@tacit/shared";
 import { Button, Card, Chip, FieldError, Icon, Textarea } from "../../components";
@@ -34,6 +34,10 @@ type Props = {
   initialSource?: BriefSource;
   /** Which ways in to offer; companies (B03) get paste and upload only. Default: all three. */
   modes?: BriefSource[];
+  /** Show the read-only "What Tacit read" card under the input card. Default true; B03 shows its own editable one. */
+  showUnderstood?: boolean;
+  /** Called when the read moves between idle (also after a successful read), uploading, reading and error. `retry` repeats the read with what is on screen now. */
+  onPhase?: (phase: "idle" | "uploading" | "reading" | "error", retry: () => void) => void;
 };
 
 const MODES: { value: BriefSource; label: string; icon: string }[] = [
@@ -103,7 +107,7 @@ function ModeSwitch({ value, onChange, modes }: { value: BriefSource; onChange: 
 }
 
 /** Picker for a client brief: paste, upload or type from a call. Sends it to the proxy and hands back the interpretation. */
-export function BriefPicker({ onInterpreted, initialSource = "paste", modes: allowed }: Props) {
+export function BriefPicker({ onInterpreted, initialSource = "paste", modes: allowed, showUnderstood = true, onPhase }: Props) {
   const modes = allowed ? MODES.filter((m) => allowed.includes(m.value)) : MODES;
   const { user } = useAuth();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -120,6 +124,18 @@ export function BriefPicker({ onInterpreted, initialSource = "paste", modes: all
   const [interp, setInterp] = useState<QuotedBriefInterpretation | null>(null);
 
   const busy = phase === "uploading" || phase === "reading";
+  // The latest read(), so a retry from outside never repeats a stale closure. Not called on mount: nothing has happened yet.
+  const latest = useRef<() => void>(() => {});
+  const announced = useRef(false);
+  useEffect(() => {
+    if (!announced.current) {
+      announced.current = true;
+      return;
+    }
+    onPhase?.(phase === "done" ? "idle" : phase, () => latest.current());
+    // onPhase is the caller's handler; only a change of phase should announce
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
   const text = source === "upload" ? "" : texts[source];
   const ready = source === "upload" ? file !== null : text.trim().length > 0;
 
@@ -186,6 +202,10 @@ export function BriefPicker({ onInterpreted, initialSource = "paste", modes: all
       setPhase("error");
     }
   }
+
+  useEffect(() => {
+    latest.current = () => void read();
+  });
 
   const status =
     phase === "uploading"
@@ -323,7 +343,7 @@ export function BriefPicker({ onInterpreted, initialSource = "paste", modes: all
         </div>
       </Card>
 
-      <div aria-live="polite">{interp && <Understood r={interp} />}</div>
+      {showUnderstood && <div aria-live="polite">{interp && <Understood r={interp} />}</div>}
     </div>
   );
 }

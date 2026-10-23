@@ -1,0 +1,64 @@
+/* Figma B03: the brief in a 440 column, what Tacit understood in the 868 column beside it, both from y 132. */
+.page { display: flex; flex-direction: column; min-height: calc(100dvh - 16px); }
+.quiet { color: var(--text-3); }
+
+.layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 440px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--gap);
+  margin-top: 4px;
+}
+.left { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; }
+
+.note { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 14px 16px; border-radius: var(--radius-inner); background: var(--surface-2); color: var(--text-2); }
+.note:empty { display: none; }
+.spark { flex: none; margin-top: 1px; color: var(--accent-text); }
+
+.check { display: flex; flex-direction: column; gap: 16px; min-width: 0; min-height: 752px; }
+.check h2, .check p { margin: 0; }
+.check h2:focus-visible { outline: none; box-shadow: none; }
+.state:empty { display: none; }
+.say { display: flex; align-items: center; gap: 8px; color: var(--text-2); }
+.say .spark { margin: 0; animation: pulse 1.4s var(--ease-out) infinite alternate; }
+.skeletons { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+@keyframes pulse { from { opacity: 0.45; } to { opacity: 1; } }
+
+.formWrap { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.cell { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.wide { grid-column: 1 / -1; }
+
+/* Unclear fields: outlined in stale, with the reason in words under the field. */
+.flagged > div:first-of-type { border-color: var(--stale); }
+.flagged > div:first-of-type:focus-within { border-color: var(--accent-text); }
+.flag { display: flex; align-items: center; gap: 6px; color: var(--stale); }
+
+.unclear { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 1px solid var(--stale); border-radius: var(--radius-inner); color: var(--stale); }
+.unclear i { margin-top: 1px; }
+.unclear ul { margin: 4px 0 0; padding: 0; list-style: none; color: var(--text); }
+.unclear li + li { margin-top: 4px; }
+
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--hairline); }
+.problem { flex: 1; min-width: 0; }
+.send { min-height: 44px; margin-left: auto; }
+
+/* Sent: the lime tick, the headline, one sentence, one button. */
+.sent { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; min-height: calc(100dvh - 32px); padding: 24px 0; text-align: center; }
+.sent h1 { margin: 0; }
+.sent h1:focus-visible { outline: none; box-shadow: none; }
+.tick { display: grid; place-items: center; width: 72px; height: 72px; border-radius: var(--radius-pill); background: var(--accent); color: var(--on-accent); }
+.sentText { max-width: 440px; margin: 0; color: var(--text-2); }
+
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .check { min-height: 0; }
+}
+@media (max-width: 700px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .cell.wide { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .say .spark { animation: none; }
+}
