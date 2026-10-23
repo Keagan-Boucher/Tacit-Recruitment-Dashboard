@@ -95,7 +95,7 @@ export function buildPortal(now: Date, owner: string, roles: Doc<Role>[], acc: P
     entry("sl_fico_b", "cand_demo_forgotten", card("Candidate B", "SAP support lead", 8, "Cape Town", "Hybrid", "One month", "R60k a month",
       ["Passed the FICO certification on his own.", "Taught himself S/4HANA Finance and wants implementation work."], ["His FICO work is support tickets, not a full implementation.", "Based in Cape Town."]),
       "shortlisted", []),
-    entry("sl_fico_c", "cand_lindiwe_khumalo", card("Candidate C", "SAP FICO analyst", 6, "Durban", "Hybrid", "Two months", "R58k a month",
+    entry("sl_fico_c", LERATO, card("Candidate C", "SAP FICO analyst", 6, "Durban", "Hybrid", "Two months", "R58k a month",
       ["Six years of SAP FICO, strong on group reporting and consolidations."], ["Six years on ECC, no S/4HANA seen.", "Two months notice."]),
       "shortlisted", []),
     entry("sl_fico_d", "cand_kagiso_molefe", card("Candidate D", "SAP FI consultant", 8, "Johannesburg", "On-site", "One month", "R56k a month",
@@ -108,7 +108,7 @@ export function buildPortal(now: Date, owner: string, roles: Doc<Role>[], acc: P
     return { id, data: { ...own(daysAgo(now, d)), candidateId: LERATO, portalUid: lerato.uid, roleAnon: { title, sector, region, seniority, salaryBand }, status, at: daysAgo(now, d) } };
   };
   const candidateUpdates = [
-    upd("upd_lerato_fico", "role_demo_fico", "shortlisted", 2),
+    upd("sl_fico_c", "role_demo_fico", "shortlisted", 2),
     upd("upd_lerato_pm", "role_vantage_sap_pm", "interviewing", 6),
     upd("upd_lerato_abap", "role_protea_abap", "not-taken-forward", 20),
   ];

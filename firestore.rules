@@ -52,18 +52,19 @@ service cloud.firestore {
     }
 
     // Portal collections: the proxy (Admin SDK) writes; clients only read their own side.
+    // A token with no role reads nothing here (sign-up or invite not finished).
     match /portalUsers/{uid} {
-      allow read: if signedIn() && (uid == request.auth.uid || owns(resource.data));
+      allow read: if (role() in ['candidate', 'company'] && uid == request.auth.uid) || owns(resource.data);
     }
     match /submissions/{id} {
-      allow read: if signedIn() && (resource.data.submittedBy == request.auth.uid || owns(resource.data));
+      allow read: if (role() in ['candidate', 'company'] && resource.data.submittedBy == request.auth.uid) || owns(resource.data);
     }
     match /shortlistEntries/{id} {
       allow read: if owns(resource.data)
         || (role() == 'company' && resource.data.companyId == request.auth.token.get('companyId', null));
     }
     match /candidateUpdates/{id} {
-      allow read: if signedIn() && (resource.data.portalUid == request.auth.uid || owns(resource.data));
+      allow read: if (role() == 'candidate' && resource.data.portalUid == request.auth.uid) || owns(resource.data);
     }
     match /courseSuggestions/{cid} {
       allow read: if owns(resource.data)
@@ -74,7 +75,8 @@ service cloud.firestore {
         && resource.data.status in ['approved', 'snoozed']
         && onlyChanges(['status', 'snoozedUntil', 'updatedAt'])
         && request.resource.data.status in ['snoozed', 'dismissed']
-        && request.resource.data.get('snoozedUntil', request.time) is timestamp;
+        && request.resource.data.get('snoozedUntil', request.time) is timestamp
+        && (request.resource.data.status != 'snoozed' || request.resource.data.get('snoozedUntil', null) is timestamp);
     }
     match /invites/{id} {
       allow read, delete: if owns(resource.data);
