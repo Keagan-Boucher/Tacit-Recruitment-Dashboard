@@ -109,6 +109,18 @@ describe("share", () => {
     const { app } = setup();
     expect((await share(app, ["cand1", "cand1"])).status).toBe(400);
   });
+  it("a card containing the candidate's name is 400 and names the field; nothing is written", async () => {
+    const { app, store } = setup({ ...SEED, "candidates/cand2": { ownerUid: R, fullName: "Sípho Dlamini" } });
+    const send = (card: any, id = "cand1") => request(app).post("/api/shortlists/share").set(as("rec")).send({ roleId: "r1", entries: [{ ...CARD, ...card, candidateId: id }] });
+    const r = await send({ headline: "Ask THANDI about SAP" });
+    expect(r.status).toBe(400);
+    expect(r.body).toMatchObject({ code: "bad_request", error: expect.stringContaining("Headline") });
+    expect((await send({ case: { ...CARD.case, against: [{ text: "Nkosi's notice is long", at: CARD.case.against[0]!.at }] } })).body.error).toContain("Reasons against");
+    expect((await send({ facts: { ...CARD.facts, salary: "Dlamini wants R60k" } }, "cand2")).body.error).toContain("Salary");
+    expect((await send({ headline: "Siphó, SAP consultant" }, "cand2")).status).toBe(400); // diacritics fold both ways
+    expect((await send({ headline: "Thandiwe's peer" })).status).toBe(200); // whole words only
+    expect(all(store, "shortlistEntries")).toHaveLength(1);
+  });
   it("re-share refreshes roleTitle and creates the missing candidateUpdate", async () => {
     const { app, store } = setup();
     const a = await share(app, ["cand3"]);

@@ -7,6 +7,7 @@ import { buttonClass, Card, ErrorBanner, Icon, Skeleton } from "../../components
 import { useAttributes, useCandidate, useNotes, useOwned } from "../../lib/data";
 import { db } from "../../lib/firebase";
 import NotFound from "../S16-not-found/NotFound";
+import { CourseSuggestions } from "./CourseSuggestions";
 import { CvPanel } from "./CvPanel";
 import { MatchHistory, historyRows } from "./MatchHistory";
 import { NotesPanel, ObservedPanel } from "./Observations";
@@ -157,6 +158,7 @@ function Profile({ onRetry }: { onRetry: () => void }) {
               )}
             </Card>
           )}
+          <CourseSuggestions candidate={c} placements={placements.data!} />
           <MatchHistory rows={rows} now={now} />
         </div>
       </div>

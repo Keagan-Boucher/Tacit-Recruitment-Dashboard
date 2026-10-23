@@ -7,6 +7,23 @@ import { draftAnon, fail, Reject } from "./review.ts";
 const MIRROR = { interviewing: "interviewing", hired: "placed", "not-progressing": "not-taken-forward" } as const;
 const ctx = (db: Firestore, c: string, id: string) => db.collection(c).doc(id);
 
+const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** The first card field that contains any whole-word token of the candidate's name (case and diacritics folded), or undefined. */
+export function nameInCard(card: ShortlistCard, fullName: string): string | undefined {
+  const tokens = fold(fullName).split(/\s+/).filter((t) => t.length > 1);
+  if (!tokens.length) return undefined;
+  const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${tokens.map(escapeRe).join("|")})(?![\\p{L}\\p{N}])`, "u");
+  const fields: [string, string][] = [
+    ["Label", card.label], ["Headline", card.headline],
+    ["Location", card.facts.location], ["Work mode", card.facts.workMode], ["Notice", card.facts.notice], ["Salary", card.facts.salary],
+    ...card.case.for.map((r): [string, string] => ["Reasons for", r.text]),
+    ...card.case.against.map((r): [string, string] => ["Reasons against", r.text]),
+  ];
+  return fields.find(([, text]) => re.test(fold(text)))?.[0];
+}
+
 export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruiterUid: string }) {
   const router = Router();
 
@@ -29,6 +46,11 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
       await Promise.all(existing.docs.map(async (d) => void ((await ctx(db, "candidateUpdates", d.id).get()).exists && hadUpdate.add(d.id))));
       const cands = await Promise.all(body.data.entries.map((e) => ctx(db, "candidates", e.candidateId).get()));
       if (cands.some((c) => !c.exists || c.data()!.ownerUid !== uid)) throw new Reject(404, "not_found", "A candidate on that shortlist doesn't exist");
+
+      for (const [i, e] of body.data.entries.entries()) {
+        const field = nameInCard(e, cands[i]!.data()!.fullName ?? "");
+        if (field) throw new Reject(400, "bad_request", `${field} contains the candidate's name`);
+      }
 
       const now = new Date();
       const entryIds: string[] = [];

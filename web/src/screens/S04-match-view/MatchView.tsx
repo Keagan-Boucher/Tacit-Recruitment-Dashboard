@@ -12,6 +12,7 @@ import NotFound from "../S16-not-found/NotFound";
 import { OverrideDialog } from "../S06-override-dialog/OverrideDialog";
 import { BriefPanel } from "./BriefPanel";
 import { MatchCard } from "./MatchCard";
+import { ShareShortlistDialog } from "./ShareShortlistDialog";
 import { forgottenNow, standingDecision } from "./match";
 import styles from "./MatchView.module.css";
 
@@ -112,6 +113,7 @@ function View({ onRetry }: { onRetry: () => void }) {
         headline={r.title}
         actions={
           <>
+            {company.data && <ShareShortlistDialog role={r} company={company.data} matches={rows} overrides={overrides.data!} candidates={people} attributes={attributes.data!} />}
             <Link to="/brief" className={buttonClass("ghost", false, "lg")}><Icon name="bx-search" />Search everyone</Link>
             <Button variant="primary" size="lg" icon="bx-refresh" onClick={() => find(!empty)} disabled={working}>
               {empty ? "Find matches" : "Re-run matches"}

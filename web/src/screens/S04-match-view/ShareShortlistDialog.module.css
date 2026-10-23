@@ -1,0 +1,23 @@
+.body { display: flex; flex-direction: column; gap: 14px; }
+.label { margin: 0; color: var(--text-2); }
+.who { display: flex; flex-direction: column; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+}
+.cardHead { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cardHead h3 { margin: 0; }
+.private { color: var(--text-3); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.problems { display: flex; flex-direction: column; gap: 6px; }
+.sent { display: flex; align-items: flex-start; gap: 10px; margin: 0; color: var(--text); }
+.sent :first-child { flex: none; color: var(--accent-text); }
+
+/* 320 px: single column */
+@media (max-width: 560px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.note { margin: 0; color: var(--text-3); }

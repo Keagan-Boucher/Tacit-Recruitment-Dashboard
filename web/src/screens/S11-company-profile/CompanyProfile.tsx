@@ -8,6 +8,7 @@ import { useCandidates, useDocument, useOwned } from "../../lib/data";
 import NotFound from "../S16-not-found/NotFound";
 import { fmtDate } from "../S03-candidate-profile/profile";
 import styles from "./CompanyProfile.module.css";
+import { InviteDialog } from "./InviteDialog";
 import { companyFacts, monthYear, placedAmount, type FactLine } from "./facts";
 import { roleCounts, roleLine } from "./roleLine";
 import { turnedDown } from "./turnedDown";
@@ -100,10 +101,13 @@ function Profile({ onRetry }: { onRetry: () => void }) {
         context={<Link to="/companies" className={styles.crumb}>Companies</Link>}
         headline={c.name}
         actions={
-          <Link to={`/roles/new?companyId=${c.id}`} className={buttonClass("primary", false, "lg")}>
-            <Icon name="bx-plus" />
-            Open a role
-          </Link>
+          <>
+            <InviteDialog company={c} />
+            <Link to={`/roles/new?companyId=${c.id}`} className={buttonClass("primary", false, "lg")}>
+              <Icon name="bx-plus" />
+              Open a role
+            </Link>
+          </>
         }
       />
       <p className={`${styles.meta} t-body-s`}>{[...c.sector.split(", "), `Client since ${monthYear(c.createdAt)}`].join(" · ")}</p>
