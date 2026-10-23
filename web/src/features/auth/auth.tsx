@@ -16,8 +16,10 @@ type AuthState = {
   claims: Claims;
   /** Force-refresh the ID token after the proxy changed a claim (register, invite accept, CV passed). */
   refreshClaims: () => Promise<void>;
+  /** Re-read auth.currentUser after updateProfile: onAuthStateChanged does not fire for a profile change. */
+  refreshUser: () => void;
 };
-const AuthContext = createContext<AuthState>({ user: null, loading: true, role: null, claims: {}, refreshClaims: async () => {} });
+const AuthContext = createContext<AuthState>({ user: null, loading: true, role: null, claims: {}, refreshClaims: async () => {}, refreshUser: () => {} });
 
 async function readClaims(user: User, force = false): Promise<Claims> {
   const parsed = Claims.safeParse((await user.getIdTokenResult(force)).claims);
@@ -42,6 +44,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState((s) => (s.user?.uid === user.uid ? { ...s, claims } : s));
   }, []);
 
+  // updateProfile mutates the same User object, so a new state object is what makes consumers re-render.
+  const refreshUser = useCallback(() => setState((s) => ({ ...s, user: auth.currentUser })), []);
+
   // The proxy mirrors claim changes to portalUsers/{uid} (e.g. candidateId once the CV is passed): refresh when it changes.
   const uid = state.user?.uid;
   const portal = state.claims.role === "candidate" || state.claims.role === "company";
@@ -55,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }, [uid, portal, refreshClaims]);
 
-  const value = useMemo(() => ({ ...state, role: state.claims.role ?? null, refreshClaims }), [state, refreshClaims]);
+  const value = useMemo(() => ({ ...state, role: state.claims.role ?? null, refreshClaims, refreshUser }), [state, refreshClaims, refreshUser]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

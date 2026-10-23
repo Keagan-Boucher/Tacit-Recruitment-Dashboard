@@ -1,34 +1,45 @@
-/* Figma S14: Appearance card full width from y 132, three cards below (432 wide, 16 gap). */
+/* Figma S14 redesign: 4 columns (321 px at 1440) with 12 px gaps.
+   Row 1: Appearance (2) · Account · Review. Row 2: Data & privacy (2, two rows tall) beside Dashboard widgets over AI (2 each). */
 .page { display: flex; flex-direction: column; }
-.page > :not(:first-child) { margin-bottom: 16px; }
-.account { display: flex; align-items: center; gap: 16px; }
-.who { color: var(--text-3); }
-.dim { margin: 4px 0 0; color: var(--text-2); }
-.page h2 { margin: 0; }
+.banner { margin-bottom: 12px; }
+.grid { margin-top: 4px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.page h2, .page h3, .page p { margin: 0; }
 
-.appearance.appearance, .panel.panel { padding: 22px 24px 24px; }
+.card.card { display: flex; flex-direction: column; gap: 16px; min-width: 0; padding: 22px 24px 24px; }
+.appearance, .data, .widgets, .ai { grid-column: span 2; }
+.data { grid-row: span 2; gap: 14px; }
+.widgets, .ai { min-height: 218px; }
+
+.dim { color: var(--text-2); }
+.sub { color: var(--text-3); }
+.push { margin-top: auto; align-self: flex-start; }
+.rule { width: 100%; height: 1px; margin: 0; border: 0; background: var(--hairline); }
+.appearance .rule { background: var(--surface-3); }
+/* The switch brings its own 44 px hit area, so the row doesn't need the height. */
+.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+/* Appearance: smaller theme previews. */
 .label { display: inline-flex; align-items: center; gap: 10px; }
-.appearance { display: flex; flex-direction: column; gap: 16px; }
 .themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; padding: 0; border: 0; min-width: 0; }
 .tile {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 10px 10px 0;
+  gap: 8px;
+  padding: 10px 10px 12px;
   border: 1px solid var(--hairline);
   border-radius: var(--radius-inner);
   background: var(--surface-2);
 }
-.tile:has(input:checked) { border: 2px solid var(--accent-text); padding: 9px 9px 0; }
+.tile:has(input:checked) { border: 2px solid var(--accent-text); padding: 9px 9px 11px; }
 .tile:has(input:focus-visible) { box-shadow: var(--focus-ring); }
 /* The whole tile is the click target: stretch the label's hit area over it. */
-.tile .pick { position: static; padding-left: 4px; }
+.tile .pick { position: static; min-height: 0; padding-left: 4px; }
 .pick::after { content: ""; position: absolute; inset: 0; border-radius: inherit; cursor: pointer; }
 
-/* Preview sketch, positions are the Figma ones as percentages of the 393 x 229 box. */
-.mock { position: relative; aspect-ratio: 393 / 229; border-radius: var(--radius-widget); background: var(--canvas); overflow: hidden; }
-.mock i { position: absolute; display: block; border-radius: var(--radius-inner); background: var(--surface); }
+/* Preview sketch, positions are the Figma ones as percentages of the box. */
+.mock { position: relative; aspect-ratio: 393 / 229; border-radius: calc(var(--radius-inner) * 2 / 3); background: var(--canvas); overflow: hidden; }
+.mock i { position: absolute; display: block; border-radius: calc(var(--radius-inner) * 0.4); background: var(--surface); }
 .side { left: 3.9%; top: 6.7%; width: 5.8%; height: 86.5%; }
 .mock .title { left: 14.5%; top: 8.3%; width: 38.8%; height: 8.3%; border-radius: var(--radius-pill); background: var(--text); }
 .mock .hero { left: 14.5%; top: 23.3%; width: 42.7%; height: 69.9%; background: var(--accent); }
@@ -37,21 +48,76 @@
 .t2, .t4 { left: 82.4%; }
 .t1, .t2 { top: 23.3%; }
 .t3, .t4 { top: 60%; }
-.split { position: relative; border-radius: var(--radius-widget); overflow: hidden; }
+.split { position: relative; border-radius: calc(var(--radius-inner) * 2 / 3); overflow: hidden; }
 .split .half { position: absolute; inset: 0; clip-path: inset(0 0 0 50%); }
 
-.rule { width: 100%; height: 1px; margin: 0; border: 0; background: var(--surface-3); }
-.row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; }
+/* Account */
+.who { display: flex; align-items: center; gap: 12px; }
+.avatar { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-pill); background: var(--surface-3); color: var(--text); }
+.whoText { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.name, .whoText .sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nameField { flex: 1; }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 
-.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.panel { display: flex; flex-direction: column; gap: 12px; min-height: 263px; }
-.push { margin-top: auto; align-self: flex-start; }
+/* Review */
+.toggleRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.toggleRow > span { max-width: 213px; min-width: 0; }
+.toggleRow > button { flex: none; margin-left: auto; }
+
+/* Data & privacy */
+.retention { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+/* Figma sets the options in 13 px with roomier padding than the shared control's compact default. */
+.seg { padding: 4px; }
+.seg button[role="radio"] { padding: 8px 14px; font: inherit; }
+.seg button[role="radio"][aria-checked="false"] { color: var(--text-2); }
+.past { display: flex; flex-direction: column; gap: 8px; }
+.stale { color: var(--stale); }
+.people { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+}
+.person:hover { background: var(--surface-3); }
+.personText { display: flex; flex: 1; flex-direction: column; gap: 3px; min-width: 0; }
+.line { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.lineText { display: flex; flex: 1 1 180px; flex-direction: column; gap: 3px; min-width: 0; }
+
+.select { position: relative; flex: 0 1 220px; min-width: 160px; color: var(--text-2); }
+.select select {
+  width: 100%;
+  padding: 12px 40px 12px 14px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-inner);
+  background: var(--surface-2);
+  color: var(--text);
+  line-height: normal;
+  text-overflow: ellipsis;
+  appearance: none;
+  cursor: pointer;
+}
+.select select[data-empty] { color: var(--text-3); }
+.select select:focus-visible { outline: none; border-color: var(--accent-text); box-shadow: 0 0 0 0.5px var(--accent-text); }
+@media (forced-colors: active) { .select select:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; } }
+.select i { position: absolute; top: 50%; right: 14px; translate: 0 -50%; pointer-events: none; }
+
+/* Widgets and AI */
 .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.facts { display: grid; grid-template-columns: auto 1fr; gap: 0 12px; margin: 0; }
-.facts dt, .facts dd { padding: 10px 0; margin: 0; }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 12px; margin: 0; }
+.facts dt, .facts dd { padding: 4px 0; margin: 0; }
 .facts dt { color: var(--text-3); }
 .facts dd { color: var(--text); text-align: right; }
-.hint { margin: 8px 0 0; color: var(--text-3); }
+.widgets > div > p { margin-top: 4px; }
 
-@media (max-width: 1100px) { .cards { grid-template-columns: minmax(0, 1fr); } .panel { min-height: 0; } }
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .appearance, .data, .widgets, .ai { grid-column: auto; grid-row: auto; }
+  .widgets, .ai { min-height: 0; }
+}
 @media (max-width: 800px) { .themes { grid-template-columns: minmax(0, 1fr); } }

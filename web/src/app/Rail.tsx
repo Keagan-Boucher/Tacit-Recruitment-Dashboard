@@ -1,6 +1,7 @@
 import { Link, NavLink, useLocation } from "react-router";
 import type { AccountRole, Submission } from "@tacit/shared";
 import { initials, useAuth } from "../features/auth";
+import { usePrefs } from "../features/prefs";
 import { useOwned } from "../lib/data";
 import { Logo } from "./Logo";
 import styles from "./Rail.module.css";
@@ -64,7 +65,8 @@ export function Rail() {
   const { user, role } = useAuth();
   const who = initials(user);
   const pending = usePendingCount(role === "recruiter");
-  const top = TOP[role ?? "recruiter"].map((i) => (i.to === "/review" ? { ...i, count: pending } : i));
+  const showCount = usePrefs().prefs.railReviewCount; // S14: the Review item always shows, only its badge is optional
+  const top = TOP[role ?? "recruiter"].map((i) => (i.to === "/review" ? { ...i, count: showCount ? pending : undefined } : i));
   return (
     <nav className={styles.rail} aria-label="Main">
       <Logo />

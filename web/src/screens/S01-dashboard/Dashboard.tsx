@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { DEFAULT_USER_PREFS } from "@tacit/shared";
-import type { Attribute, Candidate, Company, DashboardWidget, InterviewNote, Match, Override, Role, WidgetId } from "@tacit/shared";
+import type { Attribute, Candidate, Company, DashboardWidget, InterviewNote, Match, Override, Role, Submission, WidgetId } from "@tacit/shared";
 import { PageHeader, useScreenState } from "../../app";
 import { Button, buttonClass, ErrorBanner, Icon } from "../../components";
 import { usePrefs } from "../../features/prefs";
@@ -41,6 +41,14 @@ function reviewWaiting(d: DashboardWidget[]): DashboardWidget[] {
     : w);
 }
 
+/** S14 "Add Waiting for review to your board": shows it last while something is pending. Display only, never saved to prefs.dashboard. */
+export function withReviewWidget(d: DashboardWidget[], on: boolean): DashboardWidget[] {
+  const w = d.find((x) => x.widgetId === "waiting-for-review");
+  if (!on || !w || w.visible) return d;
+  const last = Math.max(-1, ...d.filter((x) => x.visible).map((x) => x.order));
+  return d.map((x) => (x === w ? { ...x, visible: true, order: last + 1 } : x));
+}
+
 function Board({ onRetry }: { onRetry: () => void }) {
   const state = useScreenState();
   const navigate = useNavigate();
@@ -55,6 +63,7 @@ function Board({ onRetry }: { onRetry: () => void }) {
   const overrides = useOwned<Override>("overrides");
   const notes = useOwned<InterviewNote>("interviewNotes");
   const attributes = useOwned<Attribute>("attributes");
+  const pending = useOwned<Submission>("submissions", ["status", "pending"]); // the query Rail uses
 
   const liveError = [candidates, roles, companies, matches, overrides, notes, attributes].find((l) => l.error)?.error;
   const loaded = useMemo<Snapshot | undefined>(
@@ -82,7 +91,7 @@ function Board({ onRetry }: { onRetry: () => void }) {
   const [failed, setFailed] = useState(false);
   const base = useRef<DashboardWidget[]>(undefined);
 
-  const layout = state === "review-waiting" ? reviewWaiting(prefs.dashboard) : prefs.dashboard;
+  const layout = state === "review-waiting" ? reviewWaiting(prefs.dashboard) : withReviewWidget(prefs.dashboard, prefs.autoReviewWidget && !!pending.data?.length);
   const board = [...layout].filter((w) => w.visible).sort((a, b) => a.order - b.order);
   const small = (id: WidgetId) => { const i = prefs.smallScreenOrder.indexOf(id); return i < 0 ? prefs.smallScreenOrder.length : i; };
 
