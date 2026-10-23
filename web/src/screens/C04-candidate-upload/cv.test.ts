@@ -54,6 +54,9 @@ describe("correctedFields", () => {
     const now = { ...details, salaryExpectation: "R62 000", workMode: "hybrid" as const, skills: [...details.skills, "SQL"], location: "Pretoria" };
     expect(correctedFields(details, now)).toEqual(["location", "salaryExpectation", "workMode", "skills"]);
   });
+  it("never counts notice or availableFrom: Tacit did not propose them", () => {
+    expect(correctedFields(details, { ...details, notice: "1 month", availableFrom: "2026-12-01" })).toEqual([]);
+  });
   it("notices a changed job", () => {
     const history = details.history.map((j, i) => (i === 1 ? { ...j, company: "Maluleke Foods" } : j));
     expect(correctedFields(details, { ...details, history })).toEqual(["history"]);
@@ -74,6 +77,17 @@ describe("buildSubmit", () => {
     if (body.kind !== "cv") throw new Error("kind");
     expect(body.fields).toMatchObject({ fullName: "Lerato Dlamini", phone: "+27 82 555 0187", workMode: "hybrid", skills: ["SAP FI", "Excel"], education: ["BCom Accounting"] });
     expect(body.fields.history[0]).toEqual({ title: "SAP FI analyst", company: "Mzansi Freight", from: "2022" });
+  });
+  it("sends notice and availableFrom when typed, trimmed, and nothing when blank", () => {
+    const withBoth = buildSubmit("users/u1/cvs/1-cv.pdf", read, { ...read.details, notice: " One calendar month ", availableFrom: "2026-12-01" });
+    if (withBoth.kind !== "cv") throw new Error("kind");
+    expect(withBoth.fields).toMatchObject({ notice: "One calendar month", availableFrom: "2026-12-01" });
+    expect(withBoth.correctedFields).toEqual([]);
+    const blank = buildSubmit("users/u1/cvs/1-cv.pdf", read, { ...read.details, notice: "  ", availableFrom: "" });
+    if (blank.kind !== "cv") throw new Error("kind");
+    expect(blank.fields.notice).toBeUndefined();
+    expect(blank.fields.availableFrom).toBeUndefined();
+    expect(() => buildSubmit("users/u1/cvs/1-cv.pdf", read, { ...read.details, availableFrom: "1 Dec 2026" })).toThrow();
   });
   it("leaves blank optional fields out and refuses a missing name", () => {
     const body = buildSubmit("users/u1/cvs/1-cv.pdf", read, { ...read.details, salaryExpectation: " " });

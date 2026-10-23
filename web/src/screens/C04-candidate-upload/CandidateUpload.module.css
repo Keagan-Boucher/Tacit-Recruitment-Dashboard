@@ -58,6 +58,7 @@
 
 /* ---- right card ---- */
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.rowOne { display: grid; grid-template-columns: minmax(0, 1fr); } /* a field that takes the full width, like a .row of one */
 .group { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .label { color: var(--text-2); }
 .group [role="radiogroup"] { align-self: flex-start; max-width: 100%; flex-wrap: wrap; }

@@ -30,6 +30,9 @@ export type Details = {
   headline: string;
   currentRole: string;
   salaryExpectation: string;
+  /** Typed by the candidate (the CV is not read for these two); "" = not said. availableFrom is yyyy-mm-dd. */
+  notice: string;
+  availableFrom: string;
   workMode: WorkMode | "";
   history: Job[];
   education: string[];
@@ -60,6 +63,8 @@ export function readFromParse(r: CvParseResult): Read {
       headline: d.headline.value,
       currentRole: d.currentRole.value,
       salaryExpectation: d.salary.value,
+      notice: "",
+      availableFrom: "",
       workMode: "",
       history: d.history.map(({ title, company, from, to }) => ({ title, company, from, to })),
       education: d.education,
@@ -81,7 +86,8 @@ export const unclearCount = (read: Read, touched: ReadonlySet<string>) =>
 
 const KEYS: DetailKey[] = ["fullName", "phone", "location", "headline", "currentRole", "salaryExpectation", "workMode", "history", "education", "skills"];
 
-/** Names (as in CvSubmissionFields) of every field that now differs from what Tacit read. Order = form order. */
+/** Names (as in CvSubmissionFields) of every field that now differs from what Tacit read. Order = form order.
+ *  notice and availableFrom are left out: Tacit never proposed them, so there is nothing to correct. */
 export function correctedFields(read: Details, now: Details): string[] {
   const norm = (v: unknown) => JSON.stringify(v, (_, x) => (typeof x === "string" ? x.trim() : x)); // stray spaces are not a correction
   return KEYS.filter((k) => norm(read[k]) !== norm(now[k]));
@@ -103,6 +109,8 @@ export function buildSubmit(fileRef: string, read: Read, now: Details): SubmitRe
       salaryExpectation: opt(now.salaryExpectation),
       workMode,
       phone: opt(now.phone),
+      notice: opt(now.notice),
+      availableFrom: opt(now.availableFrom),
       history: now.history
         .filter((j) => j.title.trim())
         .map((j) => ({ title: j.title.trim(), company: opt(j.company), from: opt(j.from), to: opt(j.to) })),

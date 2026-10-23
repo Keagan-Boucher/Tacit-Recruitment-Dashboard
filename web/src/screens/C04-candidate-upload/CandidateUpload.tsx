@@ -39,7 +39,7 @@ const WORK_MODES = [
   { value: "none", label: "Not sure" }, // the control can't show "nothing chosen", and the field is optional
 ];
 
-const BLANK: Details = { fullName: "", phone: "", location: "", headline: "", currentRole: "", salaryExpectation: "", workMode: "", history: [], education: [], skills: [] };
+const BLANK: Details = { fullName: "", phone: "", location: "", headline: "", currentRole: "", salaryExpectation: "", notice: "", availableFrom: "", workMode: "", history: [], education: [], skills: [] };
 const BLANK_READ: Read = { details: BLANK, unclear: new Set(), unclearJobs: new Set(), parseConfidence: 1 };
 
 export default function CandidateUpload() {
@@ -196,7 +196,7 @@ function Screen({ dev }: { dev: string | null }) {
   const checking = phase.kind === "check";
   const unclear = (k: keyof Details) => isUnclear(read, k, touched);
   const flagged = (k: keyof Details) => (unclear(k) ? { className: styles.stale, error: UNCLEAR } : {});
-  const text = (k: "fullName" | "phone" | "location" | "headline" | "currentRole" | "salaryExpectation", label: string, extra = {}) => (
+  const text = (k: "fullName" | "phone" | "location" | "headline" | "currentRole" | "salaryExpectation" | "notice" | "availableFrom", label: string, extra = {}) => (
     <Input
       label={label}
       value={details[k]}
@@ -278,24 +278,26 @@ function Screen({ dev }: { dev: string | null }) {
                 {text("phone", "Phone", { type: "tel", autoComplete: "tel" })}
                 {text("location", "Based in")}
               </div>
+              <div className={styles.rowOne}>{text("headline", "Headline")}</div>
               <div className={styles.row}>
-                {text("headline", "Headline")}
                 {text("currentRole", "Current role")}
+                {text("notice", "Notice period", { maxLength: 100 })}
               </div>
               <div className={styles.row}>
                 {text("salaryExpectation", "Salary expectation (a month)")}
-                <div className={styles.group}>
-                  <p className={`t-body-s-strong ${styles.label}`} aria-hidden="true">
-                    Work mode
-                  </p>
-                  <SegmentedControl
-                    className={styles.mode}
-                    label="Work mode"
-                    options={WORK_MODES}
-                    value={details.workMode || "none"}
-                    onChange={(v) => set("workMode", v === "none" ? "" : (v as Details["workMode"]))}
-                  />
-                </div>
+                {text("availableFrom", "Available from", { type: "date", min: "2000-01-01", max: "2099-12-31" })}
+              </div>
+              <div className={styles.group}>
+                <p className={`t-body-s-strong ${styles.label}`} aria-hidden="true">
+                  Work mode
+                </p>
+                <SegmentedControl
+                  className={styles.mode}
+                  label="Work mode"
+                  options={WORK_MODES}
+                  value={details.workMode || "none"}
+                  onChange={(v) => set("workMode", v === "none" ? "" : (v as Details["workMode"]))}
+                />
               </div>
 
               {details.history.length > 0 && (

@@ -5,7 +5,7 @@ import type { Firestore } from "firebase-admin/firestore";
 import { Attribute, Candidate, Role, type Claims } from "@tacit/shared";
 import { createApp } from "../app.ts";
 import { loadConfig } from "../config.ts";
-import { draftAnon } from "./review.ts";
+import { availabilitySentence, draftAnon } from "./review.ts";
 
 const R = "rec1";
 const get = (o: any, path: string) => path.split(".").reduce((a, k) => a?.[k], o);
@@ -178,6 +178,33 @@ describe("pass brief", () => {
   });
 });
 
+describe("pass cv with notice and availability", () => {
+  const attrsOf = (store: Map<string, any>) => [...store].filter(([k]) => k.startsWith("attributes/")).map(([, v]) => v);
+  const pass = async (extra: object) => {
+    const { app, store } = setup({ "submissions/s1": sub({ fields: { ...CV_FIELDS, ...extra } }) });
+    const r = await review(app, "s1", { action: "pass" });
+    expect(r.status).toBe(200);
+    return { store, id: r.body.resultId as string, attrs: attrsOf(store) };
+  };
+  it("writes one availability attribute combining both", async () => {
+    const { attrs, id } = await pass({ notice: "One calendar month", availableFrom: "2026-12-01" });
+    expect(attrs).toHaveLength(1);
+    const [a] = attrs;
+    expect(a.value).toBe("One calendar month notice; available from 1 Dec 2026");
+    expect(Attribute.safeParse(a).success).toBe(true);
+    expect(a).toMatchObject({ type: "availability", sourceType: "candidate", submissionId: "s1", candidateId: id, confidence: 1, confirmedByRecruiter: true, modelVersion: "candidate", sourceSpan: { start: 0, end: a.value.length } });
+    expect(a.observedAt).toBeInstanceOf(Date);
+  });
+  it("writes nothing when neither was given", async () => {
+    expect((await pass({})).attrs).toEqual([]);
+    expect((await pass({ notice: "  " })).attrs).toEqual([]);
+  });
+  it("copes with only one of the two", async () => {
+    expect((await pass({ notice: "Immediate" })).attrs.map((a) => a.value)).toEqual(["Immediate notice"]);
+    expect((await pass({ availableFrom: "2027-01-09" })).attrs.map((a) => a.value)).toEqual(["Available from 9 Jan 2027"]);
+  });
+});
+
 describe("pass details-change", () => {
   it("writes valid candidate-sourced attributes", async () => {
     const { app, store } = setup({
@@ -191,5 +218,13 @@ describe("pass details-change", () => {
       expect(Attribute.safeParse(a).success).toBe(true);
       expect(a).toMatchObject({ sourceType: "candidate", submissionId: "s3", candidateId: "cand9", confidence: 1, confirmedByRecruiter: true, modelVersion: "candidate", sourceSpan: { start: 0, end: a.value.length } });
     }
+  });
+});
+
+describe("availabilitySentence", () => {
+  it("doesn't double a notice the candidate already wrote", () => {
+    expect(availabilitySentence("1 month notice")).toBe("1 month notice");
+    expect(availabilitySentence("One calendar month", "2026-12-01")).toBe("One calendar month notice; available from 1 Dec 2026");
+    expect(availabilitySentence("  ", undefined)).toBe("");
   });
 });

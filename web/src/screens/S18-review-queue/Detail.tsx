@@ -40,6 +40,16 @@ function Rows({ rows }: { rows: Row[] }) {
   );
 }
 
+/** What the candidate typed in C04 (Tacit did not read these from the CV). Not in cvRows, which this screen builds from. */
+function availabilityRows(sub: Extract<Sub, { kind: "cv" }>): Row[] {
+  const { notice, availableFrom } = sub.fields;
+  const [y, m, d] = (availableFrom ?? "").split("-").map(Number);
+  return [
+    { key: "notice", label: "Notice period", lines: notice ? [notice] : [] },
+    { key: "availableFrom", label: "Available from", lines: availableFrom ? [day(new Date(y!, m! - 1, d), true)] : [] },
+  ].filter((r) => r.lines.length);
+}
+
 type Props = {
   sub: Sub;
   /** Candidate name for a CV or details change, company name for a brief. */
@@ -97,7 +107,7 @@ export function Detail({ sub, who, dup, busy, onPass, onNotAccepted }: Props) {
             {isBrief && <Sparkle />}
             {sub.kind === "brief" ? "What Tacit understood" : sub.kind === "cv" ? "What they sent" : "What changed"}
           </h3>
-          <Rows rows={sub.kind === "cv" ? cvRows(sub) : sub.kind === "brief" ? briefRows(sub, who) : changeRows(sub)} />
+          <Rows rows={sub.kind === "cv" ? [...cvRows(sub), ...availabilityRows(sub)] : sub.kind === "brief" ? briefRows(sub, who) : changeRows(sub)} />
         </div>
         {sub.kind === "cv" && (
           <div className={`${styles.panel} ${styles.read}`}>

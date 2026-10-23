@@ -51,6 +51,16 @@ export function draftAnon(
   });
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "One calendar month notice; available from 1 Dec 2026", or whichever half was given. undefined when neither was. */
+export function availabilitySentence(notice?: string, availableFrom?: string) {
+  const n = notice?.trim();
+  const parts = [n && (/\bnotice$/i.test(n) ? n : `${n} notice`), availableFrom && `available from ${+availableFrom.slice(8)} ${MONTHS[+availableFrom.slice(5, 7) - 1]} ${availableFrom.slice(0, 4)}`].filter(Boolean) as string[];
+  const text = parts.join("; ");
+  return text && text[0]!.toUpperCase() + text.slice(1);
+}
+
 const READ_TO_PARSE = { clear: "ok", check: "flagged", unreadable: "failed" } as const;
 
 export function reviewRouter({ db, auth, recruiterUid }: { db: Firestore; auth: Pick<Auth, "setCustomUserClaims">; recruiterUid: string }) {
@@ -116,6 +126,14 @@ export function reviewRouter({ db, auth, recruiterUid }: { db: Firestore; auth: 
             }));
           }
           if (puSnap.exists) put(pu, { candidateId: resultId, updatedAt: now });
+          // Typed by the candidate (C04), not read from the CV: kept as a candidate-sourced availability fact.
+          const value = availabilitySentence(f.notice, f.availableFrom);
+          if (value) {
+            put(db.collection("attributes").doc(), Attribute.parse({
+              ownerUid: recruiterUid, createdAt: now, updatedAt: now, candidateId: resultId, sourceType: "candidate", submissionId: snap.id,
+              type: "availability", value, confidence: 1, sourceSpan: { start: 0, end: value.length }, observedAt: now, confirmedByRecruiter: true, modelVersion: "candidate",
+            }));
+          }
           claimFor = sub.submittedBy;
         } else if (sub.kind === "brief") {
           const f = BriefSubmissionFields.parse(sub.fields);

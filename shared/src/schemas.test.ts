@@ -3,7 +3,7 @@ import {
   AcceptInviteRequest, Alignment, Attribute, Candidate, CandidateUpdate, Company, CourseRequest, CourseSuggestion,
   DEFAULT_USER_PREFS, InterviewNote, Invite, Match, Override, Placement, PortalUser, QuestionGuide, Reason,
   RegisterRequest, ReviewRequest, Role, RoleAnon, ShareShortlistRequest, ShortlistEntry, ShortlistLink, SubmissionCheck, ShortlistStatusRequest,
-  SourceSpan, Submission, SubmitRequest, UserPrefs,
+  CvSubmissionFields, SourceSpan, Submission, SubmitRequest, UserPrefs,
 } from "./index.ts";
 
 const d = new Date("2026-01-01");
@@ -109,6 +109,12 @@ describe("portal schemas", () => {
     expect(CandidateUpdate.safeParse({ ...update, roleAnon: { ...anon, company: "Vantage" } }).success).toBe(false);
     expect(Object.keys(CandidateUpdate.shape).some((k) => /company/i.test(k))).toBe(false);
     expect(Object.keys(RoleAnon.shape).some((k) => /company/i.test(k))).toBe(false);
+  });
+  it("a CV submission may carry notice and an ISO available-from date, both optional", () => {
+    expect(CvSubmissionFields.safeParse(cvFields).success).toBe(true);
+    expect(CvSubmissionFields.safeParse({ ...cvFields, notice: "One calendar month", availableFrom: "2026-12-01" }).success).toBe(true);
+    expect(CvSubmissionFields.safeParse({ ...cvFields, availableFrom: "1 Dec 2026" }).success).toBe(false);
+    expect(CvSubmissionFields.safeParse({ ...cvFields, notice: "x".repeat(101) }).success).toBe(false);
   });
   it("roles carry anon and portal briefs; placements carry hire terms", () => {
     expect(Role.safeParse({ ...base, companyId: "co", title: "t", briefText: "b", briefSource: "portal", status: "open", openedAt: d, anon }).success).toBe(true);

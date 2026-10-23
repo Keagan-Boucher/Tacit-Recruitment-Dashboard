@@ -23,8 +23,8 @@ const parsed: CvParseResult = {
 export const FIXTURE_FILE = { name: "lerato-dlamini-cv-2026.pdf", size: 188_416 };
 export const FIXTURE_EMAIL = "lerato.dlamini@mail.test";
 
-/** What the Figma frame shows once the candidate has added a phone number and chosen hybrid. */
+/** What the Figma frame shows once the candidate has added a phone number chosen hybrid and typed notice and availability. */
 export function fixtureRead(): { read: Read; details: Read["details"] } {
   const read = readFromParse(parsed);
-  return { read, details: { ...read.details, phone: "+27 82 555 0187", workMode: "hybrid" } };
+  return { read, details: { ...read.details, phone: "+27 82 555 0187", notice: "1 month", availableFrom: "2026-12-01", workMode: "hybrid" } };
 }

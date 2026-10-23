@@ -321,6 +321,10 @@ export const CvSubmissionFields = z.object({
   salaryExpectation: z.string().max(200).optional(),
   workMode: WorkMode.optional(),
   phone: z.string().max(40).optional(),
+  /** Typed by the candidate, never read from the CV: "One calendar month". */
+  notice: z.string().max(100).optional(),
+  /** ISO date (yyyy-mm-dd) the candidate can start. */
+  availableFrom: z.iso.date().optional(),
   history: CvFacts.shape.history,
   education: z.array(z.string().max(300)).max(30),
   skills: z.array(z.string().max(100)).max(60),
