@@ -47,6 +47,7 @@ export function candidateFixture(state: string, now = new Date()): CandidatePort
       return { ...none, submissions: [cv("pending", 1)] };
     case "not-accepted":
       return { ...none, submissions: [cv("not-accepted", 2)] };
+case "placed":      return {        ...none,        submissions: [{ ...cv("accepted", 40), submittedAt: ago(42), reviewedAt: ago(40) }],        updates: [update("u1", "placed", 1, anon("SAP FICO consultant", "Logistics", "Cape Town", "Senior", "R55k–R65k a month"))],      };
     case "courses":
       return {
         portalUser,

@@ -3,6 +3,8 @@ import {
   cvFileName, detailRows, detailsBody, freshDetails, freshLine, headline, heroFor, historyEvents, latestCv, pendingDetails, poolSince, profileStatus,
   roleSteps, roleUpdateRows, showCourses, updatesThisWeek, type Sub, type Upd,
 } from "./candidate";
+import { RECRUITER as COMPANY_RECRUITER } from "./company";
+import { RECRUITER } from "./candidate";
 import { candidateFixture } from "./candidateFixtures";
 
 const NOW = new Date(2026, 9, 23, 12);
@@ -47,6 +49,7 @@ describe("hero", () => {
     const hero = heroFor([cv("a", "accepted", 2)], [update("closed", "not-taken-forward", 20), update("open", "interviewing", 10), update("older", "shortlisted", 5)]);
     expect(hero).toMatchObject({ kind: "role", role: { title: "Role open" } });
   });
+it("flags a placed role so the screen can drop the pre-interview line", () => {    expect(heroFor([cv("a", "accepted", 2)], [update("p", "placed", 3)])).toMatchObject({ kind: "role", placed: true });    expect(heroFor([cv("a", "accepted", 2)], [update("i", "interviewing", 3)])).toMatchObject({ kind: "role", placed: false });  });  it("uses one recruiter contact on both portals", () => {    expect(RECRUITER).toBe(COMPANY_RECRUITER);    expect(RECRUITER).toMatchObject({ email: "naledi@tacit.test", phone: "+27 21 555 0142" });  });
   it("falls back to the pool when every role is closed", () => {
     expect(heroFor([cv("a", "accepted", 2)], [update("c1", "not-taken-forward", 5), update("c2", "not-taken-forward", 6)])).toMatchObject({ kind: "pool", shortlisted: 2 });
   });

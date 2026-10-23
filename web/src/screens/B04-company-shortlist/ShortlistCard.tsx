@@ -1,7 +1,7 @@
 import { forwardRef, useId, useState } from "react";
 import type { Ref } from "react";
 import { Button, Icon } from "../../components";
-import { decisionRow, factsLine, fmtDate, RECRUITER, reasonCount, sharedLine, whoLine } from "./shortlist";
+import { decisionRow, factsLine, fmtDate, moreLabel, RECRUITER, reasonCount, sharedLine, whoLine } from "./shortlist";
 import type { Entry } from "./shortlist";
 import styles from "./CompanyShortlist.module.css";
 
@@ -11,7 +11,7 @@ type Props = { entry: Entry; onAsk: (kind: Ask, entry: Entry) => void };
 /** Reasons shown per side before "and N more". */
 const SHOWN = 1;
 
-function Reasons({ tone, items }: { tone: "for" | "against"; items: Entry["case"]["for"] }) {
+function Reasons({ tone, items, name }: { tone: "for" | "against"; items: Entry["case"]["for"]; name: string }) {
   const [all, setAll] = useState(false);
   const labelId = useId();
   const { n, word } = reasonCount(items.length, tone);
@@ -30,7 +30,7 @@ function Reasons({ tone, items }: { tone: "for" | "against"; items: Entry["case"
         ))}
       </ul>
       {hidden > 0 && (
-        <button type="button" className={`${styles.more} t-caption`} aria-expanded={all} onClick={() => setAll(!all)}>
+        <button type="button" className={`${styles.more} t-caption`} aria-expanded={all} aria-label={all ? `Show fewer reasons ${tone} ${name}` : moreLabel(hidden, tone, name)} onClick={() => setAll(!all)}>
           {all ? "Show fewer" : `and ${hidden} more`}
         </button>
       )}
@@ -64,8 +64,8 @@ export const ShortlistCard = forwardRef(function ShortlistCard({ entry: e, onAsk
       <p className={`${styles.facts} t-body-s`}>{factsLine(e.facts)}</p>
 
       <div className={styles.case}>
-        <Reasons tone="for" items={e.case.for} />
-        <Reasons tone="against" items={e.case.against} />
+        <Reasons tone="for" items={e.case.for} name={name} />
+        <Reasons tone="against" items={e.case.against} name={name} />
       </div>
 
       <div className={styles.decision}>

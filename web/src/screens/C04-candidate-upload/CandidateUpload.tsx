@@ -184,7 +184,7 @@ function Screen({ dev }: { dev: string | null }) {
           Sent for review.
         </h1>
         <p className={`t-body-m-para ${styles.sentText}`}>
-          {RECRUITER} usually checks new CVs within 2 working days. You see the result on your home page and by email.
+          {RECRUITER} usually checks new CVs within 2 working days. You see the result on your Tacit home page.
         </p>
         <Link to="/candidate" className={buttonClass("primary")}>
           Back to home

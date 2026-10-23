@@ -1,4 +1,6 @@
 import type { CandidateUpdate, CourseSuggestion, DetailsChangeFields, PortalUser, RoleAnon, Submission, WorkMode } from "@tacit/shared";
+import { RECRUITER, RECRUITER_FIRST, RECRUITER_INITIALS } from "./recruiter";
+export { RECRUITER, RECRUITER_FIRST, RECRUITER_INITIALS };
 
 // Pure helpers for C02 / C03. Everything here reads only what a candidate may read: their own submissions,
 // their own candidateUpdates and their portal user. No company name or id exists in these types.
@@ -8,10 +10,6 @@ export type Sub = WithId<Submission>;
 export type CvSub = Sub & { kind: "cv" };
 export type Upd = WithId<CandidateUpdate>;
 
-// shortcut: one recruiter in this MVP; read from a recruiter profile doc when there are several
-export const RECRUITER = { name: "Naledi Mokoena", org: "Tacit Recruitment", email: "naledi.mokoena@example.com", phone: "+27 21 555 0142" } as const;
-export const RECRUITER_FIRST = RECRUITER.name.split(" ")[0] ?? RECRUITER.name;
-export const RECRUITER_INITIALS = RECRUITER.name.split(" ").map((w) => w[0]).join("");
 
 const DAY = 86_400_000;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -74,7 +72,7 @@ export type Hero =
   | { kind: "empty" }
   | { kind: "under-review"; steps: Step[] }
   | { kind: "not-accepted"; reason: string; by: string; at: Date }
-  | { kind: "role"; role: RoleAnon; steps: Step[] }
+  | { kind: "role"; role: RoleAnon; steps: Step[]; placed: boolean }
   | { kind: "pool"; since: Date; shortlisted: number };
 
 const ROLE_STEP = { shortlisted: 1, interviewing: 2, placed: 3 } as const;
@@ -106,7 +104,7 @@ export function heroFor(subs: readonly Sub[], updates: readonly Upd[]): Hero {
   if (cv.status === "not-accepted")
     return { kind: "not-accepted", reason: cv.reasonText ?? "", by: RECRUITER.name, at: cv.reviewedAt ?? cv.submittedAt };
   const live = updatesNewestFirst(updates).find(isLive);
-  if (live) return { kind: "role", role: live.roleAnon, steps: roleSteps(live.status, live.at) };
+  if (live) return { kind: "role", role: live.roleAnon, steps: roleSteps(live.status, live.at), placed: live.status === "placed" };
   return { kind: "pool", since: poolSince(subs) ?? cv.submittedAt, shortlisted: updates.length };
 }
 

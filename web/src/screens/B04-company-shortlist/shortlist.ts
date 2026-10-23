@@ -29,6 +29,9 @@ export const whoLine = (e: Pick<Entry, "headline" | "years">) => `${e.headline} 
 
 export const reasonCount = (n: number, tone: "for" | "against") => ({ n, word: `${plural(n, "reason", "reasons")} ${tone}` });
 
+/** Accessible name for an "and N more" button: names the card and the side, since the visible text repeats on every card. */
+export const moreLabel = (hidden: number, tone: "for" | "against", name: string) => `and ${hidden} more ${hidden === 1 ? "reason" : "reasons"} ${tone} ${name}`; // starts with the visible text (WCAG 2.5.3)
+
 /** When the entry reached `status`, from its history (the newest such change). */
 export const changeAt = (e: Entry, status: Entry["status"]): Date | undefined =>
   [...e.statusHistory].reverse().find((h) => h.status === status)?.at;

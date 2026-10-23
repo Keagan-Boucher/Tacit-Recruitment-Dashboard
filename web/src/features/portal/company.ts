@@ -1,4 +1,6 @@
 import type { InvitePreview, PortalUser, ShortlistEntry, Submission } from "@tacit/shared";
+import { RECRUITER, RECRUITER_FIRST, RECRUITER_INITIALS } from "./recruiter";
+export { RECRUITER, RECRUITER_FIRST, RECRUITER_INITIALS };
 
 // Pure helpers for B01 / B02. Everything here reads only what a company may read: its own briefs (submissions where
 // submittedBy == uid), its own shortlistEntries and its portal user. A person's name exists only on an entry with `identity`.
@@ -9,10 +11,6 @@ export type BriefSub = Sub & { kind: "brief" };
 export type Entry = WithId<ShortlistEntry>;
 export type CompanyPortal = { portalUser: WithId<PortalUser> | null; submissions: Sub[]; entries: Entry[] };
 
-// shortcut: one recruiter in this MVP; read from a recruiter profile doc when there are several
-export const RECRUITER = { name: "Naledi Mokoena", org: "Tacit Recruitment", email: "naledi@tacit.test", phone: "+27 21 555 0142" } as const;
-export const RECRUITER_FIRST = RECRUITER.name.split(" ")[0] ?? RECRUITER.name;
-export const RECRUITER_INITIALS = RECRUITER.name.split(" ").map((w) => w[0]).join("");
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const LONG_MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];

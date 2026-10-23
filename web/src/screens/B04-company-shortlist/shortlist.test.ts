@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ShortlistStatusRequest } from "@tacit/shared";
 import { fixtureEntries } from "./fixtures";
 import type { Entry } from "./shortlist";
-import { applyChange, buildHired, buildInterviewing, buildNotProgressing, changeError, decisionRow, factsLine, headlineParts, parseAmount, sharedLine, whoLine } from "./shortlist";
+import { applyChange, buildHired, buildInterviewing, buildNotProgressing, changeError, decisionRow, factsLine, headlineParts, moreLabel, parseAmount, sharedLine, whoLine } from "./shortlist";
 const [a, b, c, d] = fixtureEntries() as [Entry, Entry, Entry, Entry];
 
 describe("decisionRow", () => {
@@ -85,5 +85,14 @@ describe("applyChange (dev fixtures)", () => {
     const next = applyChange(all, { entryId: "entry_a", status: "hired", startDate: "2026-12-01", salary: { amount: 1, currency: "ZAR", period: "month" } }, "u", now);
     expect(next.map((e) => e.status)).toEqual(["hired", "not-progressing", "not-progressing", "not-progressing"]);
     expect(next[3]!.statusHistory).toHaveLength(2);
+  });
+});
+
+describe("moreLabel", () => {
+  it("names the side and the card so the expanders differ", () => {
+    expect(moreLabel(1, "against", "Candidate B")).toBe("and 1 more reason against Candidate B");
+    expect(moreLabel(2, "for", "Candidate A")).toBe("and 2 more reasons for Candidate A");
+    const names = [a, b, c, d].flatMap((e) => (["for", "against"] as const).map((t) => moreLabel(1, t, e.identity?.fullName || e.label)));
+    expect(new Set(names).size).toBe(names.length);
   });
 });

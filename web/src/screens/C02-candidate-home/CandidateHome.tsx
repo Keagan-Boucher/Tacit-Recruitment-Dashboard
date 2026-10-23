@@ -219,7 +219,7 @@ function HeroCard({ hero }: { hero: Hero }) {
         <div className={styles.mid}>
           <h2 id={id} className={`t-display-l ${styles.big}`}>{title}</h2>
           {hero.kind === "empty" && <p className="t-title">PDF or Word, up to 10 MB. A recruiter checks it before it joins the pool.</p>}
-          {hero.kind === "under-review" && <p className="t-title">{RECRUITER.name} usually checks new CVs within 2 working days. You see the result here and by email.</p>}
+          {hero.kind === "under-review" && <p className="t-title">{RECRUITER.name} usually checks new CVs within 2 working days. You see the result here, on your Tacit home.</p>}
           {hero.kind === "not-accepted" && (
             <>
               <blockquote className={`t-title ${styles.quote}`}>“{hero.reason}”</blockquote>
@@ -242,7 +242,7 @@ function HeroCard({ hero }: { hero: Hero }) {
         )}
         {(hero.kind === "under-review" || hero.kind === "role") && <StepBar steps={hero.steps} />}
         {hero.kind === "under-review" && <Clock>Nothing to do for now. You can still change your details while you wait.</Clock>}
-        {hero.kind === "role" && <Clock>{RECRUITER_FIRST} calls you before anything is arranged. You learn the company’s name when you agree to interview.</Clock>}
+        {hero.kind === "role" && <Clock>{hero.placed ? `${RECRUITER_FIRST} is your contact for anything that happens next.` : `${RECRUITER_FIRST} calls you before anything is arranged. You learn the company’s name when you agree to interview.`}</Clock>}
         {hero.kind === "not-accepted" && (
           <div className={styles.footEnd}>
             <Link to="/candidate/cv" className={buttonClass("on-lime")}><Icon name="bx-upload" />Upload again</Link>
