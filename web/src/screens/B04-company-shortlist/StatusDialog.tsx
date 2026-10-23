@@ -43,17 +43,17 @@ export function StatusDialog({ kind, entry, onSend, onClose }: Props) {
   const copy = {
     interviewing: {
       title: `Move ${name} to interviewing?`,
-      description: `You will see their name and contact details. ${RECRUITER} is told straight away and arranges the interview with them.`,
+      description: `You will see their name and contact details. This is saved for ${RECRUITER}, who arranges the interview with them.`,
       action: "Move to interviewing", busy: "Moving…",
     },
     hired: {
       title: `Mark ${name} as hired?`,
-      description: `${RECRUITER} is told and the role closes. Everyone else on this shortlist hears that the role is filled.`,
+      description: `The role closes and this is saved for ${RECRUITER}. Anyone else on this shortlist with a Tacit account sees that the role is filled.`,
       action: "Mark as hired", busy: "Saving…",
     },
     "not-progressing": {
       title: `Not progressing: ${name}`,
-      description: `${RECRUITER} is told and sees your reason.`,
+      description: `Your reason is saved for ${RECRUITER}.`,
       action: "Not progressing", busy: "Saving…",
     },
   }[kind];

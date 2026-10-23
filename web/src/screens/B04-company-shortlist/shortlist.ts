@@ -120,9 +120,9 @@ export function changeError(e: { status?: number; code?: string; message?: strin
 /** What a screen reader hears after a change. */
 export function announcement(e: Entry, status: Entry["status"]): string {
   const who = e.identity?.fullName ?? e.label;
-  if (status === "interviewing") return `${who} moved to interviewing. Their name and contact details are now shown. ${RECRUITER} has been told.`;
-  if (status === "hired") return `${who} marked as hired. The role is closed and the rest of the shortlist is told.`;
-  return `${who} marked as not progressing. ${RECRUITER} has been told.`;
+  if (status === "interviewing") return `${who} moved to interviewing. Their name and contact details are now shown. Saved for ${RECRUITER}.`;
+  if (status === "hired") return `${who} marked as hired. The role is closed. Saved for ${RECRUITER}.`;
+  return `${who} marked as not progressing. Saved for ${RECRUITER}.`;
 }
 
 /**
