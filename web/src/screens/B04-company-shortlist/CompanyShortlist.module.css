@@ -1,0 +1,63 @@
+.crumb { color: inherit; text-decoration: none; }
+.crumb:hover { text-decoration: underline; }
+.num { color: var(--accent-text); }
+
+/* 2 x 2 at 1440 (654 each, gap 12); stacks below 900 so it reflows at 320. */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); margin: 0; padding: 0; list-style: none; }
+.grid > li { display: flex; min-width: 0; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+.loading { margin: 0 0 12px; color: var(--text-3); }
+.skeleton { display: flex; flex-direction: column; gap: 12px; min-height: 330px; padding: 18px 20px 20px; border: 1px solid var(--hairline); border-radius: var(--radius-widget); background: var(--surface); }
+
+.card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 370px;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-widget);
+  background: var(--surface);
+}
+.card:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+@media (max-width: 900px) { .card { min-height: 0; } }
+.live { border-color: var(--for); }
+
+.who { display: flex; flex-direction: column; gap: 2px; }
+.who h2, .who p, .facts { margin: 0; }
+.headline { color: var(--text-2); }
+.note { margin: 0; color: var(--text-3); overflow-wrap: anywhere; }
+.sharedLead { color: var(--for); }
+.sharedRest { color: var(--text-2); overflow-wrap: anywhere; }
+.facts { color: var(--text-3); }
+
+.case { display: flex; align-items: stretch; gap: 10px; }
+@media (max-width: 560px) { .case { flex-direction: column; } }
+.reasons { display: flex; flex: 1 1 0; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; padding: 12px 14px 14px; border-radius: var(--radius-inner); background: var(--surface-2); }
+.count { margin: 0; color: var(--text-3); }
+.for { color: var(--for); }
+.against { color: var(--against); }
+.reasonList { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.reasonList li { display: flex; flex-direction: column; gap: 6px; }
+.reasonList p { margin: 0; color: var(--text); overflow-wrap: anywhere; }
+.reasonList .source { color: var(--text-3); }
+.more { position: relative; padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
+.more::before { content: ""; position: absolute; inset: -14px -8px; }
+.more:hover { color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; }
+.more:focus-visible, .change:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-inner); }
+
+/* Decision row, S04's pattern: a word in its tone, who and when beneath, then the actions. The rule above it pins it to the foot. */
+.decision { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--hairline); }
+.decision button { min-height: 44px; }
+.state { display: flex; flex: 1 1 200px; flex-direction: column; gap: 2px; min-width: 0; }
+.word { display: flex; align-items: center; gap: 6px; margin: 0; }
+.waiting { color: var(--accent-text); }
+.quote { color: var(--text-2); }
+.change { position: relative; padding: 0 4px; border: 0; background: none; color: var(--text-2); cursor: pointer; }
+.change:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Closed: quieter, not faded (opacity would drop the captions under AA). */
+.closed .who h2, .closed .headline, .closed .facts { color: var(--text-2); }
+.closed .reasonList p:not(.source) { color: var(--text-2); }
