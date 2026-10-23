@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { browserLocalPersistence, getAuth, initializeAuth } from "firebase/auth";
+import { browserLocalPersistence, browserSessionPersistence, getAuth, initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -13,10 +13,11 @@ const app = getApps().length
       appId: import.meta.env.VITE_FIREBASE_APP_ID,
     });
 
-// localStorage persistence (not IndexedDB) so Playwright storageState carries the session.
+// Per-tab sessions so a demo can run recruiter, candidate and company side by side and a new tab starts signed out.
+// Playwright (navigator.webdriver) keeps localStorage persistence so its storageState carries the session.
 export const auth = (() => {
   try {
-    return initializeAuth(app, { persistence: browserLocalPersistence });
+    return initializeAuth(app, { persistence: navigator.webdriver ? browserLocalPersistence : browserSessionPersistence });
   } catch {
     return getAuth(app); // already initialised (HMR)
   }
