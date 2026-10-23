@@ -33,6 +33,23 @@
   transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
 }
 .item:hover { background: var(--surface-2); color: var(--text); }
+
+/* Pending count on Review. */
+.count {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-variant-numeric: tabular-nums;
+}
+.item[aria-current="page"] .count { background: var(--on-accent); color: var(--accent); }
 .item[aria-current="page"] { background: var(--accent); color: var(--on-accent); }
 
 /* Tooltip: shown on hover and keyboard focus. */
@@ -87,5 +104,5 @@
 /* Seven 44 px destinations are all that fit at 320: the monogram and avatar drop out. */
 @media (max-width: 479px) {
   .rail { left: 4px; right: 4px; gap: 0; padding: 0; justify-content: space-around; }
-  .rail > svg, .spacer, .avatar { display: none; }
+  .rail > svg, .spacer, .avatar, .item[data-compact-hide] { display: none; }
 }

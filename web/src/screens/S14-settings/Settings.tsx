@@ -45,7 +45,7 @@ const AI: Record<AiStatus, { word: string; tone: ChipTone; icon: string }> = {
 };
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { prefs, savePrefs } = usePrefs();
   const [failed, setFailed] = useState<Parameters<typeof savePrefs>[0] | null>(null);
   const [health, setHealth] = useState<{ h: Health | null; at: Date } | null>(null);
@@ -115,7 +115,8 @@ export default function Settings() {
         </div>
       </Card>
 
-      <div className={styles.cards}>
+      {/* Portal users get Appearance and Sign out only: widgets, AI and synthetic data are the recruiter's. */}
+      {role === "recruiter" && <div className={styles.cards}>
         <Card className={styles.panel}>
           <div>
             <h2 className="t-title">Dashboard widgets</h2>
@@ -161,7 +162,7 @@ export default function Settings() {
             <p id="reset-hint" className={`${styles.hint} t-body-s`}>Not available in the app. Run “npm run seed” to reset.</p>
           </div>
         </Card>
-      </div>
+      </div>}
     </div>
   );
 }

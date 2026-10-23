@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router";
 import { CommandPalette } from "../screens/S15-command-palette/CommandPalette";
+import { useAuth } from "../features/auth";
 import { Rail } from "./Rail";
 import styles from "./Shell.module.css";
 
@@ -9,6 +10,7 @@ const CLAIM_WINDOW_MS = 4000;
 
 /** Frame for every railed screen. S07 (/login) renders outside it. The page title is set by `RouteTitle` in routes.tsx. */
 export function Shell() {
+  const { role } = useAuth();
   const main = useRef<HTMLElement>(null);
   const { pathname } = useLocation();
   const last = useRef(pathname);
@@ -59,7 +61,7 @@ export function Shell() {
         Skip to content
       </a>
       <Rail />
-      <CommandPalette />
+      {role === "recruiter" && <CommandPalette />}{/* searches recruiter records only */}
       <main id="main" ref={main} tabIndex={-1} className={styles.main}>
         <Outlet />
       </main>

@@ -32,6 +32,8 @@ export type InterpretedBrief = {
 type Props = {
   onInterpreted: (r: InterpretedBrief) => void;
   initialSource?: BriefSource;
+  /** Which ways in to offer; companies (B03) get paste and upload only. Default: all three. */
+  modes?: BriefSource[];
 };
 
 const MODES: { value: BriefSource; label: string; icon: string }[] = [
@@ -60,12 +62,12 @@ function Sparkle() {
   );
 }
 
-function ModeSwitch({ value, onChange }: { value: BriefSource; onChange: (v: BriefSource) => void }) {
+function ModeSwitch({ value, onChange, modes }: { value: BriefSource; onChange: (v: BriefSource) => void; modes: typeof MODES }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const selected = MODES.findIndex((m) => m.value === value);
+  const selected = modes.findIndex((m) => m.value === value);
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    const last = MODES.length - 1;
+    const last = modes.length - 1;
     let next: number | null = null;
     if (e.key === "ArrowRight" || e.key === "ArrowDown") next = selected === last ? 0 : selected + 1;
     else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = selected === 0 ? last : selected - 1;
@@ -73,13 +75,13 @@ function ModeSwitch({ value, onChange }: { value: BriefSource; onChange: (v: Bri
     else if (e.key === "End") next = last;
     if (next === null) return;
     e.preventDefault();
-    onChange(MODES[next]!.value);
+    onChange(modes[next]!.value);
     refs.current[next]?.focus();
   }
 
   return (
     <div role="radiogroup" aria-label="How the brief arrived" className={styles.modes} onKeyDown={onKeyDown}>
-      {MODES.map((m, i) => (
+      {modes.map((m, i) => (
         <button
           key={m.value}
           ref={(el) => {
@@ -101,7 +103,8 @@ function ModeSwitch({ value, onChange }: { value: BriefSource; onChange: (v: Bri
 }
 
 /** Picker for a client brief: paste, upload or type from a call. Sends it to the proxy and hands back the interpretation. */
-export function BriefPicker({ onInterpreted, initialSource = "paste" }: Props) {
+export function BriefPicker({ onInterpreted, initialSource = "paste", modes: allowed }: Props) {
+  const modes = allowed ? MODES.filter((m) => allowed.includes(m.value)) : MODES;
   const { user } = useAuth();
   const fileInput = useRef<HTMLInputElement>(null);
   const uploaded = useRef<{ file: File; path: string } | null>(null);
@@ -198,6 +201,7 @@ export function BriefPicker({ onInterpreted, initialSource = "paste" }: Props) {
       <Card className={styles.card} aria-busy={busy || undefined}>
         <h2 className="t-title">The brief</h2>
         <ModeSwitch
+          modes={modes}
           value={source}
           onChange={(v) => {
             setSource(v);
