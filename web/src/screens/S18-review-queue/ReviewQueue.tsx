@@ -22,7 +22,7 @@ function Queue({ onRetry }: { onRetry: () => void }) {
   const state = useScreenState();
   const [params, setParams] = useSearchParams();
   const { subs, error, fx } = usePending();
-  const { companies, people } = useSenders(fx);
+  const { companies, people, dups } = useSenders(fx);
 
   const [gone, setGone] = useState<ReadonlySet<string>>(new Set());
   const [sel, setSel] = useState<string>();
@@ -191,7 +191,7 @@ function Queue({ onRetry }: { onRetry: () => void }) {
             key={current.id}
             sub={current}
             who={who(current)}
-            dup={current.kind === "cv" && current.possibleDuplicateOf ? people[current.possibleDuplicateOf] : undefined}
+            dup={current.kind === "cv" && dups[current.id] ? people[dups[current.id]!] : undefined}
             busy={busy === current.id}
             onPass={() => void pass(current)}
             onNotAccepted={() => setDialogId(current.id)}

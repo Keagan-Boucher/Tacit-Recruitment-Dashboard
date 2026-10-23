@@ -2,7 +2,7 @@ import { Router, type Response } from "express";
 import type { Auth } from "firebase-admin/auth";
 import type { DocumentReference, Firestore } from "firebase-admin/firestore";
 import {
-  Attribute, BriefSubmissionFields, Candidate, CvSubmissionFields, DetailsChangeFields, ReviewRequest, Role, RoleAnon,
+  Attribute, BriefSubmissionFields, Candidate, CvSubmissionFields, DetailsChangeFields, ReviewRequest, Role, RoleAnon, Submission,
   type ReviewResponse,
 } from "@tacit/shared";
 
@@ -10,6 +10,14 @@ import {
 export const fail = (res: Response, status: number, code: string, error: string) => void res.status(status).json({ error, code });
 export class Reject extends Error {
   constructor(readonly status: number, readonly code: string, message: string) { super(message); }
+}
+
+/** Firestore Timestamps to Dates, recursively, so a stored doc can be re-validated against its schema. */
+export function toDates(v: unknown): unknown {
+  if (v && typeof (v as { toDate?: unknown }).toDate === "function") return (v as { toDate(): Date }).toDate();
+  if (Array.isArray(v)) return v.map(toDates);
+  if (v && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, toDates(x)]));
+  return v;
 }
 
 const SUFFIXES = new Set(["pty", "ltd", "limited", "inc", "llc", "plc", "cc", "co", "corp", "group", "holdings", "the", "and"]);
@@ -78,7 +86,9 @@ export function reviewRouter({ db, auth, recruiterUid }: { db: Firestore; auth: 
           patch.reasonText = action.reasonText;
         } else if (sub.kind === "cv") {
           const f = CvSubmissionFields.parse(sub.fields);
-          const dupRef = sub.possibleDuplicateOf ? db.collection("candidates").doc(String(sub.possibleDuplicateOf)) : undefined;
+          // The duplicate hint lives on a recruiter-only doc: the submitter can read the submission itself.
+          const dupId = (await t.get(db.collection("submissionChecks").doc(snap.id))).data()?.possibleDuplicateOf;
+          const dupRef = dupId ? db.collection("candidates").doc(String(dupId)) : undefined;
           const dup = dupRef ? await t.get(dupRef) : undefined;
           const pu = db.collection("portalUsers").doc(sub.submittedBy);
           const puSnap = await t.get(pu);
@@ -138,12 +148,21 @@ export function reviewRouter({ db, auth, recruiterUid }: { db: Firestore; auth: 
           }
         }
         if (resultId) patch.resultId = resultId;
+        Submission.parse(toDates({ ...sub, ...patch })); // the decision must leave a valid submission
         put(sref, patch);
         for (const [ref, d] of writes) t.set(ref, d, { merge: true });
         return { status: want, resultId, claimFor };
       });
       // After the commit; also runs on a repeat, so a failed claim write is finished by retrying the pass.
-      if (out.claimFor && out.resultId) await auth.setCustomUserClaims(out.claimFor, { role: "candidate", candidateId: out.resultId });
+      if (out.claimFor && out.resultId) {
+        try {
+          await auth.setCustomUserClaims(out.claimFor, { role: "candidate", candidateId: out.resultId });
+        } catch (e) {
+          // A seeded sender has no Auth user to claim for; the decision already committed, so say so rather than fail forever.
+          if ((e as { code?: string })?.code !== "auth/user-not-found") throw e;
+          console.error("claim skipped:", "auth/user-not-found");
+        }
+      }
       res.json({ status: out.status, ...(out.resultId && { resultId: out.resultId }) } as ReviewResponse);
     } catch (e) {
       if (e instanceof Reject) return void fail(res, e.status, e.code, e.message);

@@ -178,6 +178,48 @@ test("portal seed: deterministic, role-safe and shaped for S18 / C02 / B04", () 
   assert.deepEqual(["cv", "brief"].map((k) => pending.filter((s) => s.data.kind === k).length), [3, 2]);
   assert.equal(pending.length, 5);
   assert.deepEqual(pending.filter((s) => s.data.kind === "cv").map((s) => s.data.readStatus).sort(), ["check", "clear", "unreadable"]);
-  assert.equal(pending.filter((s) => s.data.possibleDuplicateOf).length, 1);
-  assert.ok(ids(cands).has(pending.find((s) => s.data.possibleDuplicateOf)!.data.possibleDuplicateOf!));
+  assert.ok(subs.every((s) => !("possibleDuplicateOf" in s.data)), "submitter-readable docs carry no duplicate hint");
+  const checks = d.submissionChecks as { id: string; data: SubmissionCheck }[];
+  assert.equal(checks.length, 1);
+  assert.ok(pending.some((s) => s.id === checks[0]!.id && s.data.kind === "cv"));
+  assert.ok(ids(cands).has(checks[0]!.data.possibleDuplicateOf));
+
+  const links = d.shortlistLinks as { id: string; data: ShortlistLink }[];
+  assert.deepEqual(links.map((l) => l.id).sort(), (d.shortlistEntries as { id: string }[]).map((e) => e.id).sort());
+  for (const l of links) assert.ok(ids(cands).has(l.data.candidateId), l.id);
+});
+
+const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+const nameHit = (blob: string, fullName: string) =>
+  fold(fullName).split(/\s+/).filter((t) => t.length > 1)
+    .find((t) => new RegExp(`(?<![\\p{L}\\p{N}])${t}(?![\\p{L}\\p{N}])`, "u").test(fold(blob)));
+
+test("no company-readable or candidate-readable doc names a candidate", () => {
+  const OWN = "cand_demo_lerato";
+  const uid = PLACEHOLDER_ACCOUNTS.candidate.uid;
+  const subs = d.submissions as { id: string; data: Submission }[];
+  // An entry's identity is revealed on purpose once the company moves the person to Interviewing.
+  const entries = (d.shortlistEntries as { data: ShortlistEntry }[]).map((e) => ({ ...e.data, identity: undefined }));
+  const readable: Record<"company" | "candidate", unknown[]> = {
+    company: [...entries, ...(d.invites as { data: unknown }[]).map((x) => x.data), ...subs.filter((s) => s.data.kind === "brief").map((s) => s.data)],
+    candidate: [
+      ...subs.filter((s) => s.data.submittedBy === uid).map((s) => s.data),
+      ...(d.candidateUpdates as { data: unknown }[]).map((x) => x.data),
+      ...(d.portalUsers as { id: string; data: unknown }[]).filter((u) => u.id === uid).map((u) => u.data),
+      ...(d.courseSuggestions as { data: unknown }[]).map((x) => x.data),
+    ],
+  };
+  // The company's own contact shares a name with one pool candidate; her own name in her own docs is not a leak.
+  const staff = new Set((d.portalUsers as { data: { role: string; displayName: string } }[]).filter((u) => u.data.role === "company").map((u) => u.data.displayName));
+  const ownTokens = new Set(fold(cand(OWN).fullName).split(/\s+/));
+  for (const [reader, docs] of Object.entries(readable) as ["company" | "candidate", unknown[]][]) {
+    assert.ok(docs.length > 0, reader);
+    const blob = JSON.stringify(docs);
+    for (const id of blob.match(/cand_[a-z0-9_]+/g) ?? []) assert.equal(id, reader === "candidate" ? OWN : "", `${reader} can read ${id}`);
+    for (const p of cands) {
+      if ((reader === "candidate" && p.id === OWN) || (reader === "company" && staff.has(p.data.fullName))) continue;
+      const name = p.data.fullName.split(/\s+/).filter((t) => reader === "company" || !ownTokens.has(fold(t))).join(" ");
+      assert.equal(nameHit(blob, name), undefined, `${reader} can read the name of ${p.id}`);
+    }
+  }
 });

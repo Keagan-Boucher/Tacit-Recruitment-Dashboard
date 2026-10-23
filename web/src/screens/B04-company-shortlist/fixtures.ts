@@ -19,7 +19,7 @@ export const FIXTURE_IDENTITY: Record<string, NonNullable<Entry["identity"]>> = 
 export function fixtureEntries(): Entry[] {
   return [
     {
-      ...base, id: "entry_a", candidateId: "cand_a", label: "Candidate A", headline: "Finance systems analyst", years: 7,
+      ...base, id: "entry_a", label: "Candidate A", headline: "Finance systems analyst", years: 7,
       facts: { location: "Durban, will relocate", workMode: "", notice: "1 month notice", salary: "R58k a month" },
       case: {
         for: [dated("Ran month-end close on S/4HANA for a three-company group."), dated("Owns the intercompany reconciliation."), dated("Trained two junior analysts."), dated("Certified in S/4HANA Finance.")],
@@ -31,7 +31,7 @@ export function fixtureEntries(): Entry[] {
       interviewTimes: ["Tue 28 Oct, mornings"],
     },
     {
-      ...base, id: "entry_b", candidateId: "cand_b", label: "Candidate B", headline: "SAP support lead", years: 8,
+      ...base, id: "entry_b", label: "Candidate B", headline: "SAP support lead", years: 8,
       facts: { location: "Cape Town", workMode: "hybrid", notice: "1 month notice", salary: "R60k a month" },
       case: {
         for: [dated("Self-taught on S/4HANA Finance, and passed the FICO certification."), dated("Led a support team of six through a year-end close."), dated("Clear, calm communicator.")],
@@ -40,7 +40,7 @@ export function fixtureEntries(): Entry[] {
       status: "shortlisted", statusHistory: [shortlisted],
     },
     {
-      ...base, id: "entry_c", candidateId: "cand_c", label: "Candidate C", headline: "SAP FI consultant", years: 6,
+      ...base, id: "entry_c", label: "Candidate C", headline: "SAP FI consultant", years: 6,
       facts: { location: "Johannesburg", workMode: "hybrid", notice: "2 months notice", salary: "R62k a month" },
       case: {
         for: [dated("Two full S/4HANA implementations, both on time."), dated("Strong references from both clients.")],
@@ -49,7 +49,7 @@ export function fixtureEntries(): Entry[] {
       status: "shortlisted", statusHistory: [shortlisted],
     },
     {
-      ...base, id: "entry_d", candidateId: "cand_d", label: "Candidate D", headline: "Finance systems consultant", years: 5,
+      ...base, id: "entry_d", label: "Candidate D", headline: "Finance systems consultant", years: 5,
       facts: { location: "Cape Town", workMode: "on-site", notice: "available now", salary: "" },
       case: {
         for: [dated("Strong on controlling and cost centres.")],

@@ -1,5 +1,5 @@
 import { useLocation } from "react-router";
-import type { Candidate, Company, Submission } from "@tacit/shared";
+import type { Candidate, Company, Submission, SubmissionCheck } from "@tacit/shared";
 import { devParam } from "../../app/dev";
 import { useOwned } from "../../lib/data";
 import { fixtureFor, type Fixture, type Person } from "./fixtures";
@@ -17,11 +17,13 @@ export function usePending(): { subs: Sub[] | undefined; error: Error | undefine
 }
 
 /** Company and candidate names for the rows. A missing one reads as "the company" / "the candidate". */
-export function useSenders(fx: Fixture | undefined): { companies: Record<string, string>; people: Record<string, Person> } {
+export function useSenders(fx: Fixture | undefined): { companies: Record<string, string>; people: Record<string, Person>; dups: Record<string, string> } {
+  const checks = useOwned<SubmissionCheck>("submissionChecks");
   const companies = useOwned<Company>("companies");
   const candidates = useOwned<Candidate>("candidates");
   if (fx) return fx;
   return {
+    dups: Object.fromEntries((checks.data ?? []).map((c) => [c.id, c.possibleDuplicateOf])),
     companies: Object.fromEntries((companies.data ?? []).map((c) => [c.id, c.name])),
     people: Object.fromEntries((candidates.data ?? []).map((c) => [c.id, { fullName: c.fullName, headline: c.headline, lastInterviewAt: c.lastInterviewAt }])),
   };

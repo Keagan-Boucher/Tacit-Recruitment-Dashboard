@@ -1,4 +1,4 @@
-import type { Candidate, CandidateUpdate, CourseSuggestion, Invite, PortalUser, Role, ShortlistEntry, Submission } from "@tacit/shared";
+import type { Candidate, CandidateUpdate, CourseSuggestion, Invite, PortalUser, Role, ShortlistEntry, ShortlistLink, Submission, SubmissionCheck } from "@tacit/shared";
 import { daysAgo, type Doc } from "./build.ts";
 
 /** The two pre-created snap portal accounts. --dry and tests use the placeholders. */
@@ -16,6 +16,10 @@ export interface PortalDocs {
   invites: Doc<Invite>[];
   submissions: Doc<Submission>[];
   shortlistEntries: Doc<ShortlistEntry>[];
+  /** Recruiter-only: which candidate each shortlist entry is (id = the entry id). */
+  shortlistLinks: Doc<ShortlistLink>[];
+  /** Recruiter-only: the S18 duplicate hint (id = the submission id). */
+  submissionChecks: Doc<SubmissionCheck>[];
   candidateUpdates: Doc<CandidateUpdate>[];
   courseSuggestions: Doc<CourseSuggestion>[];
   /** Lerato's candidate, plus the pool-since patch for the nine-month candidate. */
@@ -59,7 +63,7 @@ export function buildPortal(now: Date, owner: string, roles: Doc<Role>[], acc: P
       kind: "cv", parseConfidence: 0.95, fields: cvFields("Zodwa Mkhize", "SAP MM consultant", "Pretoria", ["SAP MM", "Procurement", "Inventory management"]),
     }),
     sub("sub_demo_cv_check", daysAgo(now, 2), "portal_demo_cv_check", {
-      kind: "cv", parseConfidence: 0.71, readStatus: "check", correctedFields: ["location", "salaryExpectation"], possibleDuplicateOf: "cand_ayesha_patel",
+      kind: "cv", parseConfidence: 0.71, readStatus: "check", correctedFields: ["location", "salaryExpectation"],
       fields: { ...cvFields("Ayesha Patel", "Oracle Financials analyst", "Cape Town", ["Oracle EBS", "Oracle GL and AP"]), salaryExpectation: "R80k a month" },
     }),
     sub("sub_demo_cv_unreadable", daysAgo(now, 3), "portal_demo_cv_unreadable", {
@@ -81,10 +85,11 @@ export function buildPortal(now: Date, owner: string, roles: Doc<Role>[], acc: P
     const at = daysAgo(now, 2);
     return { label, headline, years, facts: { location, workMode, notice, salary }, case: { for: forText.map((text) => ({ text, at })), against: againstText.map((text) => ({ text, at })) } };
   };
-  const entry = (id: string, candidateId: string, c: ReturnType<typeof card>, status: ShortlistEntry["status"], history: ShortlistEntry["statusHistory"], identity?: ShortlistEntry["identity"]): Doc<ShortlistEntry> => ({
+  const linked: [string, string][] = [];
+  const entry = (id: string, candidateId: string, c: ReturnType<typeof card>, status: ShortlistEntry["status"], history: ShortlistEntry["statusHistory"], identity?: ShortlistEntry["identity"]): Doc<ShortlistEntry> => (linked.push([id, candidateId]), {
     id,
     data: {
-      ...own(daysAgo(now, 2)), roleId: "role_demo_fico", roleTitle: ficoRole.title, companyId: "co_demo_vantage", candidateId, ...c,
+      ...own(daysAgo(now, 2)), roleId: "role_demo_fico", roleTitle: ficoRole.title, companyId: "co_demo_vantage", ...c,
       status, statusHistory: [{ status: "shortlisted", by: owner, at: daysAgo(now, 2) }, ...history], ...(identity ? { identity } : {}), sharedAt: daysAgo(now, 2),
     },
   });
@@ -102,6 +107,9 @@ export function buildPortal(now: Date, owner: string, roles: Doc<Role>[], acc: P
       ["Eight years of SAP FI, asset accounting a strength."], ["ECC 6.0 only, no S/4HANA experience.", "Johannesburg only, will not relocate to Durban."]),
       "not-progressing", [{ status: "not-progressing", by: megan.uid, at: daysAgo(now, 1), reasonText: "We need hands-on S/4HANA and someone based in Durban." }]),
   ];
+
+  const shortlistLinks: Doc<ShortlistLink>[] = linked.map(([id, candidateId]) => ({ id, data: { ...own(daysAgo(now, 2)), roleId: "role_demo_fico", candidateId, sharedAt: daysAgo(now, 2) } }));
+  const submissionChecks: Doc<SubmissionCheck>[] = [{ id: "sub_demo_cv_check", data: { ...own(daysAgo(now, 2)), possibleDuplicateOf: "cand_ayesha_patel" } }];
 
   const upd = (id: string, roleId: string, status: CandidateUpdate["status"], d: number): Doc<CandidateUpdate> => {
     const { title, sector, region, seniority, salaryBand } = role(roleId).anon!;
@@ -139,5 +147,5 @@ export function buildPortal(now: Date, owner: string, roles: Doc<Role>[], acc: P
 
   const patchCandidate = (c: Doc<Candidate>): Doc<Candidate> => (c.id === POOL_CANDIDATE ? { id: c.id, data: { ...c.data, inPoolSince: inPool } } : c);
 
-  return { portalUsers, invites, submissions, shortlistEntries, candidateUpdates, courseSuggestions, extraCandidates, patchCandidate };
+  return { portalUsers, invites, submissions, shortlistEntries, shortlistLinks, submissionChecks, candidateUpdates, courseSuggestions, extraCandidates, patchCandidate };
 }

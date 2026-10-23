@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AcceptInviteRequest, Alignment, Attribute, Candidate, CandidateUpdate, Company, CourseRequest, CourseSuggestion,
   DEFAULT_USER_PREFS, InterviewNote, Invite, Match, Override, Placement, PortalUser, QuestionGuide, Reason,
-  RegisterRequest, ReviewRequest, Role, RoleAnon, ShareShortlistRequest, ShortlistEntry, ShortlistStatusRequest,
+  RegisterRequest, ReviewRequest, Role, RoleAnon, ShareShortlistRequest, ShortlistEntry, ShortlistLink, SubmissionCheck, ShortlistStatusRequest,
   SourceSpan, Submission, SubmitRequest, UserPrefs,
 } from "./index.ts";
 
@@ -72,7 +72,7 @@ const cvFields = { fullName: "Lerato M", headline: "h", location: "CT", currentR
 const briefFields = { title: "FICO", workMode: "hybrid", travel: "", budget: { min: 1, max: 2, currency: "ZAR" }, location: "CT", mustHave: [], niceToHave: [], seniority: "Senior" };
 const sub = { ...base, submittedBy: "p1", correctedFields: [], readStatus: "clear", status: "pending", submittedAt: d };
 const card = { label: "Candidate B", headline: "h", years: 6, facts: { location: "CT", workMode: "Hybrid", notice: "1 month", salary: "R55k" }, case: { for: [{ text: "t", at: d }], against: [{ text: "t", at: d }] } };
-const entry = { ...base, ...card, roleId: "r", roleTitle: "FICO", companyId: "co", candidateId: "c", status: "shortlisted", statusHistory: [], sharedAt: d };
+const entry = { ...base, ...card, roleId: "r", roleTitle: "FICO", companyId: "co", status: "shortlisted", statusHistory: [], sharedAt: d };
 const course = { title: "S/4HANA Finance", why: "Asked for in 7 of the 10 roles you came close to", duration: "6 weeks" };
 
 const portal: [string, { safeParse(v: unknown): { success: boolean } }, unknown, unknown][] = [
@@ -84,6 +84,8 @@ const portal: [string, { safeParse(v: unknown): { success: boolean } }, unknown,
   ["Submission not-accepted", Submission, { ...sub, kind: "cv", fields: cvFields, status: "not-accepted", reasonCode: "unreadable", reasonText: "The PDF is a scan." }, { ...sub, kind: "cv", fields: cvFields, status: "not-accepted", reasonCode: "unreadable" }],
   ["ShortlistEntry", ShortlistEntry, entry, { ...entry, case: { for: card.case.for, against: [] } }],
   ["ShortlistEntry identity", ShortlistEntry, { ...entry, status: "interviewing", statusHistory: [{ status: "interviewing", by: "co1", at: d }], identity: { fullName: "A", email: "e", phone: "p" } }, { ...entry, identity: { fullName: "A", email: "e", phone: "p" } }],
+  ["ShortlistLink", ShortlistLink, { ...base, roleId: "r", candidateId: "c", sharedAt: d }, { ...base, roleId: "r", sharedAt: d }],
+  ["SubmissionCheck", SubmissionCheck, { ...base, possibleDuplicateOf: "c" }, { ...base }],
   ["CandidateUpdate", CandidateUpdate, { ...base, candidateId: "c", portalUid: "p", roleAnon: anon, status: "shortlisted", at: d }, { ...base, candidateId: "c", portalUid: "p", roleAnon: anon, status: "hired", at: d }],
   ["CourseSuggestion", CourseSuggestion, { ...base, items: [course], basis: { roleIds: ["r"] }, status: "draft", generatedAt: d, modelVersion: "m/v1" }, { ...base, items: [course, course, course, course], basis: { roleIds: [] }, status: "draft", generatedAt: d, modelVersion: "m/v1" }],
   ["RegisterRequest", RegisterRequest, { displayName: "Lerato", consent: true }, { displayName: "Lerato", consent: false }],

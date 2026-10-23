@@ -8,7 +8,7 @@ import { buildMatches, buildOverrides } from "./matches.ts";
 
 /** Collections the seed owns (and wipes per owner). userPrefs is deliberately absent. */
 export const COLLECTIONS = ["candidates", "interviewNotes", "attributes", "companies", "roles", "matches", "overrides", "questionGuides", "placements",
-  "portalUsers", "invites", "submissions", "shortlistEntries", "candidateUpdates", "courseSuggestions"] as const;
+  "portalUsers", "invites", "submissions", "shortlistEntries", "shortlistLinks", "submissionChecks", "candidateUpdates", "courseSuggestions"] as const;
 export type Collection = (typeof COLLECTIONS)[number];
 export interface Dataset extends Record<Collection, Doc<unknown>[]> { keywords: Record<string, string> }
 
@@ -42,6 +42,8 @@ export function buildDataset(now: Date, owner: string, accounts: PortalAccounts 
     invites: check("invites", S.Invite, portal.invites),
     submissions: check("submissions", S.Submission, portal.submissions),
     shortlistEntries: check("shortlistEntries", S.ShortlistEntry, portal.shortlistEntries),
+    shortlistLinks: check("shortlistLinks", S.ShortlistLink, portal.shortlistLinks),
+    submissionChecks: check("submissionChecks", S.SubmissionCheck, portal.submissionChecks),
     candidateUpdates: check("candidateUpdates", S.CandidateUpdate, portal.candidateUpdates),
     courseSuggestions: check("courseSuggestions", S.CourseSuggestion, portal.courseSuggestions),
     keywords: ctx.keywords,

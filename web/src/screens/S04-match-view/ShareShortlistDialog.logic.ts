@@ -27,6 +27,25 @@ export const FIELD_NAMES = {
 
 export const cardLabel = (i: number) => `Candidate ${String.fromCharCode(65 + i)}`;
 
+/**
+ * Labels for this share: someone already on the role keeps their card's label; everyone else gets the next
+ * "Candidate X" no entry on the role uses, so a re-share never makes a second "Candidate A".
+ */
+export function nextLabels(candidateIds: string[], links: { id: string; candidateId: string }[], entries: { id: string; label: string }[]): Record<string, string> {
+  const labelOf = new Map(entries.map((e) => [e.id, e.label]));
+  const used = new Set(entries.map((e) => e.label));
+  const out: Record<string, string> = {};
+  let next = 0;
+  for (const id of candidateIds) {
+    const prior = labelOf.get(links.find((l) => l.candidateId === id)?.id ?? "");
+    if (prior) { out[id] = prior; continue; }
+    while (used.has(cardLabel(next))) next++;
+    out[id] = cardLabel(next);
+    used.add(out[id]);
+  }
+  return out;
+}
+
 /** Candidates with a standing shortlist decision for the role: newest decision per person, not reversed. */
 export function shortlistedIds(overrides: Pick<Override, "candidateId" | "decision" | "reversedAt" | "decidedAt">[]) {
   const latest = new Map<string, Pick<Override, "decision" | "reversedAt" | "decidedAt">>();

@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import type { Attribute, Candidate, Company, Match, Override, Role, ShareShortlistResponse, ShortlistEntry } from "@tacit/shared";
+import type { Attribute, Candidate, Company, Match, Override, Role, ShareShortlistResponse, ShortlistEntry, ShortlistLink } from "@tacit/shared";
 import { useScreenState } from "../../app";
 import { Button, Dialog, FieldError, FilterChip, Icon, Input, Textarea } from "../../components";
 import { api } from "../../lib/api";
 import { useOwned } from "../../lib/data";
 import type { WithId } from "../../lib/data";
 import { fmtDate } from "../S03-candidate-profile/profile";
-import { buildShareRequest, cardLabel, cardProblems, nameHits, prefillCard, shortlistedIds } from "./ShareShortlistDialog.logic";
+import { buildShareRequest, cardLabel, cardProblems, nameHits, nextLabels, prefillCard, shortlistedIds } from "./ShareShortlistDialog.logic";
 import type { CardDraft } from "./ShareShortlistDialog.logic";
 import styles from "./ShareShortlistDialog.module.css";
 
@@ -37,8 +37,11 @@ function ShareBody({ role, company, matches, overrides, candidates, attributes, 
   const dev = state.startsWith("share-");
   const [now] = useState(() => new Date());
   // Who already went to the client, so a re-share is never silent. A failed read just shows no markers.
-  const shared = useOwned<ShortlistEntry>("shortlistEntries", ["roleId", role.id]).data;
-  const sharedOn = new Map((shared ?? []).map((e) => [e.candidateId, e.sharedAt]));
+  // Entries no longer say who they are; the recruiter-only links do.
+  const linkRead = useOwned<ShortlistLink>("shortlistLinks", ["roleId", role.id]);
+  const links = linkRead.data;
+  const entries = useOwned<ShortlistEntry>("shortlistEntries", ["roleId", role.id]).data;
+  const sharedOn = new Map((links ?? []).map((l) => [l.candidateId, l.sharedAt]));
   const [open, setOpen] = useState(true);
   const [tried, setTried] = useState(dev && state === "share-name-blocked");
   const [sending, setSending] = useState(false);
@@ -69,6 +72,17 @@ function ShareBody({ role, company, matches, overrides, candidates, attributes, 
     }
     return out;
   });
+
+  // Once what is already on the role is known, label new cards after it. Only cards still carrying their first label change.
+  const labelled = useRef(false);
+  useEffect(() => {
+    // Wait for links (they keep a shared person's label); if that read fails, entries alone still avoid a collision.
+    if (labelled.current || !entries || (!links && !linkRead.error)) return;
+    labelled.current = true;
+    const first = people.map((p) => p.candidate.id);
+    const labels = nextLabels(first, links ?? [], entries);
+    setDrafts((all) => Object.fromEntries(Object.entries(all).map(([id, d], i) => [id, d.label === cardLabel(i) && labels[id] ? { ...d, label: labels[id] } : d])));
+  }, [links, linkRead.error, entries, people]);
 
   // Close in two steps so Dialog puts focus back on the trigger before we unmount.
   useEffect(() => { if (!open) onClose(); }, [open, onClose]);

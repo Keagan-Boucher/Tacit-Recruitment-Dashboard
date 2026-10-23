@@ -1,8 +1,8 @@
 import { Router } from "express";
 import type { DocumentReference, Firestore } from "firebase-admin/firestore";
-import { CandidateUpdate, Placement, ShareShortlistRequest, ShortlistCard, ShortlistEntry, ShortlistStatusRequest, StatusChange } from "@tacit/shared";
+import { CandidateUpdate, Placement, ShareShortlistRequest, ShortlistCard, ShortlistEntry, ShortlistLink, ShortlistStatusRequest, StatusChange } from "@tacit/shared";
 import type { ShareShortlistResponse, ShortlistStatusResponse } from "@tacit/shared";
-import { draftAnon, fail, Reject } from "./review.ts";
+import { draftAnon, fail, Reject, toDates } from "./review.ts";
 
 const MIRROR = { interviewing: "interviewing", hired: "placed", "not-progressing": "not-taken-forward" } as const;
 const ctx = (db: Firestore, c: string, id: string) => db.collection(c).doc(id);
@@ -36,14 +36,16 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
       const roleSnap = await ctx(db, "roles", body.data.roleId).get();
       const role = roleSnap.exists ? roleSnap.data()! : undefined;
       if (!role || role.ownerUid !== uid) throw new Reject(404, "not_found", "That role doesn't exist");
-      const [coSnap, existing] = await Promise.all([
+      // Who is already on this role comes from the recruiter-only links; the company-readable entries never carry a candidate id.
+      const [coSnap, links] = await Promise.all([
         ctx(db, "companies", role.companyId).get(),
-        db.collection("shortlistEntries").where("ownerUid", "==", uid).where("roleId", "==", roleSnap.id).get(),
+        db.collection("shortlistLinks").where("ownerUid", "==", uid).where("roleId", "==", roleSnap.id).get(),
       ]);
+      const priors = await Promise.all(links.docs.map((l) => ctx(db, "shortlistEntries", l.id).get()));
       const roleAnon = role.anon ?? draftAnon(role as { title: string }, coSnap.exists ? coSnap.data()! : {});
-      const known = new Map(existing.docs.map((d) => [d.data().candidateId as string, d]));
+      const known = new Map(links.docs.map((l, i) => [l.data().candidateId as string, { id: l.id, entry: priors[i]!.exists ? priors[i]!.data()! : undefined }]));
       const hadUpdate = new Set<string>();
-      await Promise.all(existing.docs.map(async (d) => void ((await ctx(db, "candidateUpdates", d.id).get()).exists && hadUpdate.add(d.id))));
+      await Promise.all(links.docs.map(async (d) => void ((await ctx(db, "candidateUpdates", d.id).get()).exists && hadUpdate.add(d.id))));
       const cands = await Promise.all(body.data.entries.map((e) => ctx(db, "candidates", e.candidateId).get()));
       if (cands.some((c) => !c.exists || c.data()!.ownerUid !== uid)) throw new Reject(404, "not_found", "A candidate on that shortlist doesn't exist");
 
@@ -60,12 +62,14 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
           const prior = known.get(candidateId);
           const ref = prior ? ctx(db, "shortlistEntries", prior.id) : db.collection("shortlistEntries").doc();
           entryIds.push(ref.id);
+          const link = ctx(db, "shortlistLinks", ref.id);
           const portalUid = cands[i]!.data()!.portalUid as string | undefined;
-          if (prior) {
+          if (prior?.entry) {
+            t.set(link, { sharedAt: now, updatedAt: now }, { merge: true });
             // Re-share: refresh the approved card and title; status, history and identity stay as they are.
             t.set(ref, { ...ShortlistCard.parse(card), roleTitle: role.title, sharedAt: now, updatedAt: now }, { merge: true });
             if (portalUid && !hadUpdate.has(prior.id)) {
-              const st = prior.data().status as keyof typeof MIRROR | "shortlisted";
+              const st = prior.entry.status as keyof typeof MIRROR | "shortlisted";
               t.set(ctx(db, "candidateUpdates", ref.id), CandidateUpdate.parse({
                 ownerUid: recruiterUid, createdAt: now, updatedAt: now, candidateId, portalUid, roleAnon, status: st === "shortlisted" ? st : MIRROR[st], at: now,
               }));
@@ -74,9 +78,10 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
           }
           t.set(ref, ShortlistEntry.parse({
             ...card, ownerUid: uid, createdAt: now, updatedAt: now, sharedAt: now,
-            roleId: roleSnap.id, roleTitle: role.title, companyId: role.companyId, candidateId,
+            roleId: roleSnap.id, roleTitle: role.title, companyId: role.companyId,
             status: "shortlisted", statusHistory: [{ status: "shortlisted", by: uid, at: now }],
           }));
+          t.set(link, ShortlistLink.parse({ ownerUid: uid, createdAt: now, updatedAt: now, roleId: roleSnap.id, candidateId, sharedAt: now }));
           if (portalUid) {
             t.set(ctx(db, "candidateUpdates", ref.id), CandidateUpdate.parse({
               ownerUid: recruiterUid, createdAt: now, updatedAt: now, candidateId, portalUid, roleAnon, status: "shortlisted", at: now,
@@ -105,7 +110,10 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
       if (!e0 || !req.claims?.companyId || e0.companyId !== req.claims.companyId) throw new Reject(403, "forbidden", "Your account can't do that");
 
       // Everything the writes need, read before the transaction.
-      const cand = (await ctx(db, "candidates", e0.candidateId).get()).data() ?? {};
+      const link = (await ctx(db, "shortlistLinks", r.entryId).get()).data();
+      if (!link) throw new Error("shortlist entry has no link");
+      const candidateId = link.candidateId as string;
+      const cand = (await ctx(db, "candidates", candidateId).get()).data() ?? {};
       let identity: { fullName: string; email: string; phone: string } | undefined;
       if (r.status === "interviewing") {
         const [pu, sub] = await Promise.all([
@@ -135,8 +143,13 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
         const mirror = (id: string, s: (typeof MIRROR)[keyof typeof MIRROR]) =>
           hasUpdate.has(id) && t.set(ctx(db, "candidateUpdates", id), CandidateUpdate.partial().parse({ status: s, at: now, updatedAt: now }), { merge: true });
         const touch = (ref: DocumentReference, d: Record<string, unknown>) => void t.set(ref, { updatedAt: now, ...d }, { merge: true });
+        // The schema, not the control flow, decides an entry change is legal (identity only after interviewing). Writes just the delta.
+        const touchEntry = (ref: DocumentReference, before: Record<string, unknown>, d: Record<string, unknown>) => {
+          ShortlistEntry.parse(toDates({ ...before, updatedAt: now, ...d }));
+          touch(ref, d);
+        };
 
-        touch(eref, {
+        touchEntry(eref, cur, {
           status: r.status, statusHistory: [...cur.statusHistory, change],
           ...(identity && { identity }), ...(r.interviewTimes && { interviewTimes: r.interviewTimes }),
         });
@@ -144,7 +157,7 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
 
         if (r.status !== "interviewing") {
           t.set(db.collection("placements").doc(), Placement.parse({
-            ownerUid: e0.ownerUid, createdAt: now, updatedAt: now, companyId: e0.companyId, candidateId: e0.candidateId, roleId: e0.roleId,
+            ownerUid: e0.ownerUid, createdAt: now, updatedAt: now, companyId: e0.companyId, candidateId, roleId: e0.roleId,
             outcome: r.status === "hired" ? "placed" : "client-rejected", reason: r.status === "hired" ? "" : r.reasonText, date: now,
             ...(r.startDate && { startDate: new Date(r.startDate) }), ...(r.salary && { salary: r.salary }), source: "company",
           }));
@@ -154,7 +167,7 @@ export function shortlistsRouter({ db, recruiterUid }: { db: Firestore; recruite
           for (const o of others) {
             const s = o.data().status;
             if (s !== "shortlisted" && s !== "interviewing") continue;
-            touch(o.ref, {
+            touchEntry(o.ref, o.data(), {
               status: "not-progressing",
               statusHistory: [...o.data().statusHistory, StatusChange.parse({ status: "not-progressing", by: uid, at: now, reasonText: "Role filled" })],
             });

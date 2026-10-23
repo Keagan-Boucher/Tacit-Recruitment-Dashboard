@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import type { Auth } from "firebase-admin/auth";
 import type { Firestore } from "firebase-admin/firestore";
-import { AcceptInviteRequest, LOW_CONFIDENCE, PortalUser, RegisterRequest, Submission, SubmitRequest } from "@tacit/shared";
+import { AcceptInviteRequest, LOW_CONFIDENCE, PortalUser, RegisterRequest, Submission, SubmissionCheck, SubmitRequest } from "@tacit/shared";
 import type { AcceptInviteResponse, InvitePreview, RegisterResponse, SubmitResponse } from "@tacit/shared";
 import { requireNoRole, requireRole } from "../auth.ts";
 
@@ -145,10 +145,14 @@ export function portalRouter({ db, auth, recruiterUid }: { db: Firestore; auth: 
         ...(conf !== undefined && { parseConfidence: conf }),
         ...("fileRef" in sub && sub.fileRef && { fileRef: sub.fileRef }),
         ...("text" in sub && sub.text && { text: sub.text }),
-        ...(dup && { possibleDuplicateOf: dup }),
       });
       const ref = db.collection("submissions").doc();
-      await ref.set(doc);
+      // One transaction, so a failed check write can't leave a submission behind that a retry then duplicates.
+      await db.runTransaction(async (t) => {
+        t.set(ref, doc);
+        // Recruiter-only: the submitter can read their submission, and this names another candidate in the pool.
+        if (dup) t.set(db.collection("submissionChecks").doc(ref.id), SubmissionCheck.parse({ ownerUid: recruiterUid, createdAt: now, updatedAt: now, possibleDuplicateOf: dup }));
+      });
       res.json({ submissionId: ref.id } satisfies SubmitResponse);
     } catch (e) {
       console.error("submit failed:", (e as Error)?.name);

@@ -3,7 +3,8 @@ import type { Sub } from "./review";
 // Dev-only stand-ins for ?state=, so every state can be checked before the live queue is seeded.
 
 export type Person = { fullName: string; headline: string; lastInterviewAt?: Date };
-export type Fixture = { subs: Sub[]; companies: Record<string, string>; people: Record<string, Person> };
+/** `dups`: submission id to the pool candidate it may duplicate (the recruiter-only submissionChecks). */
+export type Fixture = { subs: Sub[]; companies: Record<string, string>; people: Record<string, Person>; dups: Record<string, string> };
 
 const base = { ownerUid: "dev", createdAt: new Date(), updatedAt: new Date(), status: "pending" as const };
 const brief = (title: string, extra: Record<string, unknown>) => ({
@@ -14,7 +15,7 @@ const brief = (title: string, extra: Record<string, unknown>) => ({
 const CVS: Sub[] = [
   {
     ...base, id: "fx-lerato", kind: "cv", submittedBy: "u1", submittedAt: new Date(2026, 9, 22, 9), readStatus: "clear", correctedFields: ["salaryExpectation"],
-    possibleDuplicateOf: "cand-lerato", fileRef: "users/u1/cvs/lerato-dlamini.pdf",
+    fileRef: "users/u1/cvs/lerato-dlamini.pdf",
     fields: {
       fullName: "Lerato Dlamini", headline: "SAP FI analyst", location: "Johannesburg", currentRole: "SAP FI analyst", workMode: "hybrid", salaryExpectation: "R60k a month",
       history: [{ title: "SAP FI analyst", company: "Mzansi Freight", from: "2022" }, { title: "Accounts payable lead", company: "Ubuntu Retail", from: "2018", to: "2022" }],
@@ -49,7 +50,7 @@ const BRIEFS: Sub[] = [
   },
 ];
 
-const ALL = { companies: { "co-vantage": "Vantage Logistics" }, people: { "cand-lerato": { fullName: "Lerato Dlamini", headline: "SAP FI analyst", lastInterviewAt: new Date(2024, 2, 14) } } };
+const ALL = { dups: { "fx-lerato": "cand-lerato" }, companies: { "co-vantage": "Vantage Logistics" }, people: { "cand-lerato": { fullName: "Lerato Dlamini", headline: "SAP FI analyst", lastInterviewAt: new Date(2024, 2, 14) } } };
 
 /** `state` from ?state=; undefined when it is not one of the S18 / S01 fixture states. */
 export function fixtureFor(state: string): Fixture | undefined {

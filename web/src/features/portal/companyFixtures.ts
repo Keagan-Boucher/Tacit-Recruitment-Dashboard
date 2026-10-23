@@ -25,7 +25,7 @@ export function companyFixture(state: string, now = new Date()): CompanyPortal {
   const entry = (id: string, roleId: string, roleTitle: string, label: string, headline: string, years: number, location: string, status: ShortlistEntry["status"], shared: number, extra: Partial<ShortlistEntry> = {}): Entry => {
     const history = status === "shortlisted" ? [] : [{ status: "interviewing" as const, by: "dev-company", at: ago(shared - 2) }, ...(status === "hired" ? [{ status: "hired" as const, by: "dev-company", at: ago(Math.max(shared - 20, 1)) }] : [])];
     return {
-      ...base, id, roleId, roleTitle, companyId: "co-vantage", candidateId: `cand-${id}`, label, headline, years, ...card, facts: { ...card.facts, location },
+      ...base, id, roleId, roleTitle, companyId: "co-vantage", label, headline, years, ...card, facts: { ...card.facts, location },
       status, statusHistory: status === "not-progressing" ? [{ status: "not-progressing" as const, by: "dev-company", at: ago(1), reasonText: "Salary too high." }] : history, sharedAt: ago(shared), ...extra,
     };
   };

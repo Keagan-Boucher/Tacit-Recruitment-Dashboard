@@ -39,12 +39,13 @@ const as = (t: string) => ({ Authorization: `Bearer ${t}` });
 
 const CV_FIELDS = { fullName: "Thandi Nkosi", headline: "SAP FICO", location: "Durban", currentRole: "Lead", history: [], education: [], skills: ["SAP", "FICO"], salaryExpectation: "R60k" };
 const BRIEF_FIELDS = { title: "Voltmark SAP FICO", workMode: "Hybrid", travel: "", budget: { min: 52000, max: 55000, currency: "ZAR" }, location: "Durban", mustHave: ["FI/CO"], niceToHave: [], seniority: "Senior", unclear: [] };
-const sub = (o: any) => ({ ownerUid: R, status: "pending", submittedBy: "c1", readStatus: "clear", kind: "cv", fields: CV_FIELDS, fileRef: "users/c1/cvs/cv.pdf", parseConfidence: 0.9, ...o });
+const D = new Date("2026-10-01");
+const sub = (o: any) => ({ ownerUid: R, createdAt: D, updatedAt: D, submittedAt: D, correctedFields: [], status: "pending", submittedBy: "c1", readStatus: "clear", kind: "cv", fields: CV_FIELDS, fileRef: "users/c1/cvs/cv.pdf", parseConfidence: 0.9, ...o });
 
-function setup(seed: Record<string, any> = {}, live: Record<string, any> = {}) {
+function setup(seed: Record<string, any> = {}, live: Record<string, any> = {}, claimCode?: string) {
   const { db, store } = fakeDb({ "portalUsers/c1": { role: "candidate", email: "t@x.co" }, ...seed });
   const claimsSet: [string, object][] = [];
-  const auth = { setCustomUserClaims: async (u: string, c: object) => void claimsSet.push([u, c]), getUser: async (u: string) => ({ customClaims: live[u] }) };
+  const auth = { setCustomUserClaims: async (u: string, c: object) => { if (claimCode) throw Object.assign(new Error("x"), { code: claimCode }); claimsSet.push([u, c]); }, getUser: async (u: string) => ({ customClaims: live[u] }) };
   const app = createApp(loadConfig({ ALLOWED_ORIGIN: "http://a.test", RECRUITER_UID: R }), async (t) => {
     if (!TOKENS[t]) throw new Error("bad");
     return TOKENS[t]!;
@@ -95,7 +96,8 @@ describe("pass cv", () => {
   });
   it("links the possible duplicate instead", async () => {
     const { app, store } = setup({
-      "submissions/s1": sub({ possibleDuplicateOf: "cand7" }),
+      "submissions/s1": sub({}),
+      "submissionChecks/s1": { ownerUid: R, possibleDuplicateOf: "cand7" },
       "candidates/cand7": { ownerUid: R, fullName: "Thandi Nkosi", cvFileRef: "users/rec/old.pdf" },
     });
     const r = await review(app, "s1", { action: "pass" });
@@ -106,7 +108,8 @@ describe("pass cv", () => {
   });
   it("linking keeps the duplicate's existing topSkills", async () => {
     const { app, store } = setup({
-      "submissions/s1": sub({ possibleDuplicateOf: "cand7" }),
+      "submissions/s1": sub({}),
+      "submissionChecks/s1": { ownerUid: R, possibleDuplicateOf: "cand7" },
       "candidates/cand7": { ownerUid: R, fullName: "T", topSkills: ["Excel"] },
     });
     await review(app, "s1", { action: "pass" });
@@ -114,11 +117,22 @@ describe("pass cv", () => {
   });
   it("won't relink a candidate that has a different portal account (409)", async () => {
     const { app, store } = setup({
-      "submissions/s1": sub({ possibleDuplicateOf: "cand7" }),
+      "submissions/s1": sub({}),
+      "submissionChecks/s1": { ownerUid: R, possibleDuplicateOf: "cand7" },
       "candidates/cand7": { ownerUid: R, fullName: "T", portalUid: "someone-else" },
     });
     expect((await review(app, "s1", { action: "pass" })).status).toBe(409);
     expect(store.get("submissions/s1").status).toBe("pending");
+  });
+  it("a seeded sender with no Auth user still gets a 200 after the commit", async () => {
+    const { app, store } = setup({ "submissions/s1": sub({}) }, {}, "auth/user-not-found");
+    const r = await review(app, "s1", { action: "pass" });
+    expect(r.status).toBe(200);
+    expect(store.get("submissions/s1")).toMatchObject({ status: "accepted", resultId: r.body.resultId });
+  });
+  it("any other claim failure is still a 500, and a retry finishes it", async () => {
+    const { app } = setup({ "submissions/s1": sub({}) }, {}, "auth/internal-error");
+    expect((await review(app, "s1", { action: "pass" })).status).toBe(500);
   });
   it("is idempotent and 409 for the opposite action", async () => {
     const { app, store } = setup({ "submissions/s1": sub({}) });

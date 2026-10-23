@@ -137,6 +137,8 @@ describe("portal roles", () => {
       await setDoc(doc(db, "submissions/s2"), { ownerUid: A, submittedBy: "compx", kind: "brief", status: "pending" });
       await setDoc(doc(db, "shortlistEntries/e1"), { ownerUid: A, companyId: "X", roleId: "r1" });
       await setDoc(doc(db, "shortlistEntries/e2"), { ownerUid: A, companyId: "Y", roleId: "r2" });
+      await setDoc(doc(db, "shortlistLinks/e1"), { ownerUid: A, roleId: "r1", candidateId: "c1" });
+      await setDoc(doc(db, "submissionChecks/s1"), { ownerUid: A, possibleDuplicateOf: "c1" });
       await setDoc(doc(db, "candidateUpdates/u1"), { ownerUid: A, portalUid: "cand1", status: "shortlisted" });
       await setDoc(doc(db, "courseSuggestions/c1"), { ownerUid: A, status: "approved", items: [{ title: "t" }] });
       await setDoc(doc(db, "courseSuggestions/c2"), { ownerUid: A, status: "draft", items: [] });
@@ -197,6 +199,21 @@ describe("portal roles", () => {
     await assertFails(getDoc(doc(compX(), "roles/r1")));
     await assertFails(updateDoc(doc(compX(), "shortlistEntries/e1"), { status: "hired" }));
     await assertFails(setDoc(doc(compX(), "shortlistEntries/e3"), { companyId: "X" }));
+  });
+
+  it("shortlistLinks and submissionChecks are recruiter-owner read only", async () => {
+    for (const p of ["shortlistLinks/e1", "submissionChecks/s1"]) {
+      await assertSucceeds(getDoc(doc(alice(), p)));
+      await assertFails(getDoc(doc(bob(), p))); // another recruiter
+      await assertFails(getDoc(doc(compX(), p)));
+      await assertFails(getDoc(doc(cand(), p))); // the submitter of s1
+      await assertFails(getDoc(doc(ctx(A, { role: "candidate", candidateId: "c1" }), p))); // matching ownerUid, wrong role
+      await assertFails(getDoc(doc(ctx(A, { role: "company", companyId: "X" }), p)));
+      await assertFails(getDoc(doc(noRole(), p)));
+      await assertFails(updateDoc(doc(alice(), p), { ownerUid: A }));
+      await assertFails(deleteDoc(doc(alice(), p)));
+      await assertFails(setDoc(doc(alice(), p.replace("1", "9")), { ownerUid: A }));
+    }
   });
 
   it("token with no role reads nothing but its own userPrefs", async () => {

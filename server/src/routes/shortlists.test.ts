@@ -84,8 +84,12 @@ describe("share", () => {
     const [id1, id3] = r.body.entryIds;
     const e = store.get(`shortlistEntries/${id1}`);
     expect(ShortlistEntry.safeParse(e).success).toBe(true);
-    expect(e).toMatchObject({ roleId: "r1", roleTitle: "SAP FICO", companyId: "co1", candidateId: "cand1", status: "shortlisted", ownerUid: R });
+    expect(e).toMatchObject({ roleId: "r1", roleTitle: "SAP FICO", companyId: "co1", status: "shortlisted", ownerUid: R });
     expect(e.identity).toBeUndefined();
+    // The company-readable entry carries no candidate id; the recruiter-only link does.
+    for (const [, d] of all(store, "shortlistEntries")) expect(strings(d).join(" ")).not.toMatch(/cand[0-9]/);
+    expect(store.get(`shortlistLinks/${id1}`)).toMatchObject({ ownerUid: R, roleId: "r1", candidateId: "cand1" });
+    expect(store.get(`shortlistLinks/${id3}`)).toMatchObject({ roleId: "r1", candidateId: "cand3" });
     expect(e.statusHistory).toMatchObject([{ status: "shortlisted", by: R }]);
     const u = store.get(`candidateUpdates/${id1}`);
     expect(CandidateUpdate.safeParse(u).success).toBe(true);
@@ -103,6 +107,7 @@ describe("share", () => {
     const b = await share(app);
     expect(b.body.entryIds).toEqual(a.body.entryIds);
     expect(all(store, "shortlistEntries")).toHaveLength(1);
+    expect(all(store, "shortlistLinks")).toHaveLength(1);
     expect(all(store, "candidateUpdates")).toHaveLength(1);
   });
   it("duplicate candidates in one request are 400", async () => {

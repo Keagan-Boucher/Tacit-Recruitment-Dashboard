@@ -226,7 +226,8 @@ describe("submit", () => {
     const { r, store } = await send("cand", cv());
     const d = Submission.parse(store.get(`submissions/${r.body.submissionId}`));
     expect(d).toMatchObject({ ownerUid: R, submittedBy: "c1", status: "pending", readStatus: "clear", fileRef: "users/c1/cvs/cv.pdf" });
-    expect(d.possibleDuplicateOf).toBeUndefined();
+    expect("possibleDuplicateOf" in d).toBe(false);
+    expect([...store.keys()].some((k) => k.startsWith("submissionChecks/"))).toBe(false);
   });
   it("readStatus: unreadable / check / clear", async () => {
     const rs = async (o: any) => written((await send("cand", cv(o))).store)[0].readStatus;
@@ -245,7 +246,9 @@ describe("submit", () => {
   it("duplicate by normalised name, email, or an earlier CV's phone", async () => {
     const dup = async (name: string, seed: any, phone?: string) => {
       const { store } = await send("cand", cv({ fields: { ...CV_FIELDS, fullName: name, ...(phone && { phone }) } }), seed);
-      return written(store).find((d) => d.submittedBy === "c1").possibleDuplicateOf;
+      const s = [...store].find(([, d]) => d.submittedBy === "c1" && d.kind === "cv" && d.status === "pending")!;
+      expect("possibleDuplicateOf" in s[1]).toBe(false); // the submitter can read this doc
+      return store.get(`submissionChecks/${s[0].split("/")[1]}`)?.possibleDuplicateOf;
     };
     const pool = { "candidates/cA": { ownerUid: R, fullName: "  Thándi   nkosi " }, "candidates/cB": { ownerUid: "other", fullName: "Someone Else" } };
     expect(await dup("Thandi Nkosi", pool)).toBe("cA");

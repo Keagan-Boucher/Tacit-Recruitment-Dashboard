@@ -351,7 +351,6 @@ const submissionBase = {
   correctedFields: z.array(z.string()),
   parseConfidence: confidence.optional(),
   readStatus: ReadStatus,
-  possibleDuplicateOf: z.string().optional(),
   status: SubmissionStatus,
   submittedAt: z.date(),
   reviewedAt: z.date().optional(),
@@ -396,7 +395,6 @@ export const ShortlistEntry = ShortlistCard.extend({
   /** Copied from Role.title when shared: companies cannot read roles. */
   roleTitle: z.string().min(1),
   companyId: z.string().min(1),
-  candidateId: z.string().min(1),
   status: ShortlistStatus,
   statusHistory: z.array(StatusChange),
   /** Absent until the company moves the person to Interviewing. */
@@ -406,6 +404,11 @@ export const ShortlistEntry = ShortlistCard.extend({
 }).refine((e) => !e.identity || e.statusHistory.some((h) => h.status === "interviewing"), {
   message: "identity is revealed only once the company moved them to interviewing", path: ["identity"],
 });
+
+/** Recruiter-only: which candidate a company-readable ShortlistEntry is. Doc id = the entry id. Rules cannot hide fields, so the id stays off the entry. */
+export const ShortlistLink = z.object({ ...doc, roleId: z.string().min(1), candidateId: z.string().min(1), sharedAt: z.date() });
+/** Recruiter-only, keyed by submission id: kept off the submission because the submitter can read that. */
+export const SubmissionCheck = z.object({ ...doc, possibleDuplicateOf: z.string().min(1) });
 
 export const CandidateUpdateStatus = z.enum(["shortlisted", "interviewing", "placed", "not-taken-forward"]);
 /** C02 Role updates. Strict, and no company id or name by construction. */
@@ -451,7 +454,7 @@ export interface AcceptInviteResponse { companyId: string }
 /** GET /api/invites/:id — no sign-in (B01 opens signed out); the random invite id is the secret. Only what B01 shows. */
 export interface InvitePreview { companyName: string; email: string; expiresAt: string; status: "open" | "used" | "expired" }
 
-/** POST /api/portal/submit (candidate: cv, details-change; company: brief). readStatus and possibleDuplicateOf are the proxy's. */
+/** POST /api/portal/submit (candidate: cv, details-change; company: brief). readStatus is the proxy's. */
 export const SubmitRequest = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("cv"),
@@ -554,6 +557,8 @@ export type ShortlistStatus = z.infer<typeof ShortlistStatus>;
 export type StatusChange = z.infer<typeof StatusChange>;
 export type ShortlistCard = z.infer<typeof ShortlistCard>;
 export type ShortlistEntry = z.infer<typeof ShortlistEntry>;
+export type ShortlistLink = z.infer<typeof ShortlistLink>;
+export type SubmissionCheck = z.infer<typeof SubmissionCheck>;
 export type CandidateUpdateStatus = z.infer<typeof CandidateUpdateStatus>;
 export type CandidateUpdate = z.infer<typeof CandidateUpdate>;
 export type CourseItem = z.infer<typeof CourseItem>;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Attribute, Candidate, Match } from "@tacit/shared";
-import { buildShareRequest, cardProblems, nameHits, prefillCard, shortlistedIds, yearsFromCv } from "./ShareShortlistDialog.logic";
+import { buildShareRequest, cardProblems, nameHits, nextLabels, prefillCard, shortlistedIds, yearsFromCv } from "./ShareShortlistDialog.logic";
 
 const now = new Date("2026-10-27T10:00:00Z");
 const candidate = {
@@ -51,6 +51,15 @@ describe("name guard", () => {
     expect(cardProblems({ ...d, againstText: "  " }, candidate.fullName)).toContain("Add at least one reason against.");
     expect(cardProblems({ ...d, forText: "" }, candidate.fullName)).toContain("Add at least one reason for.");
   });
+});
+
+describe("nextLabels", () => {
+  const links = [{ id: "e1", candidateId: "a" }, { id: "e2", candidateId: "b" }];
+  const entries = [{ id: "e1", label: "Candidate A" }, { id: "e2", label: "Candidate C" }];
+  it("keeps a shared person's label and gives new people the next unused letters", () => {
+    expect(nextLabels(["a", "x", "y"], links, entries)).toEqual({ a: "Candidate A", x: "Candidate B", y: "Candidate D" });
+  });
+  it("starts at A on a role with nothing shared", () => expect(nextLabels(["x", "y"], [], [])).toEqual({ x: "Candidate A", y: "Candidate B" }));
 });
 
 describe("shortlistedIds / request", () => {

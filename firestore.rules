@@ -63,6 +63,14 @@ service cloud.firestore {
       allow read: if owns(resource.data)
         || (role() == 'company' && resource.data.companyId == request.auth.token.get('companyId', null));
     }
+    // Recruiter-only, proxy-written. Rules cannot hide fields, so what names a candidate stays off docs a portal user can read:
+    // shortlistLinks/{entryId} says who a company-readable entry is; submissionChecks/{submissionId} holds the duplicate hint.
+    match /shortlistLinks/{id} {
+      allow read: if owns(resource.data);
+    }
+    match /submissionChecks/{id} {
+      allow read: if owns(resource.data);
+    }
     match /candidateUpdates/{id} {
       allow read: if (role() == 'candidate' && resource.data.portalUid == request.auth.uid) || owns(resource.data);
     }
