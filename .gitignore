@@ -24,3 +24,8 @@ playwright-report/
 # os / editor
 .DS_Store
 Thumbs.db
+
+# cloud function build output and local config
+functions/index.js
+functions/prompts/
+functions/node_modules/

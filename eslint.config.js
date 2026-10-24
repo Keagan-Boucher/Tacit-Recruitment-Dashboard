@@ -4,7 +4,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
 
 export default tseslint.config(
-  { ignores: ["**/dist/**", "**/node_modules/**", ".claude/**", "coverage/**"] },
+  { ignores: ["**/dist/**", "**/node_modules/**", ".claude/**", "coverage/**", "functions/index.js"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   { files: ["web/**/*.{ts,tsx}"], languageOptions: { globals: globals.browser }, ...reactHooks.configs.flat.recommended },
