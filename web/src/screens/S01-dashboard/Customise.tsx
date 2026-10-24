@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { CSSProperties, PointerEventHandler, ReactNode } from "react";
 import { Link } from "react-router";
 import {
   DndContext, DragOverlay, KeyboardSensor, PointerSensor, useDroppable, useSensor, useSensors,
@@ -10,10 +10,13 @@ import type { DashboardWidget, WidgetId } from "@tacit/shared";
 import { Button, Icon, IconButton } from "../../components";
 import { useReduceMotion } from "../../features/prefs";
 import { boardOf, setSize, setVisible, TITLES } from "../S17-widgets/layout";
-import { collide, NEW_ROW, nextSize, reorder, zoomVar } from "./arrange";
+import { collide, fitScale, NEW_ROW, nextSize, reorder, ZOOM, zoomVar } from "./arrange";
 import styles from "./Dashboard.module.css";
 
-// S01 customise (Figma 145:319): the real board at 75% with frozen widgets, a grip and a remove button on each, and the Widget shelf.
+// S01 customise (Figma 145:319): the real board with frozen widgets, a grip, size and remove buttons on each, and the Widget shelf.
+// The board is laid out at the size it has on / and scaled by one factor, so rows, columns and content match it exactly.
+const AUTO_PAGE = "(max-width: 719px), (max-height: 599px)"; // the page stops being a fixed height here (see .page)
+const SHELF_GAP = 16;
 
 const ICONS: Record<WidgetId, string> = {
   forgotten: "bx-user-voice", "roles-to-shortlist": "bx-list-check", "to-confirm": "bx-check-circle", "people-met": "bx-group",
@@ -41,6 +44,36 @@ export function Customise({ draft, onChange, render, sizeClass, shelfOpen, onClo
   const focus = useRef<string>(undefined);
   const board = boardOf(draft);
   const ids = board.map((w) => w.widgetId);
+  const slot = useRef<HTMLDivElement>(null);
+  const boardEl = useRef<HTMLDivElement>(null);
+  const tail = useRef<HTMLDivElement>(null);
+  const shelfEl = useRef<HTMLElement>(null);
+  // w/min: the real board's width and least height on /; h: its height here; z: the factor that fits it beside the shelf.
+  const [fit, setFit] = useState({ w: 0, min: 0, h: 0, z: ZOOM });
+  const measure = useCallback(() => {
+    const sl = slot.current, bd = boardEl.current;
+    if (!sl || !bd) return;
+    const box = sl.getBoundingClientRect(); // the slot is the box the board fills on /
+    const auto = matchMedia(AUTO_PAGE).matches;
+    const w = Math.round(box.width * 100) / 100;
+    const h = bd.offsetHeight;
+    const shelfLeft = shelfEl.current?.getBoundingClientRect().left;
+    // A shelf that covers most of the page (a phone) overlays the board instead of sitting beside it.
+    const roomW = shelfLeft !== undefined && shelfLeft > box.left + w * 0.4 ? shelfLeft - SHELF_GAP - box.left : w;
+    const gap = parseFloat(getComputedStyle(sl).rowGap) || 0;
+    // A board taller than its slot scrolls on / too, so only one that fits the window is shrunk to keep the new-row slot in view.
+    const roomH = auto || h > box.height ? Infinity : box.height - (tail.current?.offsetHeight ?? 0) - gap;
+    const next = { w, min: auto ? 0 : Math.round(box.height), h, z: fitScale({ w, h }, { w: roomW, h: roomH }) };
+    setFit((p) => (p.w === next.w && p.min === next.min && p.h === next.h && p.z === next.z ? p : next));
+  }, []);
+  useLayoutEffect(measure); // after every render: the board's height follows its width, and the factor follows its height
+  useEffect(() => {
+    const ro = new ResizeObserver(measure);
+    for (const el of [slot.current, boardEl.current, tail.current]) if (el) ro.observe(el);
+    addEventListener("resize", measure);
+    return () => { ro.disconnect(); removeEventListener("resize", measure); };
+  }, [measure]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -93,13 +126,17 @@ export function Customise({ draft, onChange, render, sizeClass, shelfOpen, onClo
         onDragCancel={() => setActive(undefined)}
         accessibility={{
           announcements,
-          screenReaderInstructions: { draggable: "To pick up a widget, press Space on its handle. Use the arrow keys to move it, Space to drop it and Escape to cancel." },
+          screenReaderInstructions: { draggable: "To move a widget with the keyboard, press Space on its handle. Use the arrow keys to move it, Space to drop it and Escape to cancel. With a mouse, drag the widget itself." },
         }}
       >
-        <div className={styles.arrange}>
-          <div className={styles.zoomBox}>
+        <div
+          ref={slot}
+          className={styles.arrange}
+          style={{ ...zoomVar(fit.z), "--bw": `${fit.w}px`, "--bh": `${fit.min}px` } as CSSProperties}
+        >
+          <div className={styles.stage} style={{ width: fit.w * fit.z, height: fit.h * fit.z }}>
             <SortableContext items={ids} strategy={noShift}>
-              <div className={`${styles.board} ${styles.edit}`} role="region" aria-label="Your board">
+              <div ref={boardEl} className={`${styles.board} ${styles.edit}`} role="region" aria-label="Your board">
                 {board.map((w) => (
                   <Cell key={w.widgetId} w={w} cls={sizeClass(w)} onRemove={() => remove(w.widgetId)} onResize={() => resize(w)}>
                     {render(w)}
@@ -108,15 +145,17 @@ export function Customise({ draft, onChange, render, sizeClass, shelfOpen, onClo
               </div>
             </SortableContext>
           </div>
-          <NewRow />
-          <p className={`${styles.hint} t-body-s`}>
-            <Icon name="bx-grid-vertical" />
-            Drag the handle to move a widget, or press Space on it and use the arrow keys.
-          </p>
+          <div ref={tail} className={styles.tail} style={{ width: fit.w * fit.z }}>
+            <NewRow />
+            <p className={`${styles.hint} t-body-s`}>
+              <Icon name="bx-grid-vertical" />
+              Drag a widget to move it, or press Space on its handle and use the arrow keys.
+            </p>
+          </div>
         </div>
         <DragOverlay dropAnimation={reduce ? null : undefined}>
           {lifted && (
-            <div className={styles.lift} style={zoomVar}>
+            <div className={styles.lift} style={zoomVar(fit.z)}>
               <div className={styles.liftIn}>{render(lifted)}</div>
             </div>
           )}
@@ -124,7 +163,7 @@ export function Customise({ draft, onChange, render, sizeClass, shelfOpen, onClo
       </DndContext>
 
       {shelfOpen && (
-        <aside className={styles.shelf} aria-label="Widget shelf">
+        <aside ref={shelfEl} className={styles.shelf} aria-label="Widget shelf">
           <div className={styles.shelfTitle}>
             <h2 className="t-title">Widget shelf</h2>
             <IconButton icon="bx-x" label="Close the Widget shelf" onClick={onCloseShelf} />
@@ -173,20 +212,23 @@ function NewRow() {
 
 function Cell({ w, cls, onRemove, onResize, children }: { w: DashboardWidget; cls: string; onRemove: () => void; onResize: () => void; children: ReactNode }) {
   const { setNodeRef, setActivatorNodeRef, attributes, listeners, isDragging, isOver } = useSortable({ id: w.widgetId });
+  // The whole cell starts a mouse drag; only the grip takes the keyboard (Space, arrows). Content is inert, so no widget link can fire.
+  const { onPointerDown, ...keys } = listeners ?? {};
+  const stop: PointerEventHandler = (e) => e.stopPropagation(); // pressing a button is a click, not the start of a drag
   const name = TITLES[w.widgetId];
   const next = SIZE_LABEL[nextSize(w.size)];
   return (
-    <div ref={setNodeRef} className={`${styles.cell} ${styles.editCell} ${cls} ${w.widgetId === "forgotten" ? styles.heroCell : ""} ${isDragging ? styles.slot : ""}`}>
+    <div ref={setNodeRef} onPointerDown={onPointerDown as PointerEventHandler | undefined} className={`${styles.cell} ${styles.editCell} ${cls} ${w.widgetId === "forgotten" ? styles.heroCell : ""} ${isDragging ? styles.slot : ""}`}>
       <div className={styles.frozen} inert>
         {children}
       </div>
-      <button ref={setActivatorNodeRef} id={`grip-${w.widgetId}`} type="button" className={styles.grip} aria-label={`Move ${name}`} {...attributes} {...listeners}>
+      <button ref={setActivatorNodeRef} id={`grip-${w.widgetId}`} type="button" className={styles.grip} aria-label={`Move ${name}`} {...attributes} {...keys}>
         <Icon name="bx-grid-vertical" size={20} />
       </button>
-      <button type="button" className={styles.remove} aria-label={`Remove ${name} from the board`} onClick={onRemove}>
+      <button type="button" className={styles.remove} aria-label={`Remove ${name} from the board`} onPointerDown={stop} onClick={onRemove}>
         <Icon name="bx-x" size={20} />
       </button>
-      <button id={`size-${w.widgetId}`} type="button" className={`${styles.resize} t-meta`} aria-label={`Size of ${name}: ${SIZE_LABEL[w.size]}. Change to ${next}`} onClick={onResize}>
+      <button id={`size-${w.widgetId}`} type="button" className={`${styles.resize} t-meta`} aria-label={`Size of ${name}: ${SIZE_LABEL[w.size]}. Change to ${next}`} onPointerDown={stop} onClick={onResize}>
         <Icon name="bx-expand-alt" size={14} />
         {SIZE_LABEL[w.size]}
       </button>

@@ -8,7 +8,6 @@ import { Button, buttonClass, ErrorBanner, Icon } from "../../components";
 import { usePrefs } from "../../features/prefs";
 import { useOwned } from "../../lib/data";
 import { buildBoard, EMPTY, type Snapshot } from "./board";
-import { zoomVar } from "./arrange";
 import { Customise } from "./Customise";
 import { AskNext, Forgotten, PeopleMet, RolesInPlay, RolesToShortlist, Shelf, ToConfirm, Waiting, WorthACall } from "./Widgets";
 import styles from "./Dashboard.module.css";
@@ -150,7 +149,7 @@ function Board({ onRetry }: { onRetry: () => void }) {
   );
 
   return (
-    <div className={`${styles.page} ${editing ? styles.arranging : ""}`} style={editing ? zoomVar : undefined}>
+    <div className={`${styles.page} ${editing && shelfOpen ? styles.arranging : ""}`}>
       <PageHeader
         headline={editing ? "Arrange your dashboard." : headline}
         actions={

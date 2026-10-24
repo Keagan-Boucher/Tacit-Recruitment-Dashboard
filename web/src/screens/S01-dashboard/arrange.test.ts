@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { DEFAULT_USER_PREFS } from "@tacit/shared";
 import { boardOf, setSize } from "../S17-widgets/layout";
-import { collide, NEW_ROW, nextSize, reorder } from "./arrange";
+import { collide, fitScale, NEW_ROW, nextSize, reorder, ZOOM } from "./arrange";
 
 const ids = (d: typeof DEFAULT_USER_PREFS.dashboard) => boardOf(d).map((w) => w.widgetId);
 
@@ -39,4 +39,14 @@ it("a mouse released on empty space is over nothing; the keyboard falls back to 
   expect(collide({ ...base, pointerCoordinates: { x: 50, y: 900 } })).toEqual([]);
   expect(collide({ ...base, pointerCoordinates: { x: 50, y: 50 } }).map((c) => c.id)).toEqual(["b"]);
   expect(collide({ ...base, pointerCoordinates: null }).map((c) => c.id)).toEqual(["b"]);
+});
+
+it("one factor fits the real board: 75% where it fits, smaller for the shelf or a short window, never below the floor", () => {
+  const board = { w: 1200, h: 700 };
+  expect(fitScale(board, { w: 1200, h: 700 })).toBe(ZOOM);
+  expect(fitScale(board, { w: 900, h: Infinity })).toBe(0.75);
+  expect(fitScale(board, { w: 600, h: Infinity })).toBe(0.5);
+  expect(fitScale(board, { w: 1200, h: 350 })).toBe(0.5);
+  expect(fitScale(board, { w: 10, h: 10 })).toBe(0.25);
+  expect(fitScale({ w: 0, h: 0 }, { w: 500, h: 500 })).toBe(ZOOM);
 });
