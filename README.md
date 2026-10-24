@@ -84,6 +84,59 @@ Without `AI_API_KEY` the app still runs, but anything that calls the model shows
 | `npm run snap -- --only S03 --states` | Screenshot screens for comparison with Figma (needs Playwright, see `.claude/skills/tacit-build`) |
 | `npm run test:rules` | Firestore and Storage rules tests (needs Java 17+ for the emulators) |
 
+## Architecture
+
+```mermaid
+flowchart LR
+  B["Browser<br/>React SPA"] -->|static files| H["Hostinger<br/>tacit.keaganboucher.com"]
+  B -->|"sign-in, reads, rule-checked writes"| F["Firebase<br/>Auth · Firestore · Storage"]
+  B -->|"/api/* + Firebase ID token"| P["Proxy: Express in a<br/>Cloud Function (africa-south1)"]
+  P -->|"Admin SDK: verify token, role, read/write"| F
+  P -->|"Structured Outputs, AI_API_KEY from Secret Manager"| G["Groq<br/>openai/gpt-oss-120b"]
+```
+
+The browser never holds a model key: every model call goes through the proxy, which checks the Firebase ID token and the
+caller's role (recruiter, candidate, company) and validates model output against the shared Zod schemas before anything
+is stored. Firestore and Storage rules enforce the same roles for the reads and writes the browser makes directly.
+
+## Deploy
+
+Production is one Firebase project (`tacit-3cdd4`, Blaze plan). The web app is static files on Hostinger; the proxy is
+the same Express app wrapped as a 2nd-gen Cloud Function (`server/src/function.ts`, bundled into `functions/` by
+`npm run build:functions`).
+
+**Proxy (Cloud Function `api`).** Once per machine, copy `functions/.env.example` to `functions/.env.tacit-3cdd4` and fill
+it in (the bucket variable is `STORAGE_BUCKET`, because Functions reserves the `FIREBASE_` prefix). Then:
+
+```bash
+npx -y firebase-tools@15.34.1 login
+npx -y firebase-tools@15.34.1 functions:secrets:set AI_API_KEY --project tacit-3cdd4
+npx -y firebase-tools@15.34.1 deploy --only functions --project tacit-3cdd4
+```
+
+The secret is set once; later deploys only need the last command (it builds the bundle first). Use firebase-tools 15.x
+here: 13.x cannot load firebase-functions 7. The function URL is
+`https://africa-south1-tacit-3cdd4.cloudfunctions.net/api`; check it with `curl <url>/api/health`.
+
+**Web (Hostinger).** Create `web/.env.production.local` with
+`VITE_API_BASE_URL=https://africa-south1-tacit-3cdd4.cloudfunctions.net/api` (the other `VITE_FIREBASE_*` values come from
+`web/.env.local`), then:
+
+```bash
+npm run build -w web
+```
+
+Upload the contents of `web/dist`, including the hidden `.htaccess` (deep-link fallback, https redirect, caching), to
+the subdomain's document root in hPanel. If you zip it on Windows, use `tar -a -cf dist.zip -C web/dist .htaccess assets fonts index.html`:
+PowerShell 5's `Compress-Archive` writes backslash paths that break on Hostinger's Linux.
+
+**Once per new web domain:** add it to Firebase Authentication, Authorized domains; to the Storage bucket CORS rule (GET);
+and set `ALLOWED_ORIGIN` in `functions/.env.tacit-3cdd4`, then redeploy the function.
+
+**Rules and indexes:** `npx -y firebase-tools@13.35.1 deploy --only firestore:rules,firestore:indexes,storage --project tacit-3cdd4`.
+
+**Before a demo:** `npm run seed` resets the live data to the synthetic dataset.
+
 ## Troubleshooting
 
 - **Port already in use**: something else holds 5173 or 8787 (often a dev server from Option B). Stop it, or change the left
@@ -92,8 +145,8 @@ Without `AI_API_KEY` the app still runs, but anything that calls the model shows
   should not matter. If it does, `docker compose down -v` then `docker compose up --build`.
 - **Saves don't hot-reload in Docker**: file watching is set to polling in `compose.yaml` for Windows and macOS; check
   that Docker Desktop has file sharing enabled for the repo's drive.
-- **Download CV fails in the browser**: the Storage bucket needs a CORS rule for your origin (set once for
-  `http://localhost:5173`; add the deployed origin when you deploy).
-- **Groq `429` / "couldn't read"**: the on-demand tier is capped at about 8,000 tokens a minute. Wait a minute and retry.
+- **Download CV fails in the browser**: the Storage bucket needs a CORS rule for your origin (set for
+  `http://localhost:5173` and `https://tacit.keaganboucher.com`).
+- **Groq `429` / "couldn't read"**: you hit the account's per-minute token cap. Wait a minute and retry.
 - **Docker Desktop won't start on Windows** ("sailor-ingest.sock"): quit it from the tray, delete the files in
   `%LOCALAPPDATA%\Docker\run`, then start it again.
